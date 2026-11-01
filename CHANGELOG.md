@@ -1,58 +1,10 @@
 # Changelog
 
-## Unreleased — 2026-11-01 (cost drivers and scenarios)
+## v0.10.0 - 2026-11-01
 
-### Added
-
-- **Cost drivers** (`verovo drivers --case case.json`): the same cost rows
-  re-bucketed by vendor, category, task type, model, retry and allocation;
-  `total_recorded_cost` and `attributable_cost` are reported separately so
-  unattributed cost is never spread across tasks. Missing vendor/model/retry
-  data is reported as `not-recorded` / `not-separable`, and unlinked rows stay
-  in `unknowns`.
-- **Scenario simulation** (`verovo optimize --scenario scenarios.json`): explicit
-  assumptions (`scale_cost`, `drop`) are applied to a copy of the case and
-  re-evaluated; baseline, scenario, delta and the assumption list are reported.
-  An invalid scenario is named, never skipped.
-- **ROI-driven proposals** (`verovo optimize`): reconcile unallocated cost,
-  verify outcomes, test vendor substitution under a quality gate, instrument
-  retries and review allocation rules. Each proposal carries evidence, a
-  verification plan, `requires_human: true` and `automatic_apply: false`.
-- Read-only MCP `verovo_optimize`; `docs/cost-optimization.md` documents the
-  dimensions, rule format and boundary.
-
-### Validation
-
-- 563 tests pass, including bucket shares, unattributed cost, retry
-  non-separability, scenario scaling/dropping, invalid scenarios and the
-  human gate on proposals.
-
-## Unreleased — period intake (2026-11-01)
-
-### Added
-
-- **Period intake** (`verovo intake --bundle DIR --out DIR`): a manifest plus
-  local traces, usage rows, supplier bills, outcomes and optional invoices is
-  assembled into the existing task-economics case, so a billing period no longer
-  starts as hand-written JSON. The intake report keeps unallocated costs,
-  currency mismatches, duplicate/unmatched charges, unreviewed invoices and
-  unverified outcomes as named open items; a bill that matches a financialized
-  usage row is reconciled by `charge_id` and counted once.
-- Read-only MCP `verovo_period_intake` returns the same case and report without
-  writing; `verovo economics` runs on the produced case unchanged.
-- `docs/period-intake.md` documents the manifest, column contracts and the
-  rules for what is excluded versus kept.
-
-### Validation
-
-- 555 tests pass, including bundle-to-case assembly, bill/usage reconciliation,
-  currency exclusion, unverified-outcome handling and blocked bundles with no
-  tasks.
-
-## Unreleased — execution and economics reliability
-
-- Harden interruption/evidence handling and add regression coverage.
-- Align product positioning and publish the feature implementation status.
+First release since v0.9.0. Buyer review and task economics leave main-preview,
+and a billing period can now be assembled, audited and simulated from local
+records.
 
 All notable changes to Verovo (standard, SDK, and reference product) are
 documented here. Format follows [Keep a Changelog](https://keepachangelog.com/).
@@ -61,44 +13,56 @@ documented here. Format follows [Keep a Changelog](https://keepachangelog.com/).
 > (AgentMeasure). The rename is recorded in v0.9.0 and in
 > [docs/RELEASE-v0.9.0.md](docs/RELEASE-v0.9.0.md).
 
-## [Unreleased] — 2026-10-31
-
 ### Added
 
-- Main-preview `review` command: scoped buyer tasks, independent charge/delivery
-  criteria, local JSON observations, traceable HTML/JSON and synthetic examples.
-- Missing/null/incompatible evidence remains UNPROVABLE; rule and business criteria
-  stay separate. Inputs cannot be overwritten by reports.
-- Conclusion levels on every review (text/HTML/JSON): Level 1 rule consistency
-  (established by the run), Level 2 evidence credibility (not established: rule
-  applicability is reviewer-supplied, with an explicit human-confirmation count from
-  optional `basis.confirmed_by/confirmed_at`; sources are local SHA-256 snapshots),
-  Level 3 buyer business decision (outside the tool, points to `verovo decisions`).
-  Levels are reported separately and never collapsed into a score.
-- Six-stage operating map: [docs/review-method/buyer-review-stages.md](docs/review-method/buyer-review-stages.md)
-  (Intake → Source Check → Rule Resolution → Reconciliation → Delivery Assessment →
-  Buyer Decision, each mapped to a shipped command and its human part).
-- Minimal buyer MCP server `verovo-mcp` (`verovo_healthcheck.mcp_server`, stdio
-  JSON-RPC, stdlib only): `verovo_review`, `verovo_review_template`, `verovo_recount`.
-  Read/local-compute only — dispute/recovery and any write action stay CLI-only.
+- **Buyer review** (`verovo review`): scoped buyer tasks, independent
+  charge/delivery criteria, local JSON observations, traceable HTML/JSON and
+  synthetic examples. Missing/null/incompatible evidence stays UNPROVABLE, and
+  every report separates rule consistency (Level 1), evidence credibility
+  (Level 2) and the buyer business decision (Level 3). Six operating stages are
+  mapped to shipped commands in
+  [docs/review-method/buyer-review-stages.md](docs/review-method/buyer-review-stages.md).
+- **Task economics** (`verovo economics`): explicit tasks, runs, financialized
+  usage, cost items, allocation rules and verified outcomes produce
+  direct/allocated/fully-loaded task cost, cost per verified success and ROI
+  only when verified value exists in the same currency. Duplicate rows,
+  cross-currency rows, unallocated items and unverified outcomes are reported,
+  never silently combined.
+- **Period intake** (`verovo intake --bundle DIR --out DIR`): a manifest plus
+  local traces, usage rows, supplier bills, outcomes and optional invoices is
+  assembled into the economics case. Bills matching financialized usage
+  reconcile by `charge_id`; currency mismatches are excluded; unallocated cost,
+  unreviewed invoices and unverified outcomes stay named open items.
+- **Cost drivers** (`verovo drivers`): the same cost rows re-bucketed by vendor,
+  category, task type, model, retry and allocation; recorded and attributable
+  cost are reported separately, and missing dimensions stay `not-recorded` /
+  `not-separable`.
+- **Scenario simulation and proposals** (`verovo optimize`): explicit
+  assumptions (`scale_cost`, `drop`) are applied to a case copy and
+  re-evaluated against the baseline. Proposals cover reconcile-before-ROI,
+  outcome verification, vendor substitution under a quality gate, retry
+  instrumentation and allocation review; all are `requires_human` and
+  `automatic_apply: false`.
+- MCP read-only tools: `verovo_review`, `verovo_review_template`,
+  `verovo_recount`, `verovo_invoice_intake`, `verovo_period_intake`,
+  `verovo_optimize`.
 - Skill task entries `verovo-review-charge` / `verovo-review-delivery` /
-  `verovo-prepare-dispute` inside the single `verovo` skill (one skill, never
-  separate installs), each mapped to the six stages.
-- `verovo economics` task-economics case: explicit business tasks, agent runs,
-  financialized usage, cost items, allocation rules and verified outcomes. It
-  computes direct/allocated/fully-loaded task cost, cost per verified success,
-  and ROI only when verified value exists in the same currency; duplicate cost
-  rows, cross-currency rows, unallocated items and unverified outcomes are
-  reported rather than silently combined. Schema:
-  `healthcheck/schemas/task-economics.schema.json`; boundary:
-  `docs/task-economics.md`.
+  `verovo-prepare-dispute` inside the single `verovo` skill.
 
 ### Changed
 
-- Align the product definition, buyer workflows, README and public site around
-  buyer-first charges and delivery verification. Keep provider work conditional.
-- Clarify tagged installation versus main preview and retain free measurement
-  services without obsolete $10/$20 offers.
+- Product definition, buyer workflows, README and public site aligned around
+  buyer-first charge and delivery verification; provider work stays conditional.
+- Documented tagged installation versus main preview; free measurement services
+  retained without obsolete offers.
+- Interruption/evidence handling hardened with regression coverage.
+
+### Validation
+
+- 563 tests pass locally, including review lanes and levels, economics
+  duplicate/unallocated handling, period intake reconciliation and currency
+  exclusion, cost-driver shares, scenario simulation and the human gate on
+  proposals.
 
 ## [v0.9.0] - 2026-10-30
 

@@ -47,7 +47,7 @@ records and review coverage before making a financial decision.
 
 ## Try a buyer review locally
 
-The new `review` command is a **main-branch preview**, not part of the v0.9.0 tag.
+The `review` command is part of the **v0.10.0** tag.
 Python 3.9+, standard library only:
 
 ```bash
@@ -80,7 +80,7 @@ truth; the tool does not infer contract terms or judge arbitrary AI output quali
 For the existing tagged CLI:
 
 ```bash
-python3 -m pip install "git+https://github.com/roy-tong/verovo@v0.9.0#subdirectory=healthcheck"
+python3 -m pip install "git+https://github.com/roy-tong/verovo@v0.10.0#subdirectory=healthcheck"
 verovo recount --sample
 ```
 

@@ -1,6 +1,6 @@
 # Review charges and delivery as a buyer
 
-`review` is a main-branch preview added after v0.9.0. It runs locally with no
+`review` ships in v0.10.0. It runs locally with no
 network calls and emits an offline HTML report and/or a structured JSON record.
 Existing `delivery` records the review team's work phases and effort; it is not
 the buyer acceptance command. Use `review` for buyer-defined acceptance checks.

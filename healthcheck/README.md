@@ -1,8 +1,8 @@
 # Verovo local CLI
 
 Buyer-side tools for AI service charges and delivery, with local developer diagnostics.
-The new **main-preview** `review` command evaluates separate charge and delivery
-criteria using local JSON evidence. It is not included in the v0.9.0 release tag.
+The **`review`** command evaluates separate charge and delivery criteria using
+local JSON evidence. It is part of the v0.10.0 release tag.
 
 ```bash
 python3 healthcheck/verovo review --sample --html buyer-review.html
@@ -23,17 +23,17 @@ Same honesty rules as the [conformance pack](../conformance/pack/README.md):
 every verdict is `OK / FINDING / UNPROVABLE`, and UNPROVABLE is a first-class
 result — when the logs cannot decide, that is disclosed, never zeroed.
 
-> Status 2026-10-30: CLI **v0.9.0** is tagged on GitHub; the PyPI project `verovo`
+> Status 2026-11-01: CLI **v0.10.0** is tagged on GitHub; the PyPI project `verovo`
 > is not published yet, so `pip install verovo` fails until the first upload (the
 > previous `agentmeasure` project stays at 0.8.0). Use the pinned Git install below
-> in the meantime. Provider SDK is **v0.3.0** (`@verovo/mcp`). 511 Healthcheck tests
+> in the meantime. Provider SDK is **v0.3.0** (`@verovo/mcp`). 563 Healthcheck tests
 > passed locally. See [release notes](https://roy-tong.github.io/Verovo/releases.html).
 
 ## Install
 
 ```bash
-# Pinned Git install of 0.9.0 (works today; the PyPI project `verovo` is not published yet).
-pipx install "git+https://github.com/roy-tong/verovo@v0.9.0#subdirectory=healthcheck"
+# Pinned Git install of 0.10.0 (works today; the PyPI project `verovo` is not published yet).
+pipx install "git+https://github.com/roy-tong/verovo@v0.10.0#subdirectory=healthcheck"
 verovo demo
 
 # Once `verovo` is on PyPI this is the normal path.

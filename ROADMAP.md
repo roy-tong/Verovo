@@ -10,7 +10,7 @@ or together. Providers extend the product through concrete transaction needs.
 
 - Buyer `review` tasks: explicit scope and criteria, local JSON observations,
   separate charges/delivery conclusions, evidence hashes and offline reports.
-  This is a main-branch preview, not included in the v0.9.0 tag.
+  Shipped in the v0.10.0 tag.
 - Supported billing recounts, evidence preparation, discrepancy and recovery records.
 - Buyer Ledger tooling and catalog; cataloged platforms are not live-validated.
 - Local developer diagnostics, conformance and free measurement runs.
