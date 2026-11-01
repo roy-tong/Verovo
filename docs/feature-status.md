@@ -11,7 +11,7 @@ Reviewed 2026-11-01 against the repository implementation. Available means local
 | ROI | Verified value / cost and cost per verified success | Available; incomplete input remains a coverage limitation. `verovo drivers` separates recorded from attributable cost and keeps unattributed cost visible |
 | Optimization / assurance | Cost-driven workflow changes and risk pricing | `verovo optimize` proposes vendor/task/retry/allocation tests with explicit scenario arithmetic and a verification plan; every item needs a human and is never auto-applied. No causal savings or insurance claims |
 
-Build: reconciliation semantics, task identity, allocation, outcome rules and economics. Reuse: existing telemetry/billing adapters; optional Docling/invoice2data and DuckDB remain integration candidates, not shipped dependencies. Optional invoice2data performs extraction into a non-booked draft; no vendored fork or mandatory core dependency.
+Build: reconciliation semantics, task identity, allocation, outcome rules and economics. Reuse: existing telemetry/billing adapters; optional Docling/invoice2data and DuckDB remain integration candidates, not shipped dependencies. Optional invoice2data performs extraction into a non-booked draft, and period intake reuses that draft without booking it; no vendored fork or mandatory core dependency.
 
 The read-only/local `verovo_invoice_intake` MCP tool returns the same unreviewed, unbooked draft as the CLI; it never updates the economics case. `verovo_period_intake` returns the assembled case plus the intake report (open items, reconciliation, currency mismatches) and writes nothing.
 
