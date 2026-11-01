@@ -11,6 +11,7 @@ runs, not a failure of this tool.
 import argparse
 import json
 import os
+from pathlib import Path
 import shlex
 import sys
 from datetime import datetime, timezone
@@ -59,6 +60,7 @@ from . import scaffold as scaffold_mod
 from . import review as review_mod
 from . import task_economics as economics_mod
 from . import invoice_intake as invoice_mod
+from . import period_intake as period_mod
 # Conformance pack loaded lazily in cmd_conformance
 
 DEFAULT_DAYS = 7
@@ -1753,6 +1755,41 @@ def cmd_invoice_intake(args) -> int:
         return 2
 
 
+def cmd_intake(args) -> int:
+    """Assemble a task-economics case from a local billing-period bundle."""
+    try:
+        result = period_mod.intake(Path(args.bundle))
+        report = result["report"]
+        outdir = Path(args.out)
+        outdir.mkdir(parents=True, exist_ok=True)
+        case_path = outdir / "case.json"
+        report_json = outdir / "intake-report.json"
+        report_md = outdir / "intake-report.md"
+        targets = [report_json, report_md] + ([case_path] if result["case_written"] else [])
+        for target in targets:
+            if target.exists() and not args.force:
+                raise ValueError("output exists: %s (pass --force to replace)" % target)
+        if result["case_written"]:
+            case_path.write_text(json.dumps(result["case"], ensure_ascii=False, indent=2) + "\n",
+                                 encoding="utf-8")
+        report_json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+                               encoding="utf-8")
+        report_md.write_text(period_mod.markdown(report), encoding="utf-8")
+        print(json.dumps({
+            "status": report["status"],
+            "case_written": result["case_written"],
+            "case": str(case_path) if result["case_written"] else None,
+            "report": str(report_json),
+            "markdown": str(report_md),
+            "counts": report["counts"],
+            "open_items": len(report["open_items"]),
+        }, ensure_ascii=False, indent=2))
+        return 0 if report["status"] != "blocked" else 3
+    except (ValueError, OSError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
 def cmd_economics(args) -> int:
     """Compute a task-level economics case from a local, explicit case file."""
     try:
@@ -1806,6 +1843,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_inv.add_argument("--json", metavar="PATH", help="write a source-linked draft JSON")
     p_inv.add_argument("--force", action="store_true", help="replace an existing output")
     p_inv.set_defaults(func=cmd_invoice_intake)
+
+    p_intake = sub.add_parser(
+        "intake",
+        help="assemble a task-economics case from a local billing-period bundle "
+             "(traces, bills, outcomes, optional invoices); unresolved rows are kept as open items")
+    p_intake.add_argument("--bundle", required=True, help="bundle directory with manifest.json")
+    p_intake.add_argument("--out", required=True, help="output directory for case and intake report")
+    p_intake.add_argument("--force", action="store_true", help="replace existing outputs")
+    p_intake.set_defaults(func=cmd_intake)
 
     p_econ = sub.add_parser(
         "economics",

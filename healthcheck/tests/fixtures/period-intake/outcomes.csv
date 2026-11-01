@@ -1,0 +1,3 @@
+task_id,status,verified,value,value_verified,source_ref
+t1,success,true,40.00,true,outcome:t1
+t2,failure,false,,,outcome:t2

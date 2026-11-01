@@ -15,6 +15,18 @@ report — with **Strict Qualified Usage defaulting to 0%** (the fixture is labe
 The demo runs in an isolated workspace (`mktemp -d`) and never touches
 `~/.verovo` — same fixture + same policy = same result, every run.
 
+## Period intake bundle
+
+[`period-bundle/`](period-bundle/) is a synthetic billing-period folder with a
+manifest, tasks, runs, usage rows, supplier bills and outcomes. It demonstrates
+`verovo intake` and the open items it keeps (unallocated charge, EUR bill
+excluded from a USD case, unverified outcome):
+
+```bash
+python3 healthcheck/verovo intake --bundle examples/period-bundle --out /tmp/period-out
+python3 healthcheck/verovo economics --case /tmp/period-out/case.json
+```
+
 ## SDK integration examples
 
 - [`sdk/examples/mcp-integration.js`](../sdk/examples/mcp-integration.js) — **MCP SDK v1 path**

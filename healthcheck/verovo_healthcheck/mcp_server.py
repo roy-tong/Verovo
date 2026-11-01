@@ -23,6 +23,7 @@ import sys
 
 from . import review
 from . import invoice_intake
+from . import period_intake
 from . import vendors as vendors_mod
 
 PROTOCOL_VERSION = "2024-11-05"
@@ -39,6 +40,20 @@ TOOLS = [
                 "file": {"type": "string", "description": "local invoice path"},
             },
             "required": ["file"],
+        },
+    },
+    {
+        "name": "verovo_period_intake",
+        "description": "Assemble a task-economics case from a local billing-period bundle "
+                       "(manifest + traces/bills/outcomes). Returns the case and an intake "
+                       "report that keeps unallocated, mismatched and unverified rows as open "
+                       "items; no network, no guessed tax/FX, no booking.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "bundle": {"type": "string", "description": "local directory with manifest.json"},
+            },
+            "required": ["bundle"],
         },
     },
     {
@@ -140,6 +155,10 @@ def call_tool(name, args):
         if not args.get("file"):
             return _err("provide a local invoice file")
         return _text(invoice_intake.extract_invoice(args["file"]))
+    if name == "verovo_period_intake":
+        if not args.get("bundle"):
+            return _err("provide a bundle directory with manifest.json")
+        return _text(period_intake.intake(args["bundle"]))
     if name == "verovo_review":
         return _run_review(args)
     if name == "verovo_review_template":

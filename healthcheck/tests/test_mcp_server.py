@@ -19,7 +19,8 @@ class McpServerTests(unittest.TestCase):
         init = mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
         self.assertEqual("verovo-mcp", init["result"]["serverInfo"]["name"])
         tools = mcp.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
-        self.assertEqual(["verovo_invoice_intake", "verovo_review", "verovo_review_template", "verovo_recount"],
+        self.assertEqual(["verovo_invoice_intake", "verovo_period_intake", "verovo_review",
+                          "verovo_review_template", "verovo_recount"],
                          [t["name"] for t in tools["result"]["tools"]])
 
     def test_review_sample_returns_lanes_levels_and_boundary(self):

@@ -1,0 +1,5 @@
+charge_id,amount,currency,task_id,allocation_rule,vendor
+ch-1,1.50,USD,,,openai
+shared-1,30.00,USD,,equal,openai
+ch-9,9.99,USD,,,openai
+ch-3,5.00,EUR,,,anthropic

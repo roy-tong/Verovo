@@ -6,7 +6,7 @@
 
 Verovo connects buyer logs, supplier charges, financial records and business outcomes. Review charges and delivery, allocate direct and shared costs to tasks, and calculate cost per verified success and ROI when the evidence supports it.
 
-For teams buying or operating AI services, the output is a reproducible economic record: task costs, allocation rules, verified results and explicit evidence gaps. The local `economics` command is available on main; invoice extraction, automated optimization and insurance remain future work. [Feature status and build/integrate decisions](docs/feature-status.md).
+For teams buying or operating AI services, the output is a reproducible economic record: task costs, allocation rules, verified results and explicit evidence gaps. The local `economics` command runs on an explicit case, and `intake` assembles that case from a local billing-period bundle; automated optimization and insurance remain future work. [Feature status and build/integrate decisions](docs/feature-status.md).
 
 <p align="center">
   <img src="assets/launch/hero.svg" alt="Verovo connects charging rules, usage and payment records, and delivery evidence into one local buyer review that reports charges and delivery as separate PASS / FAIL / UNPROVABLE verdicts" width="720">
@@ -68,7 +68,8 @@ Reconciliation → Delivery Assessment → Buyer Decision — map each step to a
 
 [View the synthetic report](https://roy-tong.github.io/Verovo/examples/buyer-review.html).
 Agent hosts can call the same review read-only via MCP (`verovo-mcp`: `verovo_review`,
-`verovo_review_template`, `verovo_recount`; no write or submit actions exposed).
+`verovo_review_template`, `verovo_recount`, `verovo_invoice_intake`, `verovo_period_intake`;
+no write or submit actions exposed).
 To review your own task, copy the [task and observation examples](healthcheck/verovo_healthcheck/demo/buyer-review.json)
 and follow the [input guide](docs/buyer-review.md). Checks compare supplied criteria
 with values in local JSON files. A person must confirm rule applicability and source
@@ -114,6 +115,19 @@ cost-per-verified-success denominator. See the
 [case schema](healthcheck/schemas/task-economics.schema.json) and
 [design boundary](docs/task-economics.md). The command is local and makes no
 network calls.
+
+To avoid hand-writing the case, assemble it from a period bundle:
+
+```bash
+python3 healthcheck/verovo intake --bundle examples/period-bundle --out ./period-out
+python3 healthcheck/verovo economics --case ./period-out/case.json --markdown economics.md
+```
+
+The bundle manifest names local traces, usage rows, bills, outcomes and optional
+invoices. Intake reconciles a bill with financialized usage by `charge_id`, keeps
+unallocated costs, currency mismatches and unverified outcomes as named open
+items, and refuses to fabricate a precise ROI when the period is incomplete. See
+[period intake](docs/period-intake.md).
 
 [Buyer Ledger](buyer-ledger/README.md) · [Coverage limits](buyer-ledger/REVIEW-20261029.md) ·
 [Developer CLI](healthcheck/README.md) · [Conformance](conformance/pack/README.md)

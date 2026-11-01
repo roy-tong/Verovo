@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased — period intake (2026-11-01)
+
+### Added
+
+- **Period intake** (`verovo intake --bundle DIR --out DIR`): a manifest plus
+  local traces, usage rows, supplier bills, outcomes and optional invoices is
+  assembled into the existing task-economics case, so a billing period no longer
+  starts as hand-written JSON. The intake report keeps unallocated costs,
+  currency mismatches, duplicate/unmatched charges, unreviewed invoices and
+  unverified outcomes as named open items; a bill that matches a financialized
+  usage row is reconciled by `charge_id` and counted once.
+- Read-only MCP `verovo_period_intake` returns the same case and report without
+  writing; `verovo economics` runs on the produced case unchanged.
+- `docs/period-intake.md` documents the manifest, column contracts and the
+  rules for what is excluded versus kept.
+
+### Validation
+
+- 555 tests pass, including bundle-to-case assembly, bill/usage reconciliation,
+  currency exclusion, unverified-outcome handling and blocked bundles with no
+  tasks.
+
 ## Unreleased — execution and economics reliability
 
 - Harden interruption/evidence handling and add regression coverage.

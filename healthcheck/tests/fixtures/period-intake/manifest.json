@@ -1,0 +1,13 @@
+{
+  "case_id": "period-2026-10",
+  "currency": "USD",
+  "period": {"start": "2026-10-01", "end": "2026-10-31"},
+  "allocation_rules": [{"id": "equal", "version": "1", "method": "equal"}],
+  "sources": {
+    "tasks": [{"path": "tasks.csv", "format": "tasks-csv"}],
+    "runs": [{"path": "runs.jsonl", "format": "runs-jsonl"}],
+    "usage": [{"path": "usage.jsonl", "format": "usage-jsonl"}],
+    "bills": [{"path": "bills.csv", "format": "bills-csv", "vendor": "openai"}],
+    "outcomes": [{"path": "outcomes.csv", "format": "outcomes-csv"}]
+  }
+}
