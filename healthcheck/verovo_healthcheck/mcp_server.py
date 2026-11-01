@@ -20,10 +20,13 @@ Run: `verovo-mcp` (console script) or `python3 -m verovo_healthcheck.mcp_server`
 import json
 import os
 import sys
+from pathlib import Path
 
 from . import review
 from . import invoice_intake
 from . import period_intake
+from . import cost_drivers
+from . import optimization
 from . import vendors as vendors_mod
 
 PROTOCOL_VERSION = "2024-11-05"
@@ -54,6 +57,20 @@ TOOLS = [
                 "bundle": {"type": "string", "description": "local directory with manifest.json"},
             },
             "required": ["bundle"],
+        },
+    },
+    {
+        "name": "verovo_optimize",
+        "description": "Cost drivers plus ROI-driven proposals for a local case, with optional "
+                       "explicit scenario simulation. Unknown buckets stay unknown; every proposal "
+                       "requires a human and is never auto-applied.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "case": {"type": "string", "description": "task-economics case JSON"},
+                "scenario": {"type": "string", "description": "optional scenario JSON path"},
+            },
+            "required": ["case"],
         },
     },
     {
@@ -159,6 +176,14 @@ def call_tool(name, args):
         if not args.get("bundle"):
             return _err("provide a bundle directory with manifest.json")
         return _text(period_intake.intake(args["bundle"]))
+    if name == "verovo_optimize":
+        if not args.get("case"):
+            return _err("provide a case JSON path")
+        case = json.loads(Path(args["case"]).read_text(encoding="utf-8"))
+        scenarios = None
+        if args.get("scenario"):
+            scenarios = json.loads(Path(args["scenario"]).read_text(encoding="utf-8"))
+        return _text(optimization.propose(case, scenarios=scenarios))
     if name == "verovo_review":
         return _run_review(args)
     if name == "verovo_review_template":

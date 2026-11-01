@@ -61,6 +61,8 @@ from . import review as review_mod
 from . import task_economics as economics_mod
 from . import invoice_intake as invoice_mod
 from . import period_intake as period_mod
+from . import cost_drivers as drivers_mod
+from . import optimization as optimization_mod
 # Conformance pack loaded lazily in cmd_conformance
 
 DEFAULT_DAYS = 7
@@ -1755,6 +1757,45 @@ def cmd_invoice_intake(args) -> int:
         return 2
 
 
+def cmd_drivers(args) -> int:
+    """Break a case's cost into vendor/task/model/retry/allocation buckets."""
+    try:
+        payload = drivers_mod.analyze(economics_mod.load_case(args.case))
+        if args.json:
+            with open(args.json, "w", encoding="utf-8") as out:
+                json.dump(payload, out, ensure_ascii=False, indent=2)
+                out.write("\n")
+        print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json_only
+              else drivers_mod.markdown(payload))
+        return 0
+    except (ValueError, OSError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
+def cmd_optimize(args) -> int:
+    """ROI-driven proposals with optional explicit scenario simulation."""
+    try:
+        case = economics_mod.load_case(args.case)
+        scenarios = None
+        if args.scenario:
+            scenarios = json.loads(Path(args.scenario).read_text(encoding="utf-8"))
+        payload = optimization_mod.propose(case, scenarios=scenarios)
+        if args.json:
+            with open(args.json, "w", encoding="utf-8") as out:
+                json.dump(payload, out, ensure_ascii=False, indent=2)
+                out.write("\n")
+        if args.markdown:
+            with open(args.markdown, "w", encoding="utf-8") as out:
+                out.write(optimization_mod.markdown(payload))
+        print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json_only
+              else optimization_mod.markdown(payload))
+        return 0 if payload.get("status") == "ok" else 2
+    except (ValueError, OSError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
 def cmd_intake(args) -> int:
     """Assemble a task-economics case from a local billing-period bundle."""
     try:
@@ -1843,6 +1884,25 @@ def build_parser() -> argparse.ArgumentParser:
     p_inv.add_argument("--json", metavar="PATH", help="write a source-linked draft JSON")
     p_inv.add_argument("--force", action="store_true", help="replace an existing output")
     p_inv.set_defaults(func=cmd_invoice_intake)
+
+    p_drivers = sub.add_parser(
+        "drivers",
+        help="break a case's cost into vendor/task/model/retry/allocation buckets; "
+             "unknown dimensions stay not-recorded")
+    p_drivers.add_argument("--case", required=True, help="task-economics case JSON")
+    p_drivers.add_argument("--json", metavar="PATH", help="write machine-readable drivers")
+    p_drivers.add_argument("--json-only", action="store_true", help="print JSON instead of Markdown")
+    p_drivers.set_defaults(func=cmd_drivers)
+
+    p_optimize = sub.add_parser(
+        "optimize",
+        help="ROI-driven proposals plus optional scenario simulation; never auto-applied")
+    p_optimize.add_argument("--case", required=True, help="task-economics case JSON")
+    p_optimize.add_argument("--scenario", help="scenario JSON with explicit assumptions")
+    p_optimize.add_argument("--json", metavar="PATH", help="write machine-readable proposals")
+    p_optimize.add_argument("--markdown", metavar="PATH", help="write human-readable proposals")
+    p_optimize.add_argument("--json-only", action="store_true", help="print JSON instead of Markdown")
+    p_optimize.set_defaults(func=cmd_optimize)
 
     p_intake = sub.add_parser(
         "intake",

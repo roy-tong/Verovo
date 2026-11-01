@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased — 2026-11-01 (cost drivers and scenarios)
+
+### Added
+
+- **Cost drivers** (`verovo drivers --case case.json`): the same cost rows
+  re-bucketed by vendor, category, task type, model, retry and allocation;
+  `total_recorded_cost` and `attributable_cost` are reported separately so
+  unattributed cost is never spread across tasks. Missing vendor/model/retry
+  data is reported as `not-recorded` / `not-separable`, and unlinked rows stay
+  in `unknowns`.
+- **Scenario simulation** (`verovo optimize --scenario scenarios.json`): explicit
+  assumptions (`scale_cost`, `drop`) are applied to a copy of the case and
+  re-evaluated; baseline, scenario, delta and the assumption list are reported.
+  An invalid scenario is named, never skipped.
+- **ROI-driven proposals** (`verovo optimize`): reconcile unallocated cost,
+  verify outcomes, test vendor substitution under a quality gate, instrument
+  retries and review allocation rules. Each proposal carries evidence, a
+  verification plan, `requires_human: true` and `automatic_apply: false`.
+- Read-only MCP `verovo_optimize`; `docs/cost-optimization.md` documents the
+  dimensions, rule format and boundary.
+
+### Validation
+
+- 563 tests pass, including bucket shares, unattributed cost, retry
+  non-separability, scenario scaling/dropping, invalid scenarios and the
+  human gate on proposals.
+
 ## Unreleased — period intake (2026-11-01)
 
 ### Added

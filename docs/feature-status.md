@@ -8,8 +8,8 @@ Reviewed 2026-11-01 against the repository implementation. Available means local
 | V03–V04 | Invoice extraction and normalization | Optional `invoice-intake` via invoice2data produces source-linked, unreviewed drafts (documents only, never booked). Intake reconciles bill and usage charges by `charge_id` and excludes currency mismatches; tax/credit/refund/FX normalization remains planned |
 | V06–V07 | Task/run linkage and direct/shared allocation | Available with explicit IDs and versioned rules |
 | V08–V10 | Business outcomes, verification flags and task costs | Outcome CSV ingestion requires a literal `verified` value; unverified outcomes are kept but cannot count as success or ROI. Local case ingestion available; source truth requires review |
-| ROI | Verified value / cost and cost per verified success | Available; incomplete input remains a coverage limitation |
-| Optimization / assurance | Cost-driven workflow changes and risk pricing | Deferred; no causal savings or insurance claims |
+| ROI | Verified value / cost and cost per verified success | Available; incomplete input remains a coverage limitation. `verovo drivers` separates recorded from attributable cost and keeps unattributed cost visible |
+| Optimization / assurance | Cost-driven workflow changes and risk pricing | `verovo optimize` proposes vendor/task/retry/allocation tests with explicit scenario arithmetic and a verification plan; every item needs a human and is never auto-applied. No causal savings or insurance claims |
 
 Build: reconciliation semantics, task identity, allocation, outcome rules and economics. Reuse: existing telemetry/billing adapters; optional Docling/invoice2data and DuckDB remain integration candidates, not shipped dependencies. Optional invoice2data performs extraction into a non-booked draft; no vendored fork or mandatory core dependency.
 
