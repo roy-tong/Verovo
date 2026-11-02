@@ -1,0 +1,6 @@
+{"run_id": "run-1001", "task_id": "t-support-a", "agent": "support-agent", "started_at": "2026-10-03T08:00:00Z"}
+{"run_id": "run-1002", "task_id": "t-support-a", "agent": "support-agent", "started_at": "2026-10-17T08:00:00Z"}
+{"run_id": "run-1003", "task_id": "t-support-b", "agent": "support-agent", "started_at": "2026-10-04T08:00:00Z"}
+{"run_id": "run-1004", "task_id": "t-support-b", "agent": "support-agent", "started_at": "2026-10-18T08:00:00Z"}
+{"run_id": "run-1005", "task_id": "t-support-c", "agent": "support-agent", "started_at": "2026-10-05T08:00:00Z"}
+{"run_id": "run-1006", "task_id": "t-cancel", "agent": "support-agent", "started_at": "2026-10-12T08:00:00Z"}

@@ -27,6 +27,26 @@ python3 healthcheck/verovo intake --bundle examples/period-bundle --out /tmp/per
 python3 healthcheck/verovo economics --case /tmp/period-out/case.json
 ```
 
+## Audit golden case
+
+[`audit-golden-case/`](audit-golden-case/) is a synthetic Audit Case with
+confirmed contract rules, invoice lines, tasks, runs, outcomes and independent
+expected findings. It pins the UNPROVABLE / null rule, `realized` settlement
+references and evidence locations:
+
+```bash
+python3 scripts/build_audit_case.py examples/audit-golden-case --out /tmp/generated-case.json
+python3 scripts/validate_audit_case.py /tmp/generated-case.json --evidence-root examples/audit-golden-case
+python3 scripts/validate_audit_case.py examples/audit-golden-case/audit-case.json
+python3 -m unittest discover -s tests
+```
+
+The builder regenerates the case from the raw bundle; the committed
+`audit-case.json` is the hand-reviewed reference, not the input.
+
+See [`audit-golden-case/README.md`](audit-golden-case/README.md) for the anomaly
+map and coverage arithmetic.
+
 ## SDK integration examples
 
 - [`sdk/examples/mcp-integration.js`](../sdk/examples/mcp-integration.js) — **MCP SDK v1 path**

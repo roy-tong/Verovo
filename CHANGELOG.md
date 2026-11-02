@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Audit case contract** (`schemas/audit-finding.schema.json`,
+  `schemas/audit-case.schema.json`): a finding carries classification,
+  severity, amount (`null` when unprovable), business status
+  (`identified`/`validated`/`accepted`/`realized`, plus `dismissed`),
+  evidence references and a versioned rule reference with its confirmer.
+  A case binds buyer, vendor, period, contract version, scope, coverage and
+  findings. The schemas reject a `provable: false` finding without a reason,
+  a zero amount standing in for an unknown one, and a `realized` finding
+  without a settlement reference.
+- **Audit golden case** (`examples/audit-golden-case/`): confirmed contract
+  rules, invoices (including a EUR line), credit register, tasks, runs and
+  outcomes, with eight independently expected findings across every
+  classification and an explicit UNPROVABLE case that never becomes zero.
+- **`scripts/validate_audit_case.py`**: standard-library deterministic
+  validator for the two contracts (enums, referential integrity, evidence
+  paths confined to the case root, UNPROVABLE and settlement rules).
+- **`scripts/build_audit_case.py`**: builds an Audit Case from a bundle that
+  carries a manifest, confirmed rule catalog, invoices, tasks, outcomes and
+  credits. Rule handlers are deterministic and keyed to confirmed `rule_id`s;
+  the builder emits `identified` findings and only marks a duplicate
+  `realized` when a matching credit note exists. Running it on
+  `examples/audit-golden-case` reproduces all eight expected findings and the
+  USD 1,686 / 394 coverage split, and the output passes the validator.
+
 ## v0.10.0 - 2026-11-01
 
 First release since v0.9.0. Buyer review and task economics leave main-preview,

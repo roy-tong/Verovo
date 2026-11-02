@@ -1,0 +1,5 @@
+task_id,type,status,owner,opened_at
+t-support-a,support,active,support-ops,2026-10-01
+t-support-b,support,active,support-ops,2026-10-01
+t-support-c,support,active,support-ops,2026-10-01
+t-cancel,support,cancelled,support-ops,2026-09-15

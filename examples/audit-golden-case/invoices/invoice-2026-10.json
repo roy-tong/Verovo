@@ -1,0 +1,132 @@
+{
+  "invoice_id": "INV-2026-10-001",
+  "vendor": "OpenAI",
+  "currency": "USD",
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-10-31"
+  },
+  "issued_at": "2026-11-01",
+  "lines": [
+    {
+      "line_id": "line-001",
+      "charge_id": "chg-1001",
+      "task_id": "t-support-a",
+      "description": "Support requests, October",
+      "quantity": 22000,
+      "unit": "request",
+      "unit_price": 0.02,
+      "amount": 440.0,
+      "currency": "USD",
+      "discount_applied": false,
+      "rate_rule": "CR-001",
+      "discount_rule": "CR-002"
+    },
+    {
+      "line_id": "line-002",
+      "charge_id": "chg-1002",
+      "task_id": "t-support-b",
+      "description": "Support requests, October",
+      "quantity": 6000,
+      "unit": "request",
+      "unit_price": 0.02,
+      "amount": 120.0,
+      "currency": "USD",
+      "discount_applied": false,
+      "rate_rule": "CR-001",
+      "discount_rule": "CR-002"
+    },
+    {
+      "line_id": "line-003",
+      "charge_id": "chg-1002",
+      "task_id": "t-support-b",
+      "description": "Support requests, October",
+      "quantity": 6000,
+      "unit": "request",
+      "unit_price": 0.02,
+      "amount": 120.0,
+      "currency": "USD",
+      "discount_applied": false,
+      "rate_rule": "CR-001",
+      "discount_rule": "CR-002",
+      "duplicate_of": "line-002"
+    },
+    {
+      "line_id": "line-004",
+      "charge_id": "chg-1004",
+      "task_id": "t-support-c",
+      "description": "Support requests, October",
+      "quantity": 5000,
+      "unit": "request",
+      "unit_price": 0.02,
+      "amount": 100.0,
+      "currency": "USD",
+      "discount_applied": false,
+      "rate_rule": "CR-001",
+      "discount_rule": "CR-002"
+    },
+    {
+      "line_id": "line-005",
+      "charge_id": "chg-1005",
+      "task_id": "t-support-b",
+      "description": "Priority support add-on, October",
+      "quantity": 1,
+      "unit": "month",
+      "unit_price": 175.0,
+      "amount": 175.0,
+      "currency": "USD",
+      "rate_rule": "CR-006"
+    },
+    {
+      "line_id": "line-006",
+      "charge_id": "chg-1006",
+      "task_id": "t-support-a",
+      "description": "Shared platform fee, October",
+      "quantity": 1,
+      "unit": "month",
+      "unit_price": 900.0,
+      "amount": 900.0,
+      "currency": "USD",
+      "allocation_rule": "equal",
+      "rate_rule": "CR-003"
+    },
+    {
+      "line_id": "line-007",
+      "charge_id": "chg-1007",
+      "task_id": "",
+      "description": "API overage, October",
+      "quantity": 1,
+      "unit": "month",
+      "unit_price": 75.0,
+      "amount": 75.0,
+      "currency": "USD"
+    },
+    {
+      "line_id": "line-008",
+      "charge_id": "chg-1008",
+      "task_id": "t-cancel",
+      "description": "Prepaid subscription, cancelled 2026-10-12",
+      "quantity": 1,
+      "unit": "month",
+      "unit_price": 250.0,
+      "amount": 250.0,
+      "currency": "USD",
+      "cancelled_at": "2026-10-12",
+      "rate_rule": "CR-004"
+    },
+    {
+      "line_id": "line-009",
+      "charge_id": "chg-1009",
+      "task_id": "t-support-b",
+      "description": "Support requests, October late volume",
+      "quantity": 1000,
+      "unit": "request",
+      "unit_price": 0.02,
+      "amount": 20.0,
+      "currency": "USD",
+      "discount_applied": false,
+      "rate_rule": "CR-001",
+      "discount_rule": "CR-002"
+    }
+  ]
+}

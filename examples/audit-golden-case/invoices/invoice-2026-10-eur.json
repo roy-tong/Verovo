@@ -1,0 +1,24 @@
+{
+  "invoice_id": "INV-2026-10-EUR-001",
+  "vendor": "OpenAI",
+  "currency": "EUR",
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-10-31"
+  },
+  "issued_at": "2026-11-01",
+  "lines": [
+    {
+      "line_id": "eur-line-001",
+      "charge_id": "chg-eur-2001",
+      "task_id": "t-support-b",
+      "description": "EU inference overage, October",
+      "quantity": 1,
+      "unit": "month",
+      "unit_price": 90.0,
+      "amount": 90.0,
+      "currency": "EUR",
+      "rate_rule": "CR-005"
+    }
+  ]
+}

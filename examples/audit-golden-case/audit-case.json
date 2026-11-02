@@ -1,0 +1,250 @@
+{
+  "case_id": "audit-golden-2026-10",
+  "buyer": "Northwind Support Operations",
+  "vendor": "OpenAI",
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-10-31"
+  },
+  "contract_version": "MSA-2026-03 / Order Form 4",
+  "scope": "October 2026 support automation usage, shared platform fee and cancellation refunds; USD reporting only.",
+  "coverage": {
+    "verified_amount": 1686.0,
+    "unverified_amount": 394.0,
+    "currency": "USD"
+  },
+  "findings": [
+    {
+      "finding_id": "F-001",
+      "case_id": "audit-golden-2026-10",
+      "classification": "duplicate_charge",
+      "severity": "high",
+      "amount": {
+        "currency": "USD",
+        "value": 120.0,
+        "basis": "Line-003 repeats the line-002 charge for 6,000 requests at USD 0.020 (USD 120.00)."
+      },
+      "status": "realized",
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-002",
+          "field": "amount"
+        },
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-003",
+          "field": "amount"
+        },
+        {
+          "path": "invoices/credit-register-2026-11.json",
+          "record_id": "CN-2026-11-004",
+          "field": "amount"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-001",
+        "version": "3",
+        "confirmed_by": "Maya Chen, Procurement Lead",
+        "confirmed_at": "2026-10-02T09:00:00Z"
+      },
+      "provable": true,
+      "settlement_ref": "credit-note:CN-2026-11-004"
+    },
+    {
+      "finding_id": "F-002",
+      "case_id": "audit-golden-2026-10",
+      "classification": "missing_evidence",
+      "severity": "high",
+      "amount": {
+        "currency": "USD",
+        "value": null,
+        "basis": "Invoice line-007 bills USD 75.00 but carries no task_id and no approved allocation rule; task attribution is missing."
+      },
+      "status": "identified",
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-007",
+          "field": "task_id"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-007",
+        "version": "1",
+        "confirmed_by": "Daniel Ortiz, Buyer Finance",
+        "confirmed_at": "2026-10-03T14:30:00Z"
+      },
+      "provable": false,
+      "reason": "Billing line line-007 has no task_id and no allocation rule, so the charge cannot be attributed to a task."
+    },
+    {
+      "finding_id": "F-003",
+      "case_id": "audit-golden-2026-10",
+      "classification": "currency_mismatch",
+      "severity": "medium",
+      "amount": {
+        "currency": "EUR",
+        "value": 90.0,
+        "basis": "The EUR invoice line bills EUR 90.00. It is a proven currency mismatch and stays outside USD coverage because no confirmed month-end FX rate exists."
+      },
+      "status": "validated",
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10-eur.json",
+          "record_id": "eur-line-001",
+          "field": "currency"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-005",
+        "version": "1",
+        "confirmed_by": "Daniel Ortiz, Buyer Finance",
+        "confirmed_at": "2026-10-03T14:25:00Z"
+      },
+      "provable": true
+    },
+    {
+      "finding_id": "F-004",
+      "case_id": "audit-golden-2026-10",
+      "classification": "discount_not_applied",
+      "severity": "medium",
+      "amount": {
+        "currency": "USD",
+        "value": 44.0,
+        "basis": "A 10% volume discount applies to the USD 440.00 request charge for 22,000 requests; the discount is USD 44.00."
+      },
+      "status": "validated",
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-001",
+          "field": "discount_applied"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-002",
+        "version": "2",
+        "confirmed_by": "Maya Chen, Procurement Lead",
+        "confirmed_at": "2026-10-02T09:05:00Z"
+      },
+      "provable": true
+    },
+    {
+      "finding_id": "F-005",
+      "case_id": "audit-golden-2026-10",
+      "classification": "refund_missing",
+      "severity": "high",
+      "amount": {
+        "currency": "USD",
+        "value": 250.0,
+        "basis": "The cancelled prepaid subscription line remains billed at USD 250.00. The credit register as of 2026-11-02 has no credit for chg-1008."
+      },
+      "status": "accepted",
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-008",
+          "field": "cancelled_at"
+        },
+        {
+          "path": "outcomes.csv",
+          "record_id": "outcome-004",
+          "field": "status"
+        },
+        {
+          "path": "invoices/credit-register-2026-11.json",
+          "record_id": "credit-register-2026-11",
+          "field": "credits"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-004",
+        "version": "1",
+        "confirmed_by": "Daniel Ortiz, Buyer Finance",
+        "confirmed_at": "2026-10-03T14:20:00Z"
+      },
+      "provable": true
+    },
+    {
+      "finding_id": "F-006",
+      "case_id": "audit-golden-2026-10",
+      "classification": "shared_cost_allocation",
+      "severity": "medium",
+      "amount": {
+        "currency": "USD",
+        "value": 600.0,
+        "basis": "The USD 900.00 shared fee is assigned entirely to t-support-a. Equal allocation across three active tasks is USD 300.00 each, so USD 600.00 is over-attributed."
+      },
+      "status": "validated",
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-006",
+          "field": "amount"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-003",
+        "version": "1",
+        "confirmed_by": "Maya Chen, Procurement Lead",
+        "confirmed_at": "2026-10-02T09:10:00Z"
+      },
+      "provable": true
+    },
+    {
+      "finding_id": "F-007",
+      "case_id": "audit-golden-2026-10",
+      "classification": "unverified_outcome",
+      "severity": "high",
+      "amount": {
+        "currency": "USD",
+        "value": null,
+        "basis": "The outcome claims USD 5,000.00 value for t-support-c with verified=false and no buyer-owned acceptance record."
+      },
+      "status": "identified",
+      "evidence_refs": [
+        {
+          "path": "outcomes.csv",
+          "record_id": "outcome-003",
+          "field": "verified"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-008",
+        "version": "1",
+        "confirmed_by": "Priya Nair, Support Operations",
+        "confirmed_at": "2026-10-04T10:00:00Z"
+      },
+      "provable": false,
+      "reason": "The claimed USD 5,000.00 value is unverified: verified=false and the only source is a vendor portal claim."
+    },
+    {
+      "finding_id": "F-008",
+      "case_id": "audit-golden-2026-10",
+      "classification": "rate_mismatch",
+      "severity": "medium",
+      "amount": {
+        "currency": "USD",
+        "value": 25.0,
+        "basis": "The priority add-on is billed at USD 175.00 against the confirmed USD 150.00 monthly rate; USD 25.00 is unsupported."
+      },
+      "status": "validated",
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-005",
+          "field": "unit_price"
+        }
+      ],
+      "rule_ref": {
+        "rule_id": "CR-006",
+        "version": "1",
+        "confirmed_by": "Maya Chen, Procurement Lead",
+        "confirmed_at": "2026-10-02T09:15:00Z"
+      },
+      "provable": true
+    }
+  ],
+  "status": "in_review"
+}

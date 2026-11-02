@@ -1,0 +1,71 @@
+{
+  "contract_version": "MSA-2026-03 / Order Form 4",
+  "currency": "USD",
+  "confirmed_at": "2026-10-02T09:00:00Z",
+  "rules": [
+    {
+      "rule_id": "CR-001",
+      "version": "3",
+      "statement": "The support request fee is USD 0.020 per billable request. One request is billed once.",
+      "confirmed_by": "Maya Chen, Procurement Lead",
+      "confirmed_at": "2026-10-02T09:00:00Z",
+      "source": "Order Form 4 section 2.1"
+    },
+    {
+      "rule_id": "CR-002",
+      "version": "2",
+      "statement": "A 10% volume discount applies to a task's request fee when that task's monthly billable request volume is at least 20,000.",
+      "confirmed_by": "Maya Chen, Procurement Lead",
+      "confirmed_at": "2026-10-02T09:05:00Z",
+      "source": "Order Form 4 section 2.2"
+    },
+    {
+      "rule_id": "CR-003",
+      "version": "1",
+      "statement": "The USD 900 monthly shared platform fee is allocated equally across the three active in-scope tasks.",
+      "confirmed_by": "Maya Chen, Procurement Lead",
+      "confirmed_at": "2026-10-02T09:10:00Z",
+      "source": "Order Form 4 section 3.1"
+    },
+    {
+      "rule_id": "CR-004",
+      "version": "1",
+      "statement": "A prepaid subscription for a task cancelled before period end is refundable. The vendor must issue a credit note within 10 calendar days of cancellation.",
+      "confirmed_by": "Daniel Ortiz, Buyer Finance",
+      "confirmed_at": "2026-10-03T14:20:00Z",
+      "source": "MSA section 7.4"
+    },
+    {
+      "rule_id": "CR-005",
+      "version": "1",
+      "statement": "Reporting is USD-only. A non-USD line remains unnormalized unless a month-end FX rate is confirmed in writing; no rate is inferred.",
+      "confirmed_by": "Daniel Ortiz, Buyer Finance",
+      "confirmed_at": "2026-10-03T14:25:00Z",
+      "source": "MSA section 5.2"
+    },
+    {
+      "rule_id": "CR-006",
+      "version": "1",
+      "statement": "The priority support add-on is USD 150.00 per month per account and is not subject to the request-volume discount.",
+      "confirmed_by": "Maya Chen, Procurement Lead",
+      "confirmed_at": "2026-10-02T09:15:00Z",
+      "source": "Order Form 4 section 2.3"
+    },
+    {
+      "rule_id": "CR-007",
+      "version": "1",
+      "statement": "Every billable charge must carry a task_id or an allocation rule approved before the period. Without either, attribution is unprovable.",
+      "confirmed_by": "Daniel Ortiz, Buyer Finance",
+      "confirmed_at": "2026-10-03T14:30:00Z",
+      "source": "MSA section 5.1"
+    },
+    {
+      "rule_id": "CR-008",
+      "version": "1",
+      "statement": "A business outcome value enters ROI only when verified by a buyer-owned record with a source reference. A vendor claim alone remains unverified.",
+      "confirmed_by": "Priya Nair, Support Operations",
+      "confirmed_at": "2026-10-04T10:00:00Z",
+      "source": "Buyer acceptance policy section 4"
+    }
+  ]
+}
