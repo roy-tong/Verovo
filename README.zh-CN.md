@@ -15,6 +15,16 @@ Verovo 连接买方日志、供应商账单、财务记录和业务结果：先�
 [官网](https://roy-tong.github.io/Verovo/) · [English](README.md) ·
 [产品定义](docs/product-definition.md) · [核验任务指南](docs/buyer-review.md)
 
+## 这个仓库从哪来
+
+它始于一次审计：把约 110 个 AI 用量/成本工具，喂进一份手算得出来的合成样本，再用工具自己的解析器跑一遍。65 条以上可复核的发现；大多数工具是对的，错的那批集中在五类（按内容块重复累加、重复事件、缓存计价语义、价表漂移、会话恢复/分叉丢失）。
+
+- **报告**：[The Token-Accounting Bug Report](campaigns/audit-report-2026-09.md)（英文）
+- **三张单页案例**（每个数字带出处与日期）：[launch case cards](docs/launch/README.md)
+- **审计对自己方法的修正**：有一条断言被真实数据推翻，那条规则现在适用于所有发现（[codeburn #1264](https://github.com/getagentseal/codeburn/pull/1264)）
+
+合并数按日期分开记，不维护一个手改的总数：**14** 项（报告发布 2026-09-09）、**23** 项（claims 索引 2026-10-11）。GitHub 搜索统计的是该账号全部合并 PR，不是审计修复数，两者不可互相替代。
+
 ## 从费用和交付到单任务经济性
 
 | 任务 | 回答什么 | 支持什么行动 |
