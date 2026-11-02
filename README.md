@@ -15,6 +15,25 @@ For teams buying or operating AI services, the output is a reproducible economic
 [Website](https://roy-tong.github.io/Verovo/) · [中文](README.zh-CN.md) ·
 [Product definition](docs/product-definition.md) · [Buyer task guide](docs/buyer-review.md)
 
+## Where this came from
+
+This repository grew out of an audit: ~110 AI usage/cost tools were fed a
+synthetic fixture whose expected total can be computed by hand, and the tools'
+own parsers were run against it. 65+ evidence-backed findings; most tools were
+clean, and the ones that were not failed in five specific classes
+(per-block re-summation, re-emitted events, cache-pricing semantics,
+price-table drift, resume/fork loss).
+
+- **The report:** [The Token-Accounting Bug Report](campaigns/audit-report-2026-09.md)
+- **Three single-page cases** with every number sourced and dated: [launch case cards](docs/launch/README.md)
+- **What the audit taught about its own method:** one assertion was corrected by real data, and that rule now applies to every finding ([codeburn #1264](https://github.com/getagentseal/codeburn/pull/1264))
+
+Merge counts are reported as of the date they were taken and are never kept as
+a single hand-edited number: **14** merged at report publication (2026-09-09),
+**23** merged or accepted per the claims index (2026-10-11). A GitHub search for
+the author's merged PRs counts the whole account, not audit fixes, so it is not
+a substitute for either figure.
+
 ## Three workflows for AI service buyers
 
 | Workflow | Question | Useful next step |
