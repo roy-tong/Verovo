@@ -5,6 +5,10 @@ Published 2026-10-30 with the permission of **HumanMirror / @VibeMirror-coder**
 already-public synthetic fixture and the independent re-measurement — no
 private data, wallet identities, or additional telemetry.
 
+**Fixture packaged by @chenhz01** — the three-piece landing and the
+gate-exit-0 verification are theirs ([10-21 comment](https://github.com/roy-tong/Verovo/issues/6#issuecomment-6322718375));
+the permission and claim boundary above are the provider's.
+
 > **Claim boundary (contributor's statement, verbatim): synthetic, provider-side, Base x402.**
 > The 56 canonical observations, 15 challenges, 13 validated settlements, and
 > 30/30 expected assertions below describe **the synthetic fixture and its
