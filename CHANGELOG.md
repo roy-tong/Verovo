@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+### Changed
+
+- **Audit amounts are Decimal end to end and serialize as two-decimal
+  strings** (`"44.00"`), never JSON numbers, matching
+  `task_economics` money semantics (`Decimal(str(value))`, cents quantized
+  ROUND_HALF_UP, equal splits floored with cent redistribution). Previously
+  the builder computed with `float`/`round` and the schemas typed amounts as
+  numbers; both schemas and the validator now enforce `^\d+\.\d{2}$` so
+  binary float rounding cannot enter an audit case. Previously failing
+  sample: a USD 1,000.00 shared fee across three tasks produced shares
+  summing to 999.99 and a misallocation (666.67) inconsistent with any split
+  that adds back to the invoice total; it is now 666.66 with shares summing
+  exactly to 1,000.00.
+- **Contract rule parameters are data, not code.** Unit prices, the volume
+  discount rate/threshold and the allocation policy come from `parameters`
+  on each confirmed rule in `contract-rules.json`; a missing parameter fails
+  closed (`BuildError`) instead of falling back to a built-in constant.
+  Previously changing the confirmed CR-006 price in the rule catalog did not
+  change what the builder billed against.
+- **Settlement is evidenced by application, not issuance.** A duplicate only
+  starts `realized` when the credit register shows `applied: true` plus
+  `applied_at`; an issued-but-unapplied credit keeps the finding
+  `identified`, cites the credit as evidence and keeps the amount inside
+  open exposure. A refund on a cancelled line likewise stays open until the
+  credit is applied.
+- **Coverage no longer double counts a line.** Findings carry
+  `affected_lines`; `unverified_amount` sums each affected line's worst
+  single open finding (the maximum, never a sum over findings on the same
+  line), and a line behind an UNPROVABLE finding contributes its billed
+  amount once. The coverage computation no longer parses amounts out of
+  human-readable basis text, and `verified + unverified + settled` must
+  reconcile to the invoice total or the build fails.
+
 ### Added
 
 - **Audit case contract** (`schemas/audit-finding.schema.json`,
@@ -27,6 +60,11 @@
   `realized` when a matching credit note exists. Running it on
   `examples/audit-golden-case` reproduces all eight expected findings and the
   USD 1,686 / 394 coverage split, and the output passes the validator.
+- **Audit mutation tests** (`tests/test_audit_mutation.py`): four mutation
+  groups (contract parameter change, two findings on one line, issued vs
+  applied credit note, Decimal/split identities) pin the financial
+  correctness rules above; each group names the previously failing sample it
+  guards against.
 
 ## v0.10.0 - 2026-11-01
 

@@ -10,7 +10,11 @@ JSON Schema cannot express by itself:
   root (absolute paths and traversal outside the root are refused);
 - a non-provable finding must carry a reason and amount.value=null, never zero;
 - a realized finding must carry a settlement_ref, because acceptance is not
-  settlement.
+  settlement;
+- amounts are two-decimal decimal strings ("44.00"), never JSON numbers, so
+  binary float rounding cannot enter an audit case;
+- affected_lines, when present, lists the invoice lines a finding disputes;
+  coverage counts each line once, so the lines must be identifiable.
 
 Usage:
     python3 scripts/validate_audit_case.py examples/audit-golden-case/audit-case.json
@@ -44,6 +48,7 @@ FINDING_STATUSES = ("identified", "validated", "accepted", "realized", "dismisse
 CASE_STATUSES = ("open", "in_review", "closed", "dismissed")
 
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
+_MONEY_RE = re.compile(r"^\d+\.\d{2}$")
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]*$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _DATETIME_RE = re.compile(
@@ -76,14 +81,16 @@ _AMOUNT_REQUIRED = ("currency", "value", "basis")
 _COVERAGE_REQUIRED = ("verified_amount", "unverified_amount", "currency")
 _RULE_REQUIRED = ("rule_id", "version", "confirmed_by", "confirmed_at")
 _EVIDENCE_REQUIRED = ("path", "record_id")
+_AFFECTED_LINE_REQUIRED = ("path", "line_id")
 
 _CASE_FIELDS = set(_CASE_REQUIRED)
-_FINDING_FIELDS = set(_FINDING_REQUIRED) | {"reason", "settlement_ref"}
+_FINDING_FIELDS = set(_FINDING_REQUIRED) | {"reason", "settlement_ref", "affected_lines"}
 _AMOUNT_FIELDS = set(_AMOUNT_REQUIRED)
 _COVERAGE_FIELDS = set(_COVERAGE_REQUIRED)
 _PERIOD_FIELDS = {"start", "end"}
 _RULE_FIELDS = set(_RULE_REQUIRED)
 _EVIDENCE_FIELDS = set(_EVIDENCE_REQUIRED) | {"id_field", "field", "note"}
+_AFFECTED_LINE_FIELDS = set(_AFFECTED_LINE_REQUIRED)
 
 
 def _is_nonempty_string(value: Any) -> bool:
@@ -96,6 +103,11 @@ def _is_number(value: Any) -> bool:
         and not isinstance(value, bool)
         and math.isfinite(value)
     )
+
+
+def _is_money_string(value: Any) -> bool:
+    """Two-decimal decimal string such as \"44.00\". JSON numbers are refused."""
+    return isinstance(value, str) and bool(_MONEY_RE.fullmatch(value))
 
 
 def _show(value: Any) -> str:
@@ -321,11 +333,11 @@ def _validate_coverage(coverage: Any, errors: List[str]) -> None:
         value = coverage[name]
         if value is None:
             continue
-        if not _is_number(value):
-            errors.append("%s.%s: expected a finite non-negative number or null"
-                          % (label, name))
-        elif value < 0:
-            errors.append("%s.%s: must not be negative" % (label, name))
+        if not _is_money_string(value):
+            errors.append(
+                "%s.%s: expected a two-decimal decimal string such as \"44.00\" "
+                "or null (JSON numbers are refused so float rounding cannot "
+                "enter coverage)" % (label, name))
 
     if "currency" not in coverage:
         return
@@ -382,11 +394,12 @@ def _validate_amount(amount: Any, provable: Optional[bool], label: str,
 
     value = amount.get("value")
     if "value" in amount and value is not None:
-        if not _is_number(value):
-            errors.append("%s.value: expected a finite non-negative number or null"
-                          % label)
-        elif value < 0:
-            errors.append("%s.value: must not be negative" % label)
+        if not _is_money_string(value):
+            errors.append(
+                "%s.value: expected a two-decimal decimal string such as "
+                "\"44.00\" or null (JSON numbers are refused so float rounding "
+                "cannot enter a finding)" % label
+            )
 
     if provable is False:
         if "value" in amount and value is not None:
@@ -397,8 +410,8 @@ def _validate_amount(amount: Any, provable: Optional[bool], label: str,
     elif provable is True:
         if "value" in amount and value is None:
             errors.append(
-                "%s.value: a provable finding must carry a numeric amount "
-                "(use provable=false with a reason when it is unknown)" % label
+                "%s.value: a provable finding must carry a decimal string "
+                "amount (use provable=false with a reason when it is unknown)" % label
             )
 
 
@@ -478,6 +491,21 @@ def _validate_finding(finding: Any, index: int, case_id: Optional[str],
 
     if "rule_ref" in finding:
         _validate_rule_ref(finding["rule_ref"], label + ".rule_ref", errors)
+
+    if "affected_lines" in finding:
+        affected = finding["affected_lines"]
+        if not isinstance(affected, list):
+            errors.append("%s.affected_lines: expected array" % label)
+        else:
+            for line_index, line_ref in enumerate(affected):
+                line_label = "%s.affected_lines[%d]" % (label, line_index)
+                if not isinstance(line_ref, dict):
+                    errors.append("%s: expected object" % line_label)
+                    continue
+                _check_unknown(line_ref, _AFFECTED_LINE_FIELDS, line_label, errors)
+                _check_required(line_ref, _AFFECTED_LINE_REQUIRED, line_label, errors)
+                _string_field(line_ref, "path", line_label, errors)
+                _string_field(line_ref, "line_id", line_label, errors)
 
     settlement_present = False
     if "settlement_ref" in finding:

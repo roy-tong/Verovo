@@ -32,7 +32,8 @@ python3 healthcheck/verovo economics --case /tmp/period-out/case.json
 [`audit-golden-case/`](audit-golden-case/) is a synthetic Audit Case with
 confirmed contract rules, invoice lines, tasks, runs, outcomes and independent
 expected findings. It pins the UNPROVABLE / null rule, `realized` settlement
-references and evidence locations:
+references (applied credits, not just issued ones), Decimal string amounts,
+per-line coverage deduplication and evidence locations:
 
 ```bash
 python3 scripts/build_audit_case.py examples/audit-golden-case --out /tmp/generated-case.json

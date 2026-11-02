@@ -59,14 +59,14 @@
       "required": ["verified_amount", "unverified_amount", "currency"],
       "properties": {
         "verified_amount": {
-          "type": ["number", "null"],
-          "minimum": 0,
-          "description": "Reconciled amount in the coverage currency. null means not quantified; never a fabricated zero."
+          "type": ["string", "null"],
+          "pattern": "^\\d+\\.\\d{2}$",
+          "description": "Reconciled amount in the coverage currency, as a two-decimal decimal string. null means not quantified; never a fabricated zero."
         },
         "unverified_amount": {
-          "type": ["number", "null"],
-          "minimum": 0,
-          "description": "Open exposure in the coverage currency. null means not quantified; never a fabricated zero."
+          "type": ["string", "null"],
+          "pattern": "^\\d+\\.\\d{2}$",
+          "description": "Open exposure in the coverage currency, as a two-decimal decimal string; each affected line counts once (its worst open finding). null means not quantified; never a fabricated zero."
         },
         "currency": {
           "type": "string",
@@ -86,6 +86,22 @@
     }
   },
   "$defs": {
+    "affectedLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "line_id"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path of the invoice file, relative to the audit case's evidence root."
+        },
+        "line_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "evidenceRef": {
       "type": "object",
       "additionalProperties": false,
@@ -191,9 +207,9 @@
               "pattern": "^[A-Z]{3}$"
             },
             "value": {
-              "type": ["number", "null"],
-              "minimum": 0,
-              "description": "null only when provable=false. Zero is a real measured value, never a stand-in for an unknown amount."
+              "type": ["string", "null"],
+              "pattern": "^\\d+\\.\\d{2}$",
+              "description": "Two-decimal decimal string, e.g. \"44.00\". null only when provable=false. Zero (\"0.00\") is a real measured value, never a stand-in for an unknown amount."
             },
             "basis": {
               "type": "string",
@@ -210,6 +226,13 @@
           "minItems": 1,
           "items": {
             "$ref": "#/$defs/evidenceRef"
+          }
+        },
+        "affected_lines": {
+          "type": "array",
+          "description": "Invoice lines whose billing this finding disputes. Coverage counts each line once (its worst open finding), so findings sharing a line cannot double count exposure.",
+          "items": {
+            "$ref": "#/$defs/affectedLine"
           }
         },
         "rule_ref": {
@@ -260,7 +283,7 @@
             "properties": {
               "amount": {
                 "properties": {
-                  "value": {"type": "number"}
+                  "value": {"type": "string", "pattern": "^\\d+\\.\\d{2}$"}
                 }
               }
             }

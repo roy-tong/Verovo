@@ -9,7 +9,7 @@
       "provable": true,
       "amount": {
         "currency": "USD",
-        "value": 120.0
+        "value": "120.00"
       },
       "rule_ref": {
         "rule_id": "CR-001",
@@ -30,6 +30,11 @@
           "path": "invoices/credit-register-2026-11.json",
           "record_id": "CN-2026-11-004",
           "field": "amount"
+        },
+        {
+          "path": "invoices/credit-register-2026-11.json",
+          "record_id": "CN-2026-11-004",
+          "field": "applied"
         }
       ],
       "settlement_ref": "credit-note:CN-2026-11-004"
@@ -61,11 +66,11 @@
       "finding_id": "F-003",
       "classification": "currency_mismatch",
       "severity": "medium",
-      "status": "validated",
+      "status": "identified",
       "provable": true,
       "amount": {
         "currency": "EUR",
-        "value": 90.0
+        "value": "90.00"
       },
       "rule_ref": {
         "rule_id": "CR-005",
@@ -83,11 +88,11 @@
       "finding_id": "F-004",
       "classification": "discount_not_applied",
       "severity": "medium",
-      "status": "validated",
+      "status": "identified",
       "provable": true,
       "amount": {
         "currency": "USD",
-        "value": 44.0
+        "value": "44.00"
       },
       "rule_ref": {
         "rule_id": "CR-002",
@@ -105,11 +110,11 @@
       "finding_id": "F-005",
       "classification": "refund_missing",
       "severity": "high",
-      "status": "accepted",
+      "status": "identified",
       "provable": true,
       "amount": {
         "currency": "USD",
-        "value": 250.0
+        "value": "250.00"
       },
       "rule_ref": {
         "rule_id": "CR-004",
@@ -137,11 +142,11 @@
       "finding_id": "F-006",
       "classification": "shared_cost_allocation",
       "severity": "medium",
-      "status": "validated",
+      "status": "identified",
       "provable": true,
       "amount": {
         "currency": "USD",
-        "value": 600.0
+        "value": "600.00"
       },
       "rule_ref": {
         "rule_id": "CR-003",
@@ -176,17 +181,17 @@
           "field": "verified"
         }
       ],
-      "reason": "The claimed USD 5,000.00 value is unverified: verified=false and the only source is a vendor portal claim."
+      "reason": "The claimed 5000.00 USD value is unverified: verified=false and the source is vendor-portal:claim-7731, not a buyer-owned record; its value cannot enter ROI."
     },
     {
       "finding_id": "F-008",
       "classification": "rate_mismatch",
       "severity": "medium",
-      "status": "validated",
+      "status": "identified",
       "provable": true,
       "amount": {
         "currency": "USD",
-        "value": 25.0
+        "value": "25.00"
       },
       "rule_ref": {
         "rule_id": "CR-006",

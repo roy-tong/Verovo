@@ -5,6 +5,7 @@ import csv
 import json
 import sys
 import unittest
+from decimal import Decimal
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -157,7 +158,7 @@ class TestAuditGoldenCase(unittest.TestCase):
         currency_finding = self.findings["F-003"]
         self.assertEqual(currency_finding["classification"], "currency_mismatch")
         self.assertEqual(currency_finding["amount"]["currency"], "EUR")
-        self.assertEqual(currency_finding["amount"]["value"], 90.0)
+        self.assertEqual(currency_finding["amount"]["value"], "90.00")
         self.assertTrue(currency_finding["provable"])
 
         outcome_finding = self.findings["F-007"]
@@ -199,6 +200,9 @@ class TestAuditGoldenCase(unittest.TestCase):
         self.assertIn(credit_id, credits)
         self.assertEqual(credits[credit_id]["amount"], finding["amount"]["value"])
         self.assertEqual(credits[credit_id]["charge_id"], "chg-1002")
+        # Settlement is evidenced by application, not by issuance alone.
+        self.assertTrue(credits[credit_id]["applied"])
+        self.assertTrue(credits[credit_id]["applied_at"])
 
     def test_clean_charges_are_not_flagged(self):
         clean_lines = set(self.manifest["clean_charge_lines"])
@@ -212,25 +216,32 @@ class TestAuditGoldenCase(unittest.TestCase):
 
     def test_usd_coverage_reconciles_to_invoice_minus_settled_duplicate(self):
         invoice = load_json(BUNDLE / "invoices" / "invoice-2026-10.json")
-        total = sum(line["amount"] for line in invoice["lines"])
+        total = sum(Decimal(str(line["amount"])) for line in invoice["lines"])
         self.assertEqual(invoice["currency"], "USD")
-        self.assertEqual(total, 2200.0)
+        self.assertEqual(total, Decimal("2200.00"))
 
         coverage = self.case["coverage"]
         register = load_json(BUNDLE / "invoices" / "credit-register-2026-11.json")
-        settled = sum(credit["amount"] for credit in register["credits"])
-        self.assertEqual(settled, 120.0)
+        settled = sum(
+            Decimal(str(credit["amount"])) for credit in register["credits"]
+        )
+        self.assertEqual(settled, Decimal("120.00"))
         self.assertEqual(coverage["currency"], "USD")
-        self.assertEqual(coverage["verified_amount"], 1686.0)
-        self.assertEqual(coverage["unverified_amount"], 394.0)
+        self.assertEqual(coverage["verified_amount"], "1686.00")
+        self.assertEqual(coverage["unverified_amount"], "394.00")
         self.assertEqual(
-            coverage["verified_amount"] + coverage["unverified_amount"] + settled,
+            Decimal(coverage["verified_amount"])
+            + Decimal(coverage["unverified_amount"])
+            + settled,
             total,
         )
 
         eur_invoice = load_json(BUNDLE / "invoices" / "invoice-2026-10-eur.json")
         self.assertEqual(eur_invoice["currency"], "EUR")
-        self.assertEqual(sum(line["amount"] for line in eur_invoice["lines"]), 90.0)
+        self.assertEqual(
+            sum(Decimal(str(line["amount"])) for line in eur_invoice["lines"]),
+            Decimal("90.00"),
+        )
 
 
 if __name__ == "__main__":

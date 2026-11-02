@@ -9,7 +9,11 @@
       "statement": "The support request fee is USD 0.020 per billable request. One request is billed once.",
       "confirmed_by": "Maya Chen, Procurement Lead",
       "confirmed_at": "2026-10-02T09:00:00Z",
-      "source": "Order Form 4 section 2.1"
+      "source": "Order Form 4 section 2.1",
+      "parameters": {
+        "unit_price": "0.020",
+        "currency": "USD"
+      }
     },
     {
       "rule_id": "CR-002",
@@ -17,7 +21,11 @@
       "statement": "A 10% volume discount applies to a task's request fee when that task's monthly billable request volume is at least 20,000.",
       "confirmed_by": "Maya Chen, Procurement Lead",
       "confirmed_at": "2026-10-02T09:05:00Z",
-      "source": "Order Form 4 section 2.2"
+      "source": "Order Form 4 section 2.2",
+      "parameters": {
+        "volume_threshold": 20000,
+        "discount_rate": "0.10"
+      }
     },
     {
       "rule_id": "CR-003",
@@ -25,7 +33,10 @@
       "statement": "The USD 900 monthly shared platform fee is allocated equally across the three active in-scope tasks.",
       "confirmed_by": "Maya Chen, Procurement Lead",
       "confirmed_at": "2026-10-02T09:10:00Z",
-      "source": "Order Form 4 section 3.1"
+      "source": "Order Form 4 section 3.1",
+      "parameters": {
+        "allocation": "equal"
+      }
     },
     {
       "rule_id": "CR-004",
@@ -49,7 +60,11 @@
       "statement": "The priority support add-on is USD 150.00 per month per account and is not subject to the request-volume discount.",
       "confirmed_by": "Maya Chen, Procurement Lead",
       "confirmed_at": "2026-10-02T09:15:00Z",
-      "source": "Order Form 4 section 2.3"
+      "source": "Order Form 4 section 2.3",
+      "parameters": {
+        "unit_price": "150.00",
+        "currency": "USD"
+      }
     },
     {
       "rule_id": "CR-007",

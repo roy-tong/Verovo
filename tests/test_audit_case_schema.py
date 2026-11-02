@@ -78,7 +78,11 @@ class TestAuditSchemas(unittest.TestCase):
         )
         self.assertEqual(
             schema["properties"]["amount"]["properties"]["value"]["type"],
-            ["number", "null"],
+            ["string", "null"],
+        )
+        self.assertEqual(
+            schema["properties"]["amount"]["properties"]["value"]["pattern"],
+            r"^\d+\.\d{2}$",
         )
 
     def test_case_schema_mirrors_finding_vocabularies_and_fields(self):
@@ -279,6 +283,65 @@ class TestAuditCaseValidator(unittest.TestCase):
             any("duplicate finding_id" in error for error in errors),
             errors,
         )
+
+    def test_amount_values_must_be_two_decimal_strings(self):
+        case = copy.deepcopy(self.case)
+        finding = self.finding(case, "F-004")
+        self.assertEqual(finding["amount"]["value"], "44.00")
+
+        for bad in (44.0, 44, "44", "44.0", "44.000", "-44.00", "4.4e1"):
+            finding["amount"]["value"] = bad
+            errors = self.errors(case)
+            self.assertTrue(
+                any("decimal string" in error for error in errors),
+                "value %r should be refused" % (bad,),
+            )
+
+        finding["amount"]["value"] = "44.00"
+        self.assertEqual(
+            [error for error in self.errors(case) if "amount" in error],
+            [],
+        )
+
+    def test_coverage_amounts_must_be_two_decimal_strings(self):
+        case = copy.deepcopy(self.case)
+        for bad in (1686.0, "1686", "1686.000", "1,686.00"):
+            case["coverage"]["verified_amount"] = bad
+            errors = self.errors(case)
+            self.assertTrue(
+                any("decimal string" in error for error in errors),
+                "coverage %r should be refused" % (bad,),
+            )
+        case["coverage"]["verified_amount"] = "1686.00"
+        self.assertEqual(
+            [error for error in self.errors(case) if "coverage" in error],
+            [],
+        )
+
+    def test_affected_lines_must_carry_path_and_line_id(self):
+        case = copy.deepcopy(self.case)
+        finding = self.finding(case, "F-004")
+        self.assertTrue(finding["affected_lines"])
+
+        finding["affected_lines"][0]["invoice"] = "INV-1"
+        errors = self.errors(case)
+        self.assertTrue(
+            any("affected_lines" in error and "unknown field" in error for error in errors),
+            errors,
+        )
+
+        finding["affected_lines"][0] = {"path": "invoices/invoice-2026-10.json"}
+        errors = self.errors(case)
+        self.assertTrue(
+            any("affected_lines" in error and "missing required" in error for error in errors),
+            errors,
+        )
+
+        finding["affected_lines"][0] = {
+            "path": "invoices/invoice-2026-10.json",
+            "line_id": "line-001",
+        }
+        self.assertEqual(self.errors(case), [])
 
     def test_cli_validates_golden_case_and_rejects_mutated_copy(self):
         output = io.StringIO()

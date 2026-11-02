@@ -3,23 +3,40 @@
 
 The builder is deliberately narrow. It does not interpret contract prose: a
 human confirms each rule (``rule_id`` plus version) in ``contract-rules.json``
-and this script implements that confirmed rule as a deterministic check. A new
-vendor contract therefore needs a new rule handler, not a new model call.
+together with the numeric parameters the rule needs, and this script implements
+that confirmed rule as a deterministic check. A new vendor contract therefore
+needs a new rule entry (with parameters), not a code change and not a model
+call. If a confirmed parameter is missing the builder refuses to fall back to
+any built-in default.
+
+All money arithmetic uses :class:`decimal.Decimal` (parsed from the source
+value's string form, quantized to cents with ROUND_HALF_UP, matching
+``verovo_healthcheck.task_economics``) and serializes amounts as two-decimal
+strings. Binary floats never touch a computation.
+
+Settlement is evidenced, not asserted: a credit note counts as settlement only
+when the register shows it was applied (``applied`` true plus ``applied_at``).
+An issued-but-unapplied credit keeps the finding open and is cited as evidence.
+
+Coverage never double counts: each invoice line contributes its worst single
+open finding to ``unverified_amount`` (the maximum, never a sum over findings on
+the same line), and a line with an UNPROVABLE finding contributes its billed
+amount once. Allocation-only and outcome findings stay outside invoice coverage.
 
 Inputs are a directory with this shape (paths come from ``manifest.json``)::
 
     manifest.json          case identity, sources, clean lines
-    contract-rules.json    confirmed rules, versions and confirmers
+    contract-rules.json    confirmed rules, versions, confirmers and parameters
     tasks.csv              task_id,type,status,owner,opened_at
     runs.jsonl             run_id,task_id,...
     outcomes.csv           outcome_id,task_id,status,verified,value,...
     invoices/*.json        invoice lines with charge_id, task_id, amount, ...
-    credits/*.json         credit notes with charge_id, amount, ...
+    credits/*.json         credit notes with charge_id, amount, applied, ...
 
 Output is one Audit Case, excluding the workflow statuses that only a reviewer
 can advance (``validated``/``accepted``/``dismissed``). A finding starts as
-``identified``; a duplicate with a matching credit note starts as ``realized``
-because settlement is evidenced, not asserted.
+``identified``; only an applied, matching credit note starts a duplicate at
+``realized``, because settlement is evidenced, not asserted.
 
 Usage:
     python3 scripts/build_audit_case.py examples/audit-golden-case --out /tmp/case.json
@@ -32,9 +49,11 @@ import argparse
 import csv
 import json
 import sys
+from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_HALF_UP
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+CENT = Decimal("0.01")
 CLASSIFICATION_ORDER = (
     "duplicate_charge",
     "missing_evidence",
@@ -55,11 +74,9 @@ SEVERITY = {
     "unverified_outcome": "high",
     "rate_mismatch": "medium",
 }
-STATUS_ORDER = {"identified": 0, "validated": 1, "accepted": 2, "realized": 3}
-VOLUME_DISCOUNT_THRESHOLD = 20000
-VOLUME_DISCOUNT_RATE = 0.10
-REQUEST_UNIT_PRICE = 0.02
-PRIORITY_ADDON_PRICE = 150.0
+# Findings that change attribution or claim verification, not the invoice
+# total, never contribute to coverage exposure.
+EXCLUDED_FROM_EXPOSURE = ("shared_cost_allocation", "unverified_outcome")
 
 
 class BuildError(ValueError):
@@ -99,6 +116,46 @@ def _read_jsonl(path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
+def _dec(value: Any, field: str) -> Decimal:
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError) as exc:
+        raise BuildError(f"{field}: not a decimal number: {value!r}") from exc
+
+
+def _money(value: Decimal) -> Decimal:
+    return value.quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def _s(value: Decimal) -> str:
+    return str(_money(value))
+
+
+def _plain(value: Decimal) -> str:
+    """Render a ratio for humans: 10.00 -> "10", 12.50 -> "12.5"."""
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
+
+def _split_equal(total: Decimal, count: int) -> List[Decimal]:
+    """Split *total* into *count* cent amounts that sum back to *total*.
+
+    Floor each share, then hand the leftover cents to the first shares, the
+    same policy as ``task_economics._allocate``. The sum identity is exact.
+    """
+    total = _money(total)
+    if count <= 0:
+        return []
+    share = (total / Decimal(count)).quantize(CENT, rounding=ROUND_DOWN)
+    shares = [share] * count
+    leftover = int(((total - share * count) / CENT).to_integral_value())
+    for index in range(leftover):
+        shares[index] += CENT
+    return shares
+
+
 def _source_paths(manifest: Dict[str, Any], key: str) -> List[str]:
     sources = manifest.get("sources") if isinstance(manifest.get("sources"), dict) else {}
     value = sources.get(key)
@@ -128,16 +185,47 @@ def _rule_ref(rules: Dict[str, Dict[str, Any]], rule_id: str) -> Dict[str, Any]:
     }
 
 
+def _rule_param(rules: Dict[str, Dict[str, Any]], rule_id: str, key: str,
+                kind: str = "decimal") -> Any:
+    """Read a confirmed rule parameter. Missing parameters never fall back."""
+    rule = rules.get(rule_id)
+    if not rule:
+        raise BuildError(f"rule {rule_id} is not confirmed in contract-rules.json")
+    params = rule.get("parameters") if isinstance(rule.get("parameters"), dict) else {}
+    if key not in params:
+        raise BuildError(
+            f"rule {rule_id} has no confirmed parameter {key!r}; the builder "
+            "refuses to fall back to a built-in default")
+    raw = params[key]
+    if kind == "decimal":
+        return _dec(raw, f"contract-rules rule {rule_id} parameter {key!r}")
+    if kind == "int":
+        try:
+            return int(str(raw))
+        except (TypeError, ValueError) as exc:
+            raise BuildError(
+                f"contract-rules rule {rule_id} parameter {key!r}: "
+                f"not an integer: {raw!r}") from exc
+    text = str(raw).strip()
+    if not text:
+        raise BuildError(
+            f"contract-rules rule {rule_id} parameter {key!r}: empty string")
+    return text
+
+
 def _evidence(path: str, record_id: str, field: str) -> Dict[str, str]:
     return {"path": path, "record_id": str(record_id), "field": field}
 
 
-def _money(value: Any) -> float:
-    return round(float(value), 2)
+def _affected(path: str, line_id: str) -> Dict[str, str]:
+    return {"path": path, "line_id": str(line_id)}
 
 
-def _line_amount(line: Dict[str, Any]) -> float:
-    return _money(line.get("amount") or 0)
+def _line_amount(line: Dict[str, Any]) -> Decimal:
+    raw = line.get("amount")
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return Decimal("0.00")
+    return _dec(raw, f"invoice line {line.get('line_id')} amount")
 
 
 def _load_lines(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -168,14 +256,43 @@ def _load_credits(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
     return credits
 
 
-def _matching_credit(credits: Iterable[Dict[str, Any]], charge_id: str,
-                     amount: float, currency: str) -> Optional[Dict[str, Any]]:
+def _credit_matches(credit: Dict[str, Any], charge_id: str,
+                    amount: Decimal, currency: str) -> bool:
+    if str(credit.get("charge_id")) != str(charge_id):
+        return False
+    if str(credit.get("currency")) != str(currency):
+        return False
+    try:
+        credit_amount = _dec(credit.get("amount") or 0, "credit note amount")
+    except BuildError:
+        return False
+    return _money(credit_amount) == amount
+
+
+def _settled_credit(credits: Iterable[Dict[str, Any]], charge_id: str,
+                    amount: Decimal, currency: str) -> Optional[Dict[str, Any]]:
+    """A credit note that matches the charge and evidences settlement.
+
+    Settlement means the register shows the credit was applied (``applied``
+    true with ``applied_at``). An issued-but-unapplied credit is not
+    settlement; the money has not moved.
+    """
     for credit in credits:
-        if str(credit.get("charge_id")) != str(charge_id):
+        if not _credit_matches(credit, charge_id, amount, currency):
             continue
-        if str(credit.get("currency")) != str(currency):
+        if credit.get("applied") is not True:
             continue
-        if abs(_money(credit.get("amount") or 0) - amount) < 0.005:
+        if not str(credit.get("applied_at") or "").strip():
+            continue
+        return credit
+    return None
+
+
+def _issued_credit(credits: Iterable[Dict[str, Any]], charge_id: str,
+                   amount: Decimal, currency: str) -> Optional[Dict[str, Any]]:
+    """Any credit note issued against the charge, applied or not."""
+    for credit in credits:
+        if _credit_matches(credit, charge_id, amount, currency):
             return credit
     return None
 
@@ -190,33 +307,46 @@ def _duplicate_findings(lines: List[Dict[str, Any]], credits: List[Dict[str, Any
         if len(group) < 2:
             continue
         first, repeats = group[0], group[1:]
-        duplicate_amount = _money(sum(_line_amount(item) for item in repeats))
+        duplicate_amount = _money(sum((_line_amount(item) for item in repeats),
+                                      Decimal("0.00")))
         currency = str(first.get("currency"))
-        credit = _matching_credit(credits, charge_id, duplicate_amount, currency)
         refs = [_evidence(first["_source"], first["line_id"], "amount")]
         refs.extend(_evidence(item["_source"], item["line_id"], "amount") for item in repeats)
+        affected = [_affected(item["_source"], item["line_id"]) for item in repeats]
+        settled = _settled_credit(credits, charge_id, duplicate_amount, currency)
+        issued = _issued_credit(credits, charge_id, duplicate_amount, currency)
         finding: Dict[str, Any] = {
             "case_id": case_id,
             "classification": "duplicate_charge",
             "severity": SEVERITY["duplicate_charge"],
             "amount": {
                 "currency": currency,
-                "value": duplicate_amount,
+                "value": _s(duplicate_amount),
                 "basis": (
                     f"{len(group)} invoice lines share charge {charge_id}; "
-                    f"{duplicate_amount:.2f} {currency} repeats an earlier line."
+                    f"{_s(duplicate_amount)} {currency} repeats an earlier line."
                 ),
             },
             "status": "identified",
             "evidence_refs": refs,
+            "affected_lines": affected,
             "rule_ref": _rule_ref(rules, str(first.get("rate_rule") or "CR-001")),
             "provable": True,
         }
-        if credit is not None:
+        if settled is not None:
             finding["status"] = "realized"
-            finding["settlement_ref"] = f"credit-note:{credit.get('credit_id')}"
+            finding["settlement_ref"] = f"credit-note:{settled.get('credit_id')}"
             finding["evidence_refs"].append(
-                _evidence(credit["_source"], str(credit.get("credit_id")), "amount"))
+                _evidence(settled["_source"], str(settled.get("credit_id")), "amount"))
+            finding["evidence_refs"].append(
+                _evidence(settled["_source"], str(settled.get("credit_id")), "applied"))
+        elif issued is not None:
+            finding["amount"]["basis"] += (
+                f" Credit note {issued.get('credit_id')} was issued but is not "
+                "evidenced as applied, so the duplicate is still open."
+            )
+            finding["evidence_refs"].append(
+                _evidence(issued["_source"], str(issued.get("credit_id")), "applied"))
         findings.append(finding)
     return findings
 
@@ -238,12 +368,13 @@ def _missing_evidence_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dic
                 "currency": currency,
                 "value": None,
                 "basis": (
-                    f"Invoice line {line['line_id']} bills {billed:.2f} {line.get('currency')} "
+                    f"Invoice line {line['line_id']} bills {_s(billed)} {line.get('currency')} "
                     "but carries no task_id and no approved allocation rule."
                 ),
             },
             "status": "identified",
             "evidence_refs": [_evidence(line["_source"], line["line_id"], "task_id")],
+            "affected_lines": [_affected(line["_source"], line["line_id"])],
             "rule_ref": _rule_ref(rules, "CR-007"),
             "provable": False,
             "reason": (
@@ -267,7 +398,7 @@ def _currency_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, A
             "severity": SEVERITY["currency_mismatch"],
             "amount": {
                 "currency": line_currency,
-                "value": _line_amount(line),
+                "value": _s(_line_amount(line)),
                 "basis": (
                     f"Invoice line {line['line_id']} is billed in {line_currency}; "
                     f"reporting currency is {currency} and no confirmed FX rate exists."
@@ -275,6 +406,7 @@ def _currency_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, A
             },
             "status": "identified",
             "evidence_refs": [_evidence(line["_source"], line["line_id"], "currency")],
+            "affected_lines": [_affected(line["_source"], line["line_id"])],
             "rule_ref": _rule_ref(rules, "CR-005"),
             "provable": True,
         })
@@ -283,39 +415,45 @@ def _currency_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, A
 
 def _discount_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, Any]],
                        case_id: str, currency: str) -> List[Dict[str, Any]]:
+    discount_rule = "CR-002"
+    discount_rate = _rule_param(rules, "CR-002", "discount_rate")
+    volume_threshold = _rule_param(rules, "CR-002", "volume_threshold", "int")
     by_task: Dict[str, int] = {}
     for line in lines:
-        if line.get("duplicate_of") or line.get("discount_rule") != "CR-002":
+        if line.get("duplicate_of") or line.get("discount_rule") != discount_rule:
             continue
         task_id = str(line.get("task_id") or "")
         by_task[task_id] = by_task.get(task_id, 0) + int(line.get("quantity") or 0)
     findings: List[Dict[str, Any]] = []
     for line in lines:
-        if line.get("duplicate_of") or line.get("discount_rule") != "CR-002":
+        if line.get("duplicate_of") or line.get("discount_rule") != discount_rule:
             continue
         task_id = str(line.get("task_id") or "")
-        if by_task.get(task_id, 0) < VOLUME_DISCOUNT_THRESHOLD:
+        volume = by_task.get(task_id, 0)
+        if volume < volume_threshold:
             continue
         if line.get("discount_applied"):
             continue
         if str(line.get("currency")) != currency:
             continue
-        expected = _money(_line_amount(line) * VOLUME_DISCOUNT_RATE)
+        expected = _money(_line_amount(line) * discount_rate)
         findings.append({
             "case_id": case_id,
             "classification": "discount_not_applied",
             "severity": SEVERITY["discount_not_applied"],
             "amount": {
                 "currency": currency,
-                "value": expected,
+                "value": _s(expected),
                 "basis": (
-                    f"Task {task_id} billable volume is {by_task[task_id]:,} requests, "
-                    f"so line {line['line_id']} earns a {int(VOLUME_DISCOUNT_RATE * 100)}% discount."
+                    f"Task {task_id} billable volume is {volume:,} requests "
+                    f"(threshold {volume_threshold:,}), so line {line['line_id']} "
+                    f"earns a {_plain(discount_rate * Decimal(100))}% discount."
                 ),
             },
             "status": "identified",
             "evidence_refs": [_evidence(line["_source"], line["line_id"], "discount_applied")],
-            "rule_ref": _rule_ref(rules, "CR-002"),
+            "affected_lines": [_affected(line["_source"], line["line_id"])],
+            "rule_ref": _rule_ref(rules, discount_rule),
             "provable": True,
         })
     return findings
@@ -330,8 +468,8 @@ def _refund_findings(lines: List[Dict[str, Any]], credits: List[Dict[str, Any]],
             continue
         if str(line.get("currency")) != currency:
             continue
-        credit = _matching_credit(credits, str(line.get("charge_id")), _line_amount(line), currency)
-        if credit is not None:
+        amount = _line_amount(line)
+        if _settled_credit(credits, str(line.get("charge_id")), amount, currency) is not None:
             continue
         refs = [_evidence(line["_source"], line["line_id"], "cancelled_at")]
         task_id = str(line.get("task_id") or "")
@@ -349,20 +487,30 @@ def _refund_findings(lines: List[Dict[str, Any]], credits: List[Dict[str, Any]],
                 continue
             seen_registers.add(key)
             refs.append(_evidence(credit["_source"], register_id, "credits"))
+        issued = _issued_credit(credits, str(line.get("charge_id")), amount, currency)
+        basis = (
+            f"Line {line['line_id']} bills a prepaid subscription cancelled on "
+            f"{line['cancelled_at']}; no applied credit note exists for charge "
+            f"{line.get('charge_id')}."
+        )
+        if issued is not None:
+            basis += (
+                f" Credit note {issued.get('credit_id')} was issued but is not "
+                "evidenced as applied, so the refund is still open."
+            )
+            refs.append(_evidence(issued["_source"], str(issued.get("credit_id")), "applied"))
         findings.append({
             "case_id": case_id,
             "classification": "refund_missing",
             "severity": SEVERITY["refund_missing"],
             "amount": {
                 "currency": currency,
-                "value": _line_amount(line),
-                "basis": (
-                    f"Line {line['line_id']} bills a prepaid subscription cancelled on "
-                    f"{line['cancelled_at']}; no credit note exists for charge {line.get('charge_id')}."
-                ),
+                "value": _s(amount),
+                "basis": basis,
             },
             "status": "identified",
             "evidence_refs": refs,
+            "affected_lines": [_affected(line["_source"], line["line_id"])],
             "rule_ref": _rule_ref(rules, "CR-004"),
             "provable": True,
         })
@@ -370,18 +518,26 @@ def _refund_findings(lines: List[Dict[str, Any]], credits: List[Dict[str, Any]],
 
 
 def _shared_cost_findings(lines: List[Dict[str, Any]], tasks: List[Dict[str, str]],
-                          rules: Dict[str, Dict[str, Any]], case_id: str, currency: str) -> List[Dict[str, Any]]:
+                          rules: Dict[str, Dict[str, Any]], case_id: str,
+                          currency: str) -> List[Dict[str, Any]]:
     active = [task for task in tasks if str(task.get("status")) == "active"]
     findings: List[Dict[str, Any]] = []
     if not active:
         return findings
+    allocation = _rule_param(rules, "CR-003", "allocation", "str")
+    if allocation != "equal":
+        raise BuildError(
+            f"rule CR-003 confirms allocation {allocation!r}; the builder only "
+            "implements 'equal'")
     for line in lines:
         if line.get("allocation_rule") != "equal":
             continue
         if str(line.get("currency")) != currency:
             continue
-        share = _money(_line_amount(line) / len(active))
-        misallocated = _money(_line_amount(line) - share)
+        total = _line_amount(line)
+        shares = _split_equal(total, len(active))
+        share = shares[0]
+        misallocated = _money(total - share)
         if misallocated <= 0:
             continue
         findings.append({
@@ -390,15 +546,17 @@ def _shared_cost_findings(lines: List[Dict[str, Any]], tasks: List[Dict[str, str
             "severity": SEVERITY["shared_cost_allocation"],
             "amount": {
                 "currency": currency,
-                "value": misallocated,
+                "value": _s(misallocated),
                 "basis": (
-                    f"Line {line['line_id']} assigns the whole {_line_amount(line):.2f} "
+                    f"Line {line['line_id']} assigns the whole {_s(total)} "
                     f"shared fee to {line.get('task_id')}; the confirmed rule splits it "
-                    f"across {len(active)} active tasks ({share:.2f} each)."
+                    f"across {len(active)} active tasks ({_s(share)} each for the "
+                    "first share)."
                 ),
             },
             "status": "identified",
             "evidence_refs": [_evidence(line["_source"], line["line_id"], "amount")],
+            "affected_lines": [_affected(line["_source"], line["line_id"])],
             "rule_ref": _rule_ref(rules, "CR-003"),
             "provable": True,
         })
@@ -412,9 +570,9 @@ def _outcome_findings(outcomes: List[Dict[str, str]], rules: Dict[str, Dict[str,
         if str(outcome.get("verified")).strip().lower() == "true":
             continue
         try:
-            claimed = _money(outcome.get("value") or 0)
-        except (TypeError, ValueError):
-            claimed = 0.0
+            claimed = _dec(outcome.get("value") or 0, "outcome value")
+        except BuildError:
+            claimed = Decimal("0.00")
         if claimed <= 0:
             continue
         findings.append({
@@ -425,7 +583,7 @@ def _outcome_findings(outcomes: List[Dict[str, str]], rules: Dict[str, Dict[str,
                 "currency": currency,
                 "value": None,
                 "basis": (
-                    f"Outcome {outcome['outcome_id']} claims {claimed:.2f} {currency} "
+                    f"Outcome {outcome['outcome_id']} claims {_s(claimed)} {currency} "
                     f"from {outcome.get('source_ref')} but has no buyer-owned verification."
                 ),
             },
@@ -434,8 +592,9 @@ def _outcome_findings(outcomes: List[Dict[str, str]], rules: Dict[str, Dict[str,
             "rule_ref": _rule_ref(rules, "CR-008"),
             "provable": False,
             "reason": (
-                f"Outcome {outcome['outcome_id']} is not verified by a buyer-owned record; "
-                "its value cannot enter ROI."
+                f"The claimed {_s(claimed)} {currency} value is unverified: "
+                f"verified=false and the source is {outcome.get('source_ref')}, "
+                "not a buyer-owned record; its value cannot enter ROI."
             ),
         })
     return findings
@@ -443,17 +602,21 @@ def _outcome_findings(outcomes: List[Dict[str, str]], rules: Dict[str, Dict[str,
 
 def _rate_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, Any]],
                    case_id: str, currency: str) -> List[Dict[str, Any]]:
-    expected = {"CR-001": REQUEST_UNIT_PRICE, "CR-006": PRIORITY_ADDON_PRICE}
+    priced_rules = ("CR-001", "CR-006")
+    contract_prices: Dict[str, Decimal] = {}
+    for rule_id in priced_rules:
+        contract_prices[rule_id] = _rule_param(rules, rule_id, "unit_price")
     findings: List[Dict[str, Any]] = []
     for line in lines:
         rule_id = str(line.get("rate_rule") or "")
-        if rule_id not in expected:
+        if rule_id not in contract_prices:
             continue
         if str(line.get("currency")) != currency:
             continue
-        contract_price = expected[rule_id]
-        billed_price = float(line.get("unit_price") or 0)
-        if abs(billed_price - contract_price) < 0.0005:
+        contract_price = contract_prices[rule_id]
+        billed_price = _dec(line.get("unit_price") or 0,
+                            f"invoice line {line.get('line_id')} unit_price")
+        if billed_price == contract_price:
             continue
         quantity = int(line.get("quantity") or 0)
         difference = _money((billed_price - contract_price) * quantity)
@@ -465,14 +628,15 @@ def _rate_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, Any]]
             "severity": SEVERITY["rate_mismatch"],
             "amount": {
                 "currency": currency,
-                "value": difference,
+                "value": _s(difference),
                 "basis": (
-                    f"Line {line['line_id']} bills {billed_price:.3f} per unit; "
-                    f"confirmed {rule_id} price is {contract_price:.3f}."
+                    f"Line {line['line_id']} bills {billed_price} per unit; "
+                    f"confirmed {rule_id} price is {contract_price}."
                 ),
             },
             "status": "identified",
             "evidence_refs": [_evidence(line["_source"], line["line_id"], "unit_price")],
+            "affected_lines": [_affected(line["_source"], line["line_id"])],
             "rule_ref": _rule_ref(rules, rule_id),
             "provable": True,
         })
@@ -481,39 +645,55 @@ def _rate_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, Any]]
 
 def _coverage(findings: List[Dict[str, Any]], lines: List[Dict[str, Any]],
               currency: str) -> Dict[str, Any]:
-    total = _money(sum(_line_amount(line) for line in lines
-                       if str(line.get("currency")) == currency))
-    settled = _money(sum(
-        finding["amount"]["value"] for finding in findings
-        if finding["classification"] == "duplicate_charge"
-        and finding["status"] == "realized"
-        and finding["amount"]["currency"] == currency
-    ))
-    disputed = 0.0
+    """Coverage in the reporting currency, one contribution per invoice line.
+
+    ``unverified_amount`` sums each affected line's worst single open finding
+    (the maximum across findings on that line, never a sum, so two findings on
+    one line cannot double count). A line whose finding is UNPROVABLE carries
+    its billed amount. Allocation and outcome findings never touch the invoice
+    total. ``verified_amount`` + ``unverified_amount`` + settled duplicates
+    always equals the invoice total.
+    """
+    line_amounts: Dict[Tuple[str, str], Decimal] = {}
+    total = Decimal("0.00")
+    for line in lines:
+        key = (str(line["_source"]), str(line["line_id"]))
+        line_amounts[key] = _line_amount(line)
+        if str(line.get("currency")) == currency:
+            total += line_amounts[key]
+    total = _money(total)
+
+    settled = Decimal("0.00")
+    exposure: Dict[Tuple[str, str], Decimal] = {}
     for finding in findings:
         classification = finding["classification"]
+        if classification in EXCLUDED_FROM_EXPOSURE:
+            continue
         if finding["amount"]["currency"] != currency:
             continue
-        if classification == "shared_cost_allocation":
-            continue  # allocation changes attribution, not the invoice total
-        if classification == "unverified_outcome":
-            continue  # no invoice line carries this amount
         if classification == "duplicate_charge" and finding["status"] == "realized":
+            settled += _dec(finding["amount"]["value"], "settled duplicate amount")
             continue
-        if classification == "missing_evidence":
-            basis = finding["amount"]["basis"]
-            digits = basis.split("bills ", 1)[-1].split(" ", 1)[0]
-            try:
-                disputed += _money(digits)
-            except ValueError:
-                pass
-            continue
-        disputed += _money(finding["amount"]["value"] or 0)
-    unverified = _money(disputed)
+        value = finding["amount"]["value"]
+        for line_ref in finding.get("affected_lines") or []:
+            key = (str(line_ref["path"]), str(line_ref["line_id"]))
+            if value is None:
+                # UNPROVABLE: the line is billed but cannot be attributed.
+                candidate = line_amounts.get(key, Decimal("0.00"))
+            else:
+                candidate = _dec(value, "finding amount")
+            if candidate > exposure.get(key, Decimal("0.00")):
+                exposure[key] = candidate
+    settled = _money(settled)
+    unverified = _money(sum(exposure.values(), Decimal("0.00")))
     verified = _money(total - settled - unverified)
+    if verified < 0:
+        raise BuildError(
+            "coverage underflow: open findings exceed the invoice total in "
+            f"{currency}; check affected_lines and finding amounts")
     return {
-        "verified_amount": verified,
-        "unverified_amount": unverified,
+        "verified_amount": _s(verified),
+        "unverified_amount": _s(unverified),
         "currency": currency,
     }
 

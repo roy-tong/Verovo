@@ -82,8 +82,8 @@ class BuildAuditCaseTests(unittest.TestCase):
             self.assertTrue(finding.get("reason"))
 
     def test_coverage_matches_the_oracle(self) -> None:
-        self.assertEqual(1686.0, self.case["coverage"]["verified_amount"])
-        self.assertEqual(394.0, self.case["coverage"]["unverified_amount"])
+        self.assertEqual("1686.00", self.case["coverage"]["verified_amount"])
+        self.assertEqual("394.00", self.case["coverage"]["unverified_amount"])
         self.assertEqual("USD", self.case["coverage"]["currency"])
 
     def test_clean_lines_are_not_flagged(self) -> None:

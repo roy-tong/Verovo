@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://verovo.dev/schemas/audit-finding.schema.json",
   "title": "Verovo Audit Finding",
-  "description": "One buyer-side audit finding. A finding that cannot be decided is represented by provable=false, a non-empty reason, and amount.value=null. It must never be coerced to zero. A realized finding additionally requires a settlement_ref, because acceptance is not settlement.",
+  "description": "One buyer-side audit finding. A finding that cannot be decided is represented by provable=false, a non-empty reason, and amount.value=null. It must never be coerced to zero. A realized finding additionally requires a settlement_ref, because acceptance is not settlement. Amounts are two-decimal decimal strings (never JSON numbers), matching verovo_healthcheck.task_economics.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -54,9 +54,9 @@
           "pattern": "^[A-Z]{3}$"
         },
         "value": {
-          "type": ["number", "null"],
-          "minimum": 0,
-          "description": "null only when provable=false. Zero is a real measured value, never a stand-in for an unknown amount."
+          "type": ["string", "null"],
+          "pattern": "^\\d+\\.\\d{2}$",
+          "description": "Two-decimal decimal string, e.g. \"44.00\". null only when provable=false. Zero (\"0.00\") is a real measured value, never a stand-in for an unknown amount."
         },
         "basis": {
           "type": "string",
@@ -73,6 +73,13 @@
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/evidenceRef"
+      }
+    },
+    "affected_lines": {
+      "type": "array",
+      "description": "Invoice lines whose billing this finding disputes. Coverage counts each line once (its worst open finding), so findings sharing a line cannot double count exposure.",
+      "items": {
+        "$ref": "#/$defs/affectedLine"
       }
     },
     "rule_ref": {
@@ -94,6 +101,22 @@
     }
   },
   "$defs": {
+    "affectedLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "line_id"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path of the invoice file, relative to the audit case's evidence root."
+        },
+        "line_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "evidenceRef": {
       "type": "object",
       "additionalProperties": false,
@@ -178,7 +201,7 @@
         "properties": {
           "amount": {
             "properties": {
-              "value": {"type": "number"}
+              "value": {"type": "string", "pattern": "^\\d+\\.\\d{2}$"}
             }
           }
         }
