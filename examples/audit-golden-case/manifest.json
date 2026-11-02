@@ -1,0 +1,42 @@
+{
+  "case_id": "audit-golden-2026-10",
+  "buyer": "Northwind Support Operations",
+  "vendor": "OpenAI",
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-10-31"
+  },
+  "contract_version": "MSA-2026-03 / Order Form 4",
+  "scope": "October 2026 support automation usage, shared platform fee and cancellation refunds; USD reporting only.",
+  "currency": "USD",
+  "audit_case": "audit-case.json",
+  "contract_rules": "contract-rules.json",
+  "expected_findings": "expected-findings.json",
+  "sources": {
+    "tasks": [
+      "tasks.csv"
+    ],
+    "runs": [
+      "runs.jsonl"
+    ],
+    "outcomes": [
+      "outcomes.csv"
+    ],
+    "invoices": [
+      "invoices/invoice-2026-10.json",
+      "invoices/invoice-2026-10-eur.json"
+    ],
+    "credits": [
+      "invoices/credit-register-2026-11.json"
+    ]
+  },
+  "clean_charge_lines": [
+    "line-004",
+    "line-009"
+  ],
+  "notes": [
+    "Synthetic data. It exercises the audit-case contract, not a real vendor relationship.",
+    "The EUR line is deliberately outside USD coverage; no FX rate is inferred.",
+    "The USD 600 shared-cost misallocation changes task attribution, not the USD 900 invoice total."
+  ]
+}

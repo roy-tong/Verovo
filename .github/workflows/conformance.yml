@@ -9,6 +9,7 @@ on:
       - 'schemas/**'
       - 'registry/**'
       - 'scripts/**'
+      - 'tests/**'
       - 'docs/**'
       - 'product/**'
       - 'extensions/**'
@@ -182,6 +183,9 @@ jobs:
       - name: Canonical observation schema validation
         run: |
           python3 schemas/validate_observation.py
+      - name: "Audit case contract and golden case"
+        run: |
+          python3 -m unittest discover -s tests
       - name: "Vocabulary registry single-source check (yaml, schema, TS, Python)"
         run: |
           python3 scripts/gen_vocab.py --check

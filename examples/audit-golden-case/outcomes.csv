@@ -1,0 +1,5 @@
+outcome_id,task_id,status,verified,value,value_verified,source_ref,observed_at
+outcome-001,t-support-a,success,true,4000.00,true,buyer-crm:case-9001,2026-10-28
+outcome-002,t-support-b,success,true,2800.00,true,buyer-crm:case-9002,2026-10-29
+outcome-003,t-support-c,success,false,5000.00,false,vendor-portal:claim-7731,2026-10-30
+outcome-004,t-cancel,cancelled,true,0.00,true,buyer-crm:case-9003,2026-10-12

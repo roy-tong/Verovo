@@ -1,0 +1,204 @@
+{
+  "case_id": "audit-golden-2026-10",
+  "findings": [
+    {
+      "finding_id": "F-001",
+      "classification": "duplicate_charge",
+      "severity": "high",
+      "status": "realized",
+      "provable": true,
+      "amount": {
+        "currency": "USD",
+        "value": 120.0
+      },
+      "rule_ref": {
+        "rule_id": "CR-001",
+        "version": "3"
+      },
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-002",
+          "field": "amount"
+        },
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-003",
+          "field": "amount"
+        },
+        {
+          "path": "invoices/credit-register-2026-11.json",
+          "record_id": "CN-2026-11-004",
+          "field": "amount"
+        }
+      ],
+      "settlement_ref": "credit-note:CN-2026-11-004"
+    },
+    {
+      "finding_id": "F-002",
+      "classification": "missing_evidence",
+      "severity": "high",
+      "status": "identified",
+      "provable": false,
+      "amount": {
+        "currency": "USD",
+        "value": null
+      },
+      "rule_ref": {
+        "rule_id": "CR-007",
+        "version": "1"
+      },
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-007",
+          "field": "task_id"
+        }
+      ],
+      "reason": "Billing line line-007 has no task_id and no allocation rule, so the charge cannot be attributed to a task."
+    },
+    {
+      "finding_id": "F-003",
+      "classification": "currency_mismatch",
+      "severity": "medium",
+      "status": "validated",
+      "provable": true,
+      "amount": {
+        "currency": "EUR",
+        "value": 90.0
+      },
+      "rule_ref": {
+        "rule_id": "CR-005",
+        "version": "1"
+      },
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10-eur.json",
+          "record_id": "eur-line-001",
+          "field": "currency"
+        }
+      ]
+    },
+    {
+      "finding_id": "F-004",
+      "classification": "discount_not_applied",
+      "severity": "medium",
+      "status": "validated",
+      "provable": true,
+      "amount": {
+        "currency": "USD",
+        "value": 44.0
+      },
+      "rule_ref": {
+        "rule_id": "CR-002",
+        "version": "2"
+      },
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-001",
+          "field": "discount_applied"
+        }
+      ]
+    },
+    {
+      "finding_id": "F-005",
+      "classification": "refund_missing",
+      "severity": "high",
+      "status": "accepted",
+      "provable": true,
+      "amount": {
+        "currency": "USD",
+        "value": 250.0
+      },
+      "rule_ref": {
+        "rule_id": "CR-004",
+        "version": "1"
+      },
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-008",
+          "field": "cancelled_at"
+        },
+        {
+          "path": "outcomes.csv",
+          "record_id": "outcome-004",
+          "field": "status"
+        },
+        {
+          "path": "invoices/credit-register-2026-11.json",
+          "record_id": "credit-register-2026-11",
+          "field": "credits"
+        }
+      ]
+    },
+    {
+      "finding_id": "F-006",
+      "classification": "shared_cost_allocation",
+      "severity": "medium",
+      "status": "validated",
+      "provable": true,
+      "amount": {
+        "currency": "USD",
+        "value": 600.0
+      },
+      "rule_ref": {
+        "rule_id": "CR-003",
+        "version": "1"
+      },
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-006",
+          "field": "amount"
+        }
+      ]
+    },
+    {
+      "finding_id": "F-007",
+      "classification": "unverified_outcome",
+      "severity": "high",
+      "status": "identified",
+      "provable": false,
+      "amount": {
+        "currency": "USD",
+        "value": null
+      },
+      "rule_ref": {
+        "rule_id": "CR-008",
+        "version": "1"
+      },
+      "evidence_refs": [
+        {
+          "path": "outcomes.csv",
+          "record_id": "outcome-003",
+          "field": "verified"
+        }
+      ],
+      "reason": "The claimed USD 5,000.00 value is unverified: verified=false and the only source is a vendor portal claim."
+    },
+    {
+      "finding_id": "F-008",
+      "classification": "rate_mismatch",
+      "severity": "medium",
+      "status": "validated",
+      "provable": true,
+      "amount": {
+        "currency": "USD",
+        "value": 25.0
+      },
+      "rule_ref": {
+        "rule_id": "CR-006",
+        "version": "1"
+      },
+      "evidence_refs": [
+        {
+          "path": "invoices/invoice-2026-10.json",
+          "record_id": "line-005",
+          "field": "unit_price"
+        }
+      ]
+    }
+  ]
+}
