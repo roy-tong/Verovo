@@ -254,9 +254,12 @@ class CanonicalFinanceTests(unittest.TestCase):
         mismatch = next(item for item in result["intake_report"]["charge_amount_mismatches"]
                         if item.get("kind") == "approved_rule_recalculation"
                         and item["charge_id"] == "ch-api-1")
-        self.assertEqual("usage", mismatch["lane"])
-        self.assertEqual("21.00", mismatch["bill"])
-        self.assertEqual("20.00", mismatch["expected"])
+        # 金额字段按 lane 命名：usage lane 差额不得把实际金额写进名为 bill 的字段
+        self.assertEqual(["usage"], mismatch["difference_lanes"])
+        self.assertNotIn("bill", mismatch)
+        self.assertEqual("21.00", mismatch["bill_amount"])
+        self.assertEqual("21.00", mismatch["usage_amount"])
+        self.assertEqual("20.00", mismatch["expected_amount"])
         self.assertTrue(any(item["kind"] == "charge_amount_mismatch"
                             and item.get("record_id") == "ch-api-1"
                             and item.get("status") != "resolved"

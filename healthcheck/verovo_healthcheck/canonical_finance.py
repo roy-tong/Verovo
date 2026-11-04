@@ -296,12 +296,21 @@ def _recalculate(case: Dict[str, Any], report: Dict[str, Any],
                             if row["recalculation"][lane] is not None
                             and row["recalculation"][lane]["status"] == "difference"]
         if difference_lanes and row["charge_id"] not in known_mismatches:
-            lane = difference_lanes[0]
-            recalculation = row["recalculation"][lane]
+            # Amounts stay lane-named: a usage-lane difference must never surface
+            # its actual amount under a field called "bill" — downstream readers
+            # would mistake the usage record's amount for the vendor invoice.
+            def _amount(lane: str) -> Optional[str]:
+                recalc = row["recalculation"][lane]
+                return recalc["actual_amount"] if recalc is not None else None
+
             report["charge_amount_mismatches"].append({
-                "charge_id": row["charge_id"], "bill": recalculation["actual_amount"],
-                "expected": recalculation["expected_amount"], "source": row.get("source_ref"),
-                "kind": "approved_rule_recalculation", "lane": lane,
+                "charge_id": row["charge_id"],
+                "bill_amount": _amount("bill"),
+                "usage_amount": _amount("usage"),
+                "expected_amount": row["recalculation"][difference_lanes[0]]["expected_amount"],
+                "difference_lanes": difference_lanes,
+                "source": row.get("source_ref"),
+                "kind": "approved_rule_recalculation",
             })
     counts = {status: sum(row["status"] == status for row in report["reconciliation_rows"])
               for status in ("matched", "difference", "unknown")}
