@@ -10,6 +10,10 @@ from decimal import Decimal
 from pathlib import Path
 from unittest import mock
 
+HEALTHCHECK_ROOT = Path(__file__).resolve().parents[1]
+if str(HEALTHCHECK_ROOT) not in sys.path:
+    sys.path.insert(0, str(HEALTHCHECK_ROOT))
+
 from verovo_healthcheck import canonical_finance, period_intake
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "canonical-finance"
