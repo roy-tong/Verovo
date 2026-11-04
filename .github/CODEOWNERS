@@ -1,0 +1,3 @@
+# Require owner review when GitHub branch protection is enabled.
+* @roy-tong
+/.github/workflows/ @roy-tong

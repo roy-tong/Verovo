@@ -66,7 +66,7 @@ records and review coverage before making a financial decision.
 
 ## Try a buyer review locally
 
-The `review` command is part of the **v0.12.0** release.
+The `review` command is part of the **v0.13.0** release.
 Python 3.9+, standard library only:
 
 ```bash
@@ -99,7 +99,7 @@ truth; the tool does not infer contract terms or judge arbitrary AI output quali
 Install the current CLI release:
 
 ```bash
-python3 -m pip install "verovo==0.12.0"
+python3 -m pip install "verovo==0.13.0"
 verovo recount --sample
 ```
 

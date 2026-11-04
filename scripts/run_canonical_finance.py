@@ -47,6 +47,9 @@ def main(argv=None) -> int:
     totals = (result.get("economics") or {}).get("totals") or {}
     print("wrote %s canonical case (%s) -> %s" % (
         result["case_id"], result["status"], target))
+    print("finance=%s verification=%s delivery=%s economics=%s" % (
+        result["finance_status"], result["verification_status"],
+        result["delivery_status"], result["economics_status"]))
     print("fully_loaded_cost=%r cost_per_verified_success=%r roi=%r" % (
         totals.get("fully_loaded_cost"), totals.get("cost_per_verified_success"), totals.get("roi")))
     return 0

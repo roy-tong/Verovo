@@ -23,7 +23,33 @@ permissions:
   contents: write
 
 jobs:
+  release-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require tag on main and matching package version
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+        run: |
+          TAG="${REQUESTED_TAG:-$GITHUB_REF_NAME}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::An explicit vX.Y.Z tag is required."
+            exit 1
+          fi
+          git fetch origin main:refs/remotes/origin/main "refs/tags/$TAG:refs/tags/$TAG"
+          TARGET="$(git rev-list -n 1 "$TAG")"
+          git merge-base --is-ancestor "$TARGET" origin/main
+          VER=$(python3 -c "import tomllib; print(tomllib.load(open('healthcheck/pyproject.toml','rb'))['project']['version'])")
+          test "$TAG" = "v$VER"
+          echo "release guard: $TAG -> $TARGET on origin/main, version $VER"
+
   github-release:
+    needs: release-guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

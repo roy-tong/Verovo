@@ -7,10 +7,10 @@
   "period": {"start": "2026-10-01", "end": "2026-10-31"},
   "rule_map": "rule-map.json",
   "sources": {
-    "tasks": [{"path": "tasks.csv", "format": "tasks-csv", "rule_id": "intake-tasks", "source_party": "buyer", "collection_method": "buyer_csv", "independence": "buyer_independent"}],
-    "runs": [{"path": "runs.jsonl", "format": "runs-jsonl", "rule_id": "intake-runs", "source_party": "buyer", "collection_method": "buyer_jsonl", "independence": "buyer_independent"}],
-    "usage": [{"path": "usage.jsonl", "format": "usage-jsonl", "rule_id": "intake-usage", "source_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain"}],
-    "bills": [{"path": "bills.csv", "format": "bills-csv", "rule_id": "intake-bills", "source_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain"}],
-    "outcomes": [{"path": "outcomes.csv", "format": "outcomes-csv", "rule_id": "intake-outcomes", "source_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain"}]
+    "tasks": [{"path": "tasks.csv", "format": "tasks-csv", "rule_id": "intake-tasks", "source_party": "buyer", "source_affiliation": "buyer", "control_domain": "buyer", "collector_party": "buyer", "collection_method": "buyer_csv", "independence": "buyer_independent", "confirmation_process": "buyer_reviewed"}],
+    "runs": [{"path": "runs.jsonl", "format": "runs-jsonl", "rule_id": "intake-runs", "source_party": "buyer", "source_affiliation": "buyer", "control_domain": "buyer", "collector_party": "buyer", "collection_method": "buyer_jsonl", "independence": "buyer_independent", "confirmation_process": "buyer_reviewed"}],
+    "usage": [{"path": "usage.jsonl", "format": "usage-jsonl", "rule_id": "intake-usage", "source_party": "vendor", "source_affiliation": "vendor", "control_domain": "vendor", "collector_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain", "confirmation_process": "vendor_export"}],
+    "bills": [{"path": "bills.csv", "format": "bills-csv", "rule_id": "intake-bills", "source_party": "vendor", "source_affiliation": "vendor", "control_domain": "vendor", "collector_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain", "confirmation_process": "vendor_export"}],
+    "outcomes": [{"path": "outcomes.csv", "format": "outcomes-csv", "rule_id": "intake-outcomes", "source_party": "vendor", "source_affiliation": "vendor", "control_domain": "vendor", "collector_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain", "confirmation_process": "vendor_export"}]
   }
 }

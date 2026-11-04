@@ -72,12 +72,14 @@ def _truth(value: Any) -> Optional[bool]:
 
 
 def _provenance(entry: Dict[str, Any], row: Dict[str, Any]) -> Dict[str, str]:
-    """Preserve observer provenance; never infer independence from a filename."""
-    return {
-        "source_party": (_text(row.get("source_party")) or _text(entry.get("source_party")) or "unknown").lower(),
-        "collection_method": (_text(row.get("collection_method")) or _text(entry.get("collection_method")) or "unknown").lower(),
-        "independence": (_text(row.get("independence")) or _text(entry.get("independence")) or "unknown").lower(),
-    }
+    """Preserve declared provenance; never infer independence from a filename."""
+    merged = dict(entry)
+    for field in task_economics.EVIDENCE_FIELDS + ("source_association", "collected_by"):
+        if field != "source_path" and _text(row.get(field)):
+            merged[field] = row.get(field)
+    # The manifest path is an observed collection path; a row cannot rename it.
+    merged["source_path"] = entry.get("path")
+    return task_economics.evidence_provenance(merged)
 
 
 def _rows(path: Path) -> List[Dict[str, str]]:
@@ -336,10 +338,9 @@ def intake(bundle: Path) -> Dict[str, Any]:
                     "usage_amount": matched_usage.get("cost"),
                     "usage_currency": matched_usage.get("currency"),
                     "usage_source_ref": matched_usage.get("source_ref"),
-                    "usage_source_party": matched_usage.get("source_party"),
-                    "usage_collection_method": matched_usage.get("collection_method"),
-                    "usage_independence": matched_usage.get("independence"),
                 })
+                for field in task_economics.EVIDENCE_FIELDS:
+                    charge_row["usage_" + field] = matched_usage.get(field)
             reconciliation_rows.append(charge_row)
             if charge_id in seen_bill_charges:
                 report["duplicates"].append({"charge_id": charge_id, "source": path.name})
@@ -460,7 +461,8 @@ def intake(bundle: Path) -> Dict[str, Any]:
         for row in _rows(path):
             task_id = _text(row.get("task_id")) or _text(row.get("conversation_id"))
             if not task_id:
-                _open_item(open_items, "missing_task_id", "outcome row without task_id", path.name)
+                _open_item(open_items, "missing_task_id", "outcome row without task_id", path.name,
+                           domain="outcome")
                 continue
             add_task(task_id)
             verified = _truth(row.get("verified")) is True

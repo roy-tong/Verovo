@@ -55,6 +55,8 @@ def base_case():
         "outcomes": [
             {"task_id": "t1", "status": "success", "verified": True,
              "source_ref": "crm:1", "source_party": "buyer",
+             "source_affiliation": "buyer", "control_domain": "buyer",
+             "collector_party": "buyer", "confirmation_process": "buyer_reviewed",
              "collection_method": "buyer_review", "independence": "buyer_independent",
              "value": "100.00", "value_verified": True, "currency": "USD"},
             {"task_id": "t2", "status": "pending", "verified": False},
@@ -95,8 +97,10 @@ class TestTaskEconomics(unittest.TestCase):
         case = base_case()
         case["outcomes"] = [{"task_id": "t1", "status": "success",
                              "verified": True, "source_ref": "crm:1",
-                             "source_party": "buyer", "collection_method": "buyer_review",
-                             "independence": "buyer_independent"}]
+                             "source_party": "buyer", "source_affiliation": "buyer",
+                             "control_domain": "buyer", "collector_party": "buyer",
+                             "collection_method": "buyer_review", "independence": "buyer_independent",
+                             "confirmation_process": "buyer_reviewed"}]
         case["usage"] = [u for u in case["usage"] if u["usage_id"] != "u3"]
         result = econ.evaluate(case)
         self.assertIsNone(result["totals"]["roi"])
@@ -175,6 +179,8 @@ class TestTaskEconomics(unittest.TestCase):
         case = base_case()
         case["outcomes"].append({"task_id": "t1", "status": "reverted", "verified": True,
                                  "source_ref": "crm:reversal", "source_party": "buyer",
+                                 "source_affiliation": "buyer", "control_domain": "buyer",
+                                 "collector_party": "buyer", "confirmation_process": "buyer_reviewed",
                                  "collection_method": "buyer_review", "independence": "buyer_independent"})
         totals = econ.evaluate(case)["totals"]
         self.assertIsNone(totals["verified_success_tasks"])
@@ -253,6 +259,29 @@ class TestTaskEconomics(unittest.TestCase):
         self.assertIsNone(row["verified_success"])
         self.assertEqual("unknown", row["success_status"])
         self.assertIsNone(result["totals"]["cost_per_verified_success"])
+
+    def test_self_declared_independence_is_not_buyer_proof(self):
+        attacks = {
+            "missing_control_domain": ("control_domain", None),
+            "missing_confirmation_process": ("confirmation_process", None),
+            "vendor_control_domain": ("control_domain", "vendor"),
+            "vendor_source_path": ("source_ref", "vendor_export:crm-1"),
+            "vendor_confirmation": ("confirmation_process", "vendor_export"),
+        }
+        for label, (field, value) in attacks.items():
+            with self.subTest(label=label):
+                case = base_case()
+                case["usage"] = [u for u in case["usage"] if u["usage_id"] != "u3"]
+                outcome = case["outcomes"][0]
+                if value is None:
+                    outcome.pop(field)
+                else:
+                    outcome[field] = value
+                result = econ.evaluate(case)
+                self.assertEqual("unknown", result["totals"]["success_denominator_status"])
+                self.assertIsNone(result["totals"]["cost_per_verified_success"])
+                self.assertEqual("not_established", result["outcomes"][0]["independence_basis"])
+                self.assertEqual("buyer_independent", result["outcomes"][0]["independence_assertion"])
 
     def test_confirmed_loss_with_missing_amount_is_unknown_not_zero(self):
         case = base_case()

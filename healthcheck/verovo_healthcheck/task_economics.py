@@ -21,6 +21,7 @@ Rules that are intentionally strict:
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, ROUND_DOWN
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -90,15 +91,84 @@ def _currency(item: Dict[str, Any], label: str, case_currency: str) -> str:
     return currency
 
 
+EVIDENCE_FIELDS = (
+    "source_party", "source_affiliation", "control_domain", "collector_party",
+    "collection_method", "independence", "confirmation_process", "source_path",
+)
+
+
+def evidence_provenance(item: Dict[str, Any], prefix: str = "") -> Dict[str, str]:
+    """Return normalized evidence metadata, without treating it as a signature.
+
+    ``source_association`` and ``collected_by`` are accepted input aliases for
+    the canonical ``source_affiliation`` and ``collector_party`` fields.  The
+    output always uses the canonical names so downstream reviewers have one
+    vocabulary to inspect.
+    """
+    result: Dict[str, str] = {}
+    for field in EVIDENCE_FIELDS:
+        value = item.get(prefix + field)
+        if value in (None, "") and field == "source_affiliation":
+            value = item.get(prefix + "source_association")
+        if value in (None, "") and field == "collector_party":
+            value = item.get(prefix + "collected_by")
+        result[field] = str(value or "unknown").strip().lower() or "unknown"
+    return result
+
+
+def _known_vendor_path(value: Any) -> bool:
+    """Recognize explicit vendor path markers; absence of a marker proves nothing."""
+    text = str(value or "").strip().lower()
+    return text.startswith("vendor") or "vendor" in set(re.split(r"[^a-z0-9]+", text))
+
+
+def buyer_evidence_review(item: Dict[str, Any]) -> Dict[str, Any]:
+    """Fail closed unless buyer provenance is complete and internally consistent.
+
+    ``independence=buyer_independent`` remains an assertion.  Qualification here
+    is only a deterministic check of declared source affiliation, control domain,
+    collector and confirmation process; it is not external identity or
+    cryptographic proof.  Explicit vendor paths and conflicting control domains
+    are rejected even when every other field says ``buyer``.
+    """
+    provenance = evidence_provenance(item)
+    conflicts: List[str] = []
+    for field in ("source_party", "source_affiliation", "control_domain", "collector_party"):
+        if provenance[field] != "buyer":
+            conflicts.append("%s=%s" % (field, provenance[field]))
+    if provenance["independence"] != "buyer_independent":
+        conflicts.append("independence=%s" % provenance["independence"])
+    method = provenance["collection_method"]
+    if method in ("", "unknown", "ocr", "invoice2data", "self_declared", "self_attested"):
+        conflicts.append("collection_method=%s" % method)
+    process = provenance["confirmation_process"]
+    if process in ("", "unknown", "self_declared", "self_attested"):
+        conflicts.append("confirmation_process=%s" % process)
+    if not str(item.get("source_ref") or "").strip():
+        conflicts.append("source_ref=unknown")
+    for field, value in (
+        ("source_ref", item.get("source_ref")),
+        ("source_path", provenance["source_path"]),
+        ("collection_method", method),
+        ("confirmation_process", process),
+        ("source_affiliation", provenance["source_affiliation"]),
+        ("control_domain", provenance["control_domain"]),
+        ("collector_party", provenance["collector_party"]),
+    ):
+        if _known_vendor_path(value):
+            conflicts.append("%s_has_vendor_control_marker" % field)
+    return {
+        "qualified": not conflicts,
+        "provenance": provenance,
+        "independence_assertion": provenance["independence"],
+        "independence_basis": "procedural_metadata_only" if not conflicts else "not_established",
+        "conflicts": sorted(set(conflicts)),
+    }
+
+
 def buyer_evidence(item: Dict[str, Any]) -> bool:
-    """Check observer and collection provenance without assuming independence."""
-    method = str(item.get("collection_method") or "").strip().lower()
-    return bool(
-        str(item.get("source_party") or "").strip().lower() == "buyer"
-        and str(item.get("independence") or "").strip().lower() == "buyer_independent"
-        and method not in ("", "unknown", "ocr", "invoice2data")
-        and not method.startswith("vendor")
-    )
+    """Return procedural buyer-evidence qualification, never asserted proof."""
+    return bool(buyer_evidence_review(item)["qualified"])
 
 
 def _buyer_verified(item: Dict[str, Any]) -> bool:
@@ -531,9 +601,10 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
                "success_status": ("success" if outcome_status[task_id] is True else
                                   "not_successful" if outcome_status[task_id] is False else "unknown"),
                "source_ref": source_ref,
-               "source_party": item.get("source_party") or "unknown",
-               "collection_method": item.get("collection_method") or "unknown",
-               "independence": item.get("independence") or "unknown"}
+               "independence_assertion": item.get("independence") or "unknown",
+               "independence_basis": ("procedural_metadata_only" if buyer_verified
+                                      else "not_established")}
+        row.update(evidence_provenance(item))
         if item.get("value") is not None:
             value = _dec(item.get("value"), "outcome value %s" % task_id)
             if value < 0:
@@ -701,7 +772,8 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
             "Local deterministic calculation only. Missing amount/currency/quantity and "
             "unallocated costs remain open, never zero. Buyer-verified outcomes control "
             "Cost per Verified Success; ROI is a separate verified-value calculation. "
-            "Vendor exports are not independent buyer evidence."
+            "Vendor exports are not independent buyer evidence. Buyer independence is "
+            "qualified from consistent procedural metadata, not cryptographic proof."
         ),
     }
     return result

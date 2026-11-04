@@ -53,10 +53,19 @@ class CanonicalFinanceTests(unittest.TestCase):
 
     def outcome(self, outcome_id, **changes):
         fields, rows = self.rows("outcomes.csv")
+        fields += [key for key in changes if key not in fields]
         for row in rows:
             if row["outcome_id"] == outcome_id:
                 row.update(changes)
         self.write_rows("outcomes.csv", fields, rows)
+
+    def usage(self, usage_id, **changes):
+        path = self.bundle / "usage.jsonl"
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        for row in rows:
+            if row["usage_id"] == usage_id:
+                row.update(changes)
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
 
     def conclusion(self, result, name, row_id):
         return next(row for row in result["evidence_conclusions"][name] if row["id"] == row_id)
@@ -76,8 +85,11 @@ class CanonicalFinanceTests(unittest.TestCase):
         self.assertIs(tasks["t2"]["verified_success"], False)
         coverage = result["economics"]["allocation_coverage"][0]
         self.assertEqual("unknown", result["intake_report"]["reconciliation"]["status"])
-        self.assertIn("seat-fee", result["intake_report"]["reconciliation"]["reconciled_charges"])
+        self.assertNotIn("seat-fee", result["intake_report"]["reconciliation"]["reconciled_charges"],
+                         "a bill-only rule recalculation is not cross-source reconciliation")
         self.assertNotIn("shared-key", result["intake_report"]["reconciliation"]["reconciled_charges"])
+        self.assertEqual("PASS", self.conclusion(result, "Rule Repriced", "seat-fee")["status"])
+        self.assertEqual("UNPROVABLE", self.conclusion(result, "Invoice Reconciled", "seat-fee")["status"])
         self.assertEqual("complete", coverage["status"],
                          "shared-key allocation is complete even though its invoice has no pricing recount")
         self.assertEqual(
@@ -106,6 +118,122 @@ class CanonicalFinanceTests(unittest.TestCase):
         independent = self.conclusion(result, "Buyer Verified", "ch-buyer")
         self.assertEqual("PASS", independent["status"])
         self.assertEqual("buyer_independent", independent["independence"])
+
+    def test_finance_only_period_is_complete_without_business_outcomes(self):
+        manifest = self.json("manifest.json")
+        del manifest["sources"]["outcomes"]
+        self.write_json("manifest.json", manifest)
+        result = canonical_finance.run(self.bundle)
+        self.assertEqual("complete", result["finance_status"])
+        self.assertEqual("not_applicable", result["verification_status"])
+        self.assertEqual("not_applicable", result["delivery_status"])
+        self.assertEqual("not_applicable", result["economics_status"])
+        self.assertEqual("complete", result["status"])
+        self.assertEqual("86.00", result["economics"]["totals"]["fully_loaded_cost"])
+        self.assertEqual("unknown", result["economics"]["totals"]["success_denominator_status"])
+        self.assertIsNone(result["economics"]["totals"]["cost_per_verified_success"])
+
+    def test_decisive_delivery_failure_is_complete_not_partial(self):
+        fields, rows = self.rows("outcomes.csv")
+        self.write_rows("outcomes.csv", fields,
+                        [row for row in rows if row["outcome_id"] != "vendor-claim-t2"])
+        result = canonical_finance.run(self.bundle)
+        self.assertEqual("FAIL", self.conclusion(result, "Delivery Accepted", "buyer-reject-t2")["status"])
+        self.assertEqual("complete", result["finance_status"])
+        self.assertEqual("complete", result["verification_status"])
+        self.assertEqual("complete", result["delivery_status"])
+        self.assertEqual("complete", result["economics_status"])
+        self.assertEqual("complete", result["status"])
+
+    def test_present_but_empty_outcomes_source_does_not_hide_economics_gap(self):
+        fields, _ = self.rows("outcomes.csv")
+        self.write_rows("outcomes.csv", fields, [])
+        result = canonical_finance.run(self.bundle)
+        self.assertEqual("complete", result["finance_status"])
+        self.assertEqual("partial", result["verification_status"])
+        self.assertEqual("partial", result["delivery_status"])
+        self.assertEqual("partial", result["economics_status"])
+        self.assertEqual("partial", result["status"])
+
+    def test_vendor_control_cannot_be_relabelled_as_buyer_independence(self):
+        valid_buyer = {
+            "source_party": "buyer", "source_affiliation": "buyer",
+            "control_domain": "buyer", "collector_party": "buyer",
+            "collection_method": "buyer_jsonl", "independence": "buyer_independent",
+            "confirmation_process": "buyer_recomputed", "source_ref": "buyer-usage:u1",
+        }
+        attacks = {
+            "known_vendor_path": {"source_ref": "vendor_export:u1"},
+            "known_vendor_collection": {"collection_method": "vendor_export"},
+            "control_domain_conflict": {"control_domain": "vendor"},
+            "collector_conflict": {"collector_party": "vendor"},
+            "vendor_confirmation": {"confirmation_process": "vendor_export"},
+            "self_declared_process": {"confirmation_process": "self_declared"},
+            "missing_affiliation": {"source_affiliation": "unknown"},
+        }
+        for label, attack in attacks.items():
+            with self.subTest(label=label):
+                self.usage("u1", **dict(valid_buyer, **attack))
+                result = canonical_finance.run(self.bundle)
+                buyer = self.conclusion(result, "Buyer Verified", "ch-api-1")
+                self.assertEqual("UNPROVABLE", buyer["status"])
+                self.assertEqual("buyer_independent", buyer["independence_assertion"])
+                self.assertEqual("not_established", buyer["independence_basis"])
+
+    def test_manifest_vendor_path_fails_closed_despite_buyer_row_claims(self):
+        self.usage("u1", source_ref="buyer-usage:u1", source_party="buyer",
+                   source_affiliation="buyer", control_domain="buyer", collector_party="buyer",
+                   collection_method="buyer_jsonl", independence="buyer_independent",
+                   confirmation_process="buyer_recomputed")
+        (self.bundle / "usage.jsonl").rename(self.bundle / "vendor_export.jsonl")
+        manifest = self.json("manifest.json")
+        manifest["sources"]["usage"][0]["path"] = "vendor_export.jsonl"
+        self.write_json("manifest.json", manifest)
+        result = canonical_finance.run(self.bundle)
+        buyer = self.conclusion(result, "Buyer Verified", "ch-api-1")
+        self.assertEqual("UNPROVABLE", buyer["status"])
+        self.assertEqual("vendor_export.jsonl", buyer["source_path"])
+        self.assertEqual("not_established", buyer["independence_basis"])
+
+    def test_vendor_path_cannot_forge_delivery_acceptance(self):
+        self.outcome("buyer-accept-t1", source_ref="vendor_export:accept-t1")
+        result = canonical_finance.run(self.bundle)
+        self.assertEqual(
+            "UNPROVABLE", self.conclusion(result, "Delivery Accepted", "buyer-accept-t1")["status"])
+        self.assertEqual("complete", result["finance_status"])
+        self.assertEqual("partial", result["verification_status"])
+        self.assertEqual("partial", result["delivery_status"])
+        self.assertIsNone(result["economics"]["totals"]["cost_per_verified_success"])
+
+    def test_buyer_repricing_pass_does_not_hide_vendor_invoice_difference(self):
+        self.bill("ch-buyer", amount="3.00")
+        result = canonical_finance.run(self.bundle)
+        row = next(row for row in result["intake_report"]["reconciliation_rows"]
+                   if row["charge_id"] == "ch-buyer")
+        self.assertEqual("matched", row["recalculation"]["usage"]["status"])
+        self.assertEqual("difference", row["recalculation"]["bill"]["status"])
+        self.assertEqual("FAIL", self.conclusion(result, "Rule Repriced", "ch-buyer")["status"])
+        reconciled = self.conclusion(result, "Invoice Reconciled", "ch-buyer")
+        self.assertEqual("FAIL", reconciled["status"])
+        self.assertEqual("distinct_source_ledger_comparison", reconciled["basis"])
+        legacy = self.conclusion(result, "Invoice Matched", "ch-buyer")
+        self.assertEqual("FAIL", legacy["status"])
+        self.assertEqual("Rule Repriced", legacy["alias_of"])
+        self.assertEqual("approved_rule_recalculation", legacy["basis"])
+        self.assertEqual("PASS", self.conclusion(result, "Buyer Verified", "ch-buyer")["status"])
+        self.assertEqual("partial", result["finance_status"])
+        self.assertEqual("partial", result["status"])
+        self.assertIsNone(result["economics"]["totals"]["fully_loaded_cost"])
+
+    def test_invoice_reconciliation_pass_does_not_hide_rule_difference(self):
+        self.bill("ch-api-1", amount="21.00")
+        self.usage("u1", cost="21.00")
+        result = canonical_finance.run(self.bundle)
+        self.assertEqual("FAIL", self.conclusion(result, "Rule Repriced", "ch-api-1")["status"])
+        self.assertEqual("PASS", self.conclusion(result, "Invoice Reconciled", "ch-api-1")["status"])
+        self.assertEqual("PASS", self.conclusion(result, "Vendor Reconciled", "ch-api-1")["status"])
+        self.assertEqual("partial", result["finance_status"])
+        self.assertIsNone(result["economics"]["totals"]["fully_loaded_cost"])
 
     def test_missing_bill_amount_is_open_and_blocks_complete_totals(self):
         self.bill("ch-api-1", amount="")

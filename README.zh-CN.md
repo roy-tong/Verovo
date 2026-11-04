@@ -42,7 +42,7 @@ Verovo 连接买方日志、供应商账单、财务记录和业务结果：先�
 
 ## 本地运行一次完整核验
 
-`review` 命令已包含在 **v0.12.0** 发布中。需要 Python 3.9+，无额外运行依赖。
+`review` 命令已包含在 **v0.13.0** 发布中。需要 Python 3.9+，无额外运行依赖。
 
 ```bash
 git clone https://github.com/roy-tong/verovo.git
@@ -71,7 +71,7 @@ Agent 宿主可通过 MCP 只读调用同一核验（`verovo-mcp`：`verovo_revi
 ## 使用已有核账工具
 
 ```bash
-python3 -m pip install "verovo==0.12.0"
+python3 -m pip install "verovo==0.13.0"
 verovo recount --sample
 ```
 

@@ -90,7 +90,7 @@
         </div>
         <p class="note">Local tools support selected recounts and explicit charge/delivery criteria. Enterprise review scope and fees are under validation, with no recovery guarantee. <a href="first-look.html">See the buyer workflow and limits</a>.</p>
         <p class="note">Working on local agent logs instead? Use the <a href="#how">free developer tools</a> or the <a href="services.html">free measurement runs</a>. 中文入口：<a href="faq.html">常见问题（账单核对与免费任务）</a>。</p>
-        <p class="note reveal d5" style="margin-top:14px"><strong>CLI v0.12.0</strong> on <a href="https://github.com/roy-tong/Verovo/releases/tag/v0.12.0" target="_blank" rel="noopener">GitHub</a> and <a href="https://pypi.org/project/verovo/" target="_blank" rel="noopener">PyPI</a>. <a href="https://www.npmjs.com/package/@verovo/mcp" target="_blank" rel="noopener">SDK v0.3.0</a>. 752 local tests verified on 2026-11-04; the complex fixture is synthetic. Customer payment and repeat use remain unverified.</p>
+        <p class="note reveal d5" style="margin-top:14px"><strong>CLI v0.13.0</strong> on <a href="https://github.com/roy-tong/Verovo/releases/tag/v0.13.0" target="_blank" rel="noopener">GitHub</a> and <a href="https://pypi.org/project/verovo/" target="_blank" rel="noopener">PyPI</a>. <a href="https://www.npmjs.com/package/@verovo/mcp" target="_blank" rel="noopener">SDK v0.3.0</a>. 761 local tests verified on 2026-11-04; the complex fixture is synthetic. Customer payment and repeat use remain unverified.</p>
       </div>
 
       <!-- Recount console: real output of `verovo recount` on a 5-row synthetic sample -->
@@ -125,7 +125,7 @@
     <div class="status-strip reveal d5" role="list" aria-label="Project status">
       <div class="status" role="listitem"><span class="status-k">Open source</span><span class="status-v ok">MIT</span></div>
       <div class="status" role="listitem"><span class="status-k">Spec</span><span class="status-v spec" data-status="spec">Draft 0.4.5</span></div>
-      <div class="status" role="listitem"><span class="status-k">CLI</span><span class="status-v ok">v0.12.0 · PyPI</span></div>
+      <div class="status" role="listitem"><span class="status-k">CLI</span><span class="status-v ok">v0.13.0 · PyPI</span></div>
       <div class="status" role="listitem"><span class="status-k">SDK</span><span class="status-v" data-status="sdk">v0.3.0</span></div>
       <div class="status" role="listitem"><span class="status-k">Tool bills</span><span class="status-v spec">26 cataloged · 0 live-validated</span></div>
       <div class="status" role="listitem"><span class="status-k">Ecosystem audit</span><span class="status-v ok">110 tools · September report</span></div>
@@ -153,7 +153,7 @@
 <div class="terminal" style="margin-top:30px"><div class="terminal-body"><pre style="white-space:pre-wrap">git clone https://github.com/roy-tong/verovo.git
 cd verovo
 python3 healthcheck/verovo review --sample --html buyer-review.html</pre></div></div>
-<p class="note">Synthetic example, not a customer result. Available in CLI v0.12.0. A person confirms rule applicability and source truth. <a href="https://github.com/roy-tong/verovo/blob/main/docs/buyer-review.md">Prepare your own task →</a></p>
+<p class="note">Synthetic example, not a customer result. Available in CLI v0.13.0. A person confirms rule applicability and source truth. <a href="https://github.com/roy-tong/verovo/blob/main/docs/buyer-review.md">Prepare your own task →</a></p>
 <div class="trial-actions"><a class="btn btn-primary" href="examples/buyer-review.html">Open the example report</a><a class="btn btn-ghost" href="first-look.html#contact">Discuss a real task</a></div>
 <p class="body-secondary" style="margin-top:30px">AI support is an initial application scenario. Coding agents, automation platforms, tools/APIs and model services enter through specific buyer tasks; capabilities are verified one scope at a time.</p>
 </div></section>
@@ -188,7 +188,7 @@ python3 -m buyer_ledger fetch --recipe bill.recipe.json --period 2026-10 --cdp h
 <h2 class="reveal">Developer tools: inspect your own logs.</h2>
 <p class="body-secondary">For developers using Codex or Claude Code: first try a synthetic example. You need Python 3.9+ and a terminal on a computer. No logs or account required.</p>
 <div class="terminal"><div class="terminal-body"><pre style="white-space:pre-wrap"># Current CLI release, published on PyPI
-python3 -m pip install "verovo==0.12.0"
+python3 -m pip install "verovo==0.13.0"
 verovo demo</pre></div></div>
 <p class="note">Open <code>verovo-demo-report.html</code> in the folder where you ran the command. The terminal prints the exact path. The example contains a retry chain and failed executions; these are demonstration findings, not installation failures.</p>
 <details><summary>Just browsing? See what an explanation looks like</summary><p>The synthetic demo shows 1 retry chain containing 3 executions, and 7 failed executions. That does not prove seven bugs or seven charges. A useful next check is to inspect the first error in the longest failure run.</p><p><a href="examples/healthcheck-report.html">Read an illustrative diagnosis</a>. To inspect your own sessions, run the CLI on the computer holding your logs.</p></details>
@@ -363,7 +363,7 @@ verovo validate summary.json</pre><p>Auto-discovery prefers Codex when both runt
           </ul>
           <div class="spec-chips reveal d4" style="margin-top:14px">
             <span class="chip"><span data-status="sdkTests">21</span>&nbsp;SDK tests</span>
-            <span class="chip">752 local tests · 2026-11-04</span>
+            <span class="chip">761 local tests · 2026-11-04</span>
             <span class="chip">Conformance vectors · <span data-status="conformance">Passing</span></span>
             <span class="chip">No cloud required</span>
           </div>

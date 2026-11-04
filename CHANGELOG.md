@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.13.0 - 2026-11-04
+
+Independent completion axes and evidence provenance: finance can finish without
+Task Economics, rule repricing is no longer called reconciliation, and
+self-declared independence is no longer accepted as proof.
+
+### Added
+
+- **Four completion axes**: `finance_status`, `verification_status`,
+  `delivery_status` and `economics_status`, each with explicit semantics. A
+  finance-only period with no outcomes source can be `finance_status=complete`
+  and compatibility `status=complete` while the other axes are
+  `not_applicable`. An outcomes source that exists but is empty remains partial.
+- **Rule Repriced / Invoice Reconciled**: `Rule Repriced` is approved-rule
+  recalculation; `Invoice Reconciled` requires a distinct second source record.
+  `Invoice Matched` remains a compatibility alias of `Rule Repriced` with an
+  explicit basis and `alias_of`. `reconciled_charges` comes only from distinct
+  source reconciliation.
+- **Evidence provenance**: source affiliation, control domain, collector party,
+  confirmation process and observed source path, with aliases for
+  `source_association` / `collected_by`. `buyer_independent` is treated as an
+  assertion, not proof; missing or conflicting provenance fails closed.
+- **Adversarial coverage** for relabelled vendor evidence, vendor-path delivery
+  acceptance, buyer usage PASS with a different vendor invoice, and two sources
+  agreeing while both violate the approved rule.
+
+### Verification
+
+- Healthcheck: **592 tests pass**.
+- Repository root: **59 tests pass**.
+- Buyer-ledger: **110 tests pass**.
+- Healthcheck selftest, calendar/registry checks, and the full conformance
+  runner suite pass.
+- Python 3.9 and 3.11 healthcheck suites pass.
+- Synthetic fixture only; no real supplier or customer data.
+
 ## v0.12.0 - 2026-11-04
 
 A narrow, fail-closed canonical finance chain built on the existing Period
