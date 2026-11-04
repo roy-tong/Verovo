@@ -349,7 +349,10 @@ jobs:
   status-sync:
     runs-on: ubuntu-latest
     needs: [healthcheck, healthcheck-windows, buyer-ledger, spec-conformance, reference-implementation, lab-suite, sdk-gate, documentation-consistency, release-smoke]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Manual opt-in only: branch protection must not be weakened just to let a
+    # bot commit. Set repository variable ENABLE_STATUS_SYNC=true only after a
+    # reviewed bypass/PAT policy exists.
+    if: ${{ vars.ENABLE_STATUS_SYNC == 'true' }}
     permissions:
       contents: write
     concurrency:
