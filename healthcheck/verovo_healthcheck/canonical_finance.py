@@ -231,8 +231,9 @@ def _bill_item(row: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _usage_item(row: Dict[str, Any], usage: Dict[str, Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    item = usage.get(_text(row.get("usage_id")))
-    return dict(item) if item is not None else None
+    # Return the live usage record, not a copy: repricing verdicts must
+    # propagate into the canonical case (financial_status / recalculation_status).
+    return usage.get(_text(row.get("usage_id")))
 
 
 def _recalculate(case: Dict[str, Any], report: Dict[str, Any],
@@ -258,11 +259,20 @@ def _recalculate(case: Dict[str, Any], report: Dict[str, Any],
             "unknown")
         row["recalculation"] = {"bill": bill_recalc, "usage": usage_recalc}
         cost = costs.get(row["charge_id"])
+        usage_difference = usage_recalc is not None and usage_recalc["status"] == "difference"
         if cost is not None:
-            cost["recalculation_status"] = bill_recalc["status"]
+            decisive = bill_recalc["status"]
+            if decisive == "unknown" and usage_recalc is not None:
+                decisive = usage_recalc["status"]
+            cost["recalculation_status"] = decisive
             if bill_recalc.get("rule_ref"):
                 cost["rule_ref"] = bill_recalc["rule_ref"]
-        if bill_recalc["status"] == "difference":
+        # A known repricing difference on any lane must reach the cost item and
+        # the finance open items; a lane that cannot reprice must not hide the
+        # other lane's difference out of the complete-state totals.
+        if bill_recalc["status"] == "difference" or usage_difference:
+            lanes = ("bill+usage" if usage_difference and bill_recalc["status"] == "difference"
+                     else "bill" if bill_recalc["status"] == "difference" else "usage")
             if cost is not None:
                 cost["financial_status"] = "difference"
             if not any(item.get("kind") == "charge_amount_mismatch"
@@ -270,7 +280,8 @@ def _recalculate(case: Dict[str, Any], report: Dict[str, Any],
                        and item.get("status") != "resolved" for item in open_items):
                 period_intake._open_item(
                     open_items, "charge_amount_mismatch",
-                    "charge %s differs from its approved rule recalculation" % row["charge_id"],
+                    "charge %s differs from its approved rule recalculation (%s lane)"
+                    % (row["charge_id"], lanes),
                     _text(row.get("source_ref")), row["charge_id"])
         if usage_item is not None and usage_recalc is not None:
             usage_item["recalculation_status"] = usage_recalc["status"]
@@ -281,12 +292,16 @@ def _recalculate(case: Dict[str, Any], report: Dict[str, Any],
     report["reconciled_charges"] = matched_ids
     known_mismatches = {row["charge_id"] for row in report["charge_amount_mismatches"]}
     for row in report["reconciliation_rows"]:
-        recalculation = row["recalculation"]["bill"]
-        if recalculation["status"] == "difference" and row["charge_id"] not in known_mismatches:
+        difference_lanes = [lane for lane in ("bill", "usage")
+                            if row["recalculation"][lane] is not None
+                            and row["recalculation"][lane]["status"] == "difference"]
+        if difference_lanes and row["charge_id"] not in known_mismatches:
+            lane = difference_lanes[0]
+            recalculation = row["recalculation"][lane]
             report["charge_amount_mismatches"].append({
                 "charge_id": row["charge_id"], "bill": recalculation["actual_amount"],
                 "expected": recalculation["expected_amount"], "source": row.get("source_ref"),
-                "kind": "approved_rule_recalculation",
+                "kind": "approved_rule_recalculation", "lane": lane,
             })
     counts = {status: sum(row["status"] == status for row in report["reconciliation_rows"])
               for status in ("matched", "difference", "unknown")}
