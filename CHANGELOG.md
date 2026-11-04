@@ -1,5 +1,72 @@
 # Changelog
 
+## v0.12.0 - 2026-11-04
+
+A narrow, fail-closed canonical finance chain built on the existing Period
+Intake, approved Rule Map and Task Economics components. Unknown evidence stays
+unknown; vendor control is never relabeled as buyer independence.
+
+### Added
+
+- **Canonical finance orchestrator** (`healthcheck/verovo_healthcheck/canonical_finance.py`,
+  `scripts/run_canonical_finance.py`): known CSV/JSONL inputs → Period Intake →
+  approved Rule Map → Decimal per-unit recalculation → allocation and Task
+  Economics. Unsupported formats, mixed vendor/account/currency scope and
+  unapproved rules fail closed. OCR/invoice2data remains unreviewed/unbooked.
+- **Shared-cost drivers**: shared keys, seats and platform fees require a
+  versioned driver and approval. Local driver rows are checked against approved
+  weights; missing weights are never averaged or filled with zero.
+- **Four independent evidence conclusions**: `Invoice Matched`,
+  `Vendor Reconciled`, `Buyer Verified`, `Delivery Accepted`, each carrying
+  source party, collection method, independence and recalculation status.
+- **Complex synthetic canonical fixture** covering shared API key, seat fee,
+  buyer-accepted and buyer-rejected delivery, and vendor-claimed value.
+- **Regression coverage** for canonical intake/rules/economics, optimizer
+  unknowns, buyer-ledger currency handling and audit mutation.
+
+### Changed
+
+- Missing amount, currency or quantity is `unknown/open` or a build error, never
+  a default currency or zero. Complete totals are blocked while attributed
+  subtotals remain explicitly named.
+- Allocation coverage and reconciliation are orthogonal. Per currency,
+  `allocatable = allocated + unallocated + non_allocatable`; unknown inputs keep
+  the relevant values null. A matched amount difference is `difference` and
+  never enters `reconciled_charges`.
+- Cost per Verified Success is blocked by unallocated cost or unknown success
+  denominator. It is not ROI.
+- `verified_success` is null when delivery evidence is missing, not false.
+  Missing success counts keep `verified_success_tasks` and CPS null.
+- Buyer-ledger reconciliation no longer copies the only bill currency onto usage
+  rows with missing currency; those rows remain unknown and incomplete.
+
+### Fixed
+
+- Duplicate vendor exports can no longer inflate Buyer Verified; two vendor
+  exports can at most support Vendor Reconciled.
+- The optimizer no longer turns unknown cost into zero in scenario simulation.
+- Missing approval, driver, unit price or non-finite numbers fail closed in the
+  audit builder.
+
+### Verification
+
+- Healthcheck: **583 tests pass**.
+- Repository root: **59 tests pass**.
+- Buyer-ledger: **110 tests pass**.
+- `python3 healthcheck/verovo selftest`: PASS.
+- Registry: 18 metrics valid. Vocabulary: 21 entries in sync.
+- Conformance: metrics 22/22, outcome 15/15, delegation 23/23, SSE 2/2.
+- Complex fixture: fully loaded cost 86.00 USD, task costs 58.00/28.00 USD,
+  Cost per Verified Success 86.00 USD, ROI null because vendor-claimed business
+  value is not independent evidence.
+
+### Boundary
+
+The canonical slice supports per-unit pricing and approved allocation only. It
+does not support FX, general contract parsing, arbitrary invoice formats or
+external signature/identity verification. OCR accuracy and real supplier data
+remain unverified. The complex fixture is synthetic, not production data.
+
 ## v0.11.0 - 2026-11-02
 
 ### Changed

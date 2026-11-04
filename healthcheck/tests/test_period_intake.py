@@ -37,8 +37,10 @@ class PeriodIntakeTests(unittest.TestCase):
         evaluated = task_economics.evaluate(result["case"])
         self.assertEqual(1, evaluated["coverage"]["verified_success_tasks"])
         self.assertIsNone(evaluated["totals"]["roi"])
-        self.assertIn("unallocated", evaluated["totals"]["roi_reason"])
-        self.assertEqual("33.50", evaluated["totals"]["fully_loaded_cost"])
+        self.assertIn("incomplete", evaluated["totals"]["roi_reason"])
+        self.assertIsNone(evaluated["totals"]["fully_loaded_cost"])
+        self.assertEqual("33.50", evaluated["totals"]["attributed_cost_subtotal"])
+        self.assertIsNone(evaluated["totals"]["cost_per_verified_success"])
         self.assertTrue(any(item["reason"].startswith("shared cost needs")
                             for item in evaluated["unallocated"]))
 
@@ -50,7 +52,8 @@ class PeriodIntakeTests(unittest.TestCase):
         evaluated = task_economics.evaluate(result["case"])
         rows = {row["task_id"]: row for row in evaluated["tasks"]}
         self.assertTrue(rows["t1"]["verified_success"])
-        self.assertFalse(rows["t2"]["verified_success"])
+        self.assertIsNone(rows["t2"]["verified_success"])
+        self.assertEqual("unknown", rows["t2"]["success_status"])
 
     def test_bundle_without_tasks_is_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -60,7 +63,7 @@ class PeriodIntakeTests(unittest.TestCase):
                 "period": {"start": "2026-10-01", "end": "2026-10-31"},
                 "sources": {"bills": [{"path": "bills.csv", "format": "bills-csv"}]},
             }), encoding="utf-8")
-            (bundle / "bills.csv").write_text("charge_id,amount\nx-1,10.00\n", encoding="utf-8")
+            (bundle / "bills.csv").write_text("charge_id,amount,currency\nx-1,10.00,USD\n", encoding="utf-8")
             result = period_intake.intake(bundle)
             self.assertFalse(result["case_written"])
             self.assertEqual("blocked", result["report"]["status"])

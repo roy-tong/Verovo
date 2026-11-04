@@ -1,0 +1,6 @@
+charge_id,amount,currency,quantity,unit_price,rate_rule,task_id,allocation_rule
+ch-api-1,20.00,USD,1000,0.020,api-request,t1,
+ch-api-2,10.00,USD,500,0.020,api-request,t2,
+ch-buyer,2.00,USD,100,0.020,api-request,t1,
+shared-key,30.00,USD,,,,,shared-key-driver
+seat-fee,24.00,USD,3,8.00,seat-month,,seat-driver

@@ -92,11 +92,16 @@ class ReconciliationSafetyTest(LedgerCase):
         usage_doc = self.doc("u", "platform_usage")
         self.usage(usage_doc, "1", charge="100")
         self.usage(usage_doc, "999", unit="token", currency="")
-        result = reconcile(self.store, "2026-10")[0]
+        results = reconcile(self.store, "2026-10")
+        result = next(row for row in results if row["currency"] == "USD")
         self.assertEqual(result["variance_class"], CLS_ESTIMATE_INCOMPLETE)
         self.assertEqual(result["recount_total"], "100")
         self.assertIsNone(result["variance"])
         self.assertFalse(result["recount_complete"])
+        self.assertEqual(1, len(result["detail"]["unknown_currency_usage_events"]))
+        unknown = next(row for row in results if row["currency"] == "")
+        self.assertEqual(unknown["variance_class"], CLS_UNPRICED_USAGE)
+        self.assertEqual(unknown["detail"]["unpriced_usage_qty"], "999")
 
     def test_pending_records_block_economic_verdict(self):
         self.bill(self.doc("a"), "999", status="pending")

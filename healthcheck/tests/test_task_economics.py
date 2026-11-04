@@ -17,7 +17,9 @@ def base_case():
         "schema_version": "1.0", "case_id": "case-1", "currency": "USD",
         "period": {"start": "2026-10-01", "end": "2026-10-31"},
         "allocation_rules": [
-            {"id": "equal", "version": "1", "method": "equal"},
+            {"id": "equal", "version": "1", "method": "equal",
+             "driver": {"id": "explicit-task-set", "version": "1", "source_ref": "tasks:t1,t2"},
+             "confirmed_by": "Buyer Finance", "confirmed_at": "2026-10-01T00:00:00Z"},
         ],
         "tasks": [
             {"task_id": "t1", "type": "support"},
@@ -30,11 +32,11 @@ def base_case():
         ],
         "usage": [
             {"usage_id": "u1", "run_id": "r1", "cost": "1.50",
-             "financialized": True, "source_ref": "trace:r1"},
+             "financialized": True, "currency": "USD", "source_ref": "trace:r1"},
             {"usage_id": "u2", "run_id": "r2", "cost": "2.00",
-             "financialized": True, "source_ref": "trace:r2"},
+             "financialized": True, "currency": "USD", "source_ref": "trace:r2"},
             {"usage_id": "u3", "run_id": "rx", "cost": "9.00",
-             "financialized": True, "source_ref": "trace:rx"},
+             "financialized": True, "currency": "USD", "source_ref": "trace:rx"},
             {"usage_id": "u4", "run_id": "r1", "cost": "99.00",
              "financialized": False, "source_ref": "trace:u4"},
         ],
@@ -43,20 +45,22 @@ def base_case():
              "source_ref": "invoice:1"},
         ],
         "cost_items": [
-            {"cost_id": "c1", "task_id": "t1", "amount": "10.00",
+            {"cost_id": "c1", "task_id": "t1", "amount": "10.00", "currency": "USD",
              "source_ref": "invoice:1", "vendor": "v"},
-            {"cost_id": "c2", "task_id": "t1", "amount": "10.00",
+            {"cost_id": "c2", "task_id": "t1", "amount": "10.00", "currency": "USD",
              "source_ref": "invoice:1", "vendor": "v"},
-            {"cost_id": "c3", "amount": "30.00", "source_ref": "invoice:shared",
+            {"cost_id": "c3", "amount": "30.00", "currency": "USD", "source_ref": "invoice:shared",
              "vendor": "v", "allocation_rule": "equal"},
         ],
         "outcomes": [
             {"task_id": "t1", "status": "success", "verified": True,
-             "source_ref": "crm:1", "value": "100.00", "value_verified": True},
+             "source_ref": "crm:1", "source_party": "buyer",
+             "collection_method": "buyer_review", "independence": "buyer_independent",
+             "value": "100.00", "value_verified": True, "currency": "USD"},
             {"task_id": "t2", "status": "pending", "verified": False},
         ],
         "loss_events": [
-            {"loss_id": "l1", "task_id": "t1", "amount": "5.00",
+            {"loss_id": "l1", "task_id": "t1", "amount": "5.00", "currency": "USD",
              "status": "confirmed", "source_ref": "claim:1"},
         ],
     }
@@ -65,9 +69,10 @@ def base_case():
 class TestTaskEconomics(unittest.TestCase):
     def test_full_case_cost_and_roi(self):
         result = econ.evaluate(base_case())
-        self.assertEqual("43.50", result["totals"]["fully_loaded_cost"])
+        self.assertIsNone(result["totals"]["fully_loaded_cost"])
+        self.assertEqual("43.50", result["totals"]["attributed_cost_subtotal"])
         self.assertEqual(1, result["totals"]["verified_success_tasks"])
-        self.assertEqual("43.50", result["totals"]["cost_per_verified_success"])
+        self.assertIsNone(result["totals"]["cost_per_verified_success"])
         self.assertIsNone(result["totals"]["roi"])
         self.assertIn("incomplete", result["totals"]["roi_reason"])
         self.assertEqual("5.00", result["totals"]["loss_events"])
@@ -89,7 +94,9 @@ class TestTaskEconomics(unittest.TestCase):
     def test_no_verified_value_makes_roi_null(self):
         case = base_case()
         case["outcomes"] = [{"task_id": "t1", "status": "success",
-                             "verified": True, "source_ref": "crm:1"}]
+                             "verified": True, "source_ref": "crm:1",
+                             "source_party": "buyer", "collection_method": "buyer_review",
+                             "independence": "buyer_independent"}]
         case["usage"] = [u for u in case["usage"] if u["usage_id"] != "u3"]
         result = econ.evaluate(case)
         self.assertIsNone(result["totals"]["roi"])
@@ -100,7 +107,8 @@ class TestTaskEconomics(unittest.TestCase):
         for item in case["cost_items"]:
             item.pop("allocation_rule", None)
         result = econ.evaluate(case)
-        self.assertEqual("13.50", result["totals"]["fully_loaded_cost"])
+        self.assertIsNone(result["totals"]["fully_loaded_cost"])
+        self.assertEqual("13.50", result["totals"]["attributed_cost_subtotal"])
         self.assertTrue(any("allocation_rule" in row["reason"]
                             for row in result["unallocated"]))
 
@@ -110,9 +118,9 @@ class TestTaskEconomics(unittest.TestCase):
         case["runs"] = [{"run_id": "r1", "task_id": "t1"}]
         case["usage"] = []
         case["cost_items"] = [
-            {"cost_id": "a", "task_id": "t1", "amount": "0.10",
+            {"cost_id": "a", "task_id": "t1", "amount": "0.10", "currency": "USD",
              "source_ref": "a"},
-            {"cost_id": "b", "task_id": "t1", "amount": "0.20",
+            {"cost_id": "b", "task_id": "t1", "amount": "0.20", "currency": "USD",
              "source_ref": "b"},
         ]
         case["outcomes"] = []
@@ -165,9 +173,12 @@ class TestTaskEconomics(unittest.TestCase):
 
     def test_reverted_outcome_removes_success_and_value(self):
         case = base_case()
-        case["outcomes"].append({"task_id": "t1", "status": "reverted", "verified": True, "source_ref": "crm:reversal"})
+        case["outcomes"].append({"task_id": "t1", "status": "reverted", "verified": True,
+                                 "source_ref": "crm:reversal", "source_party": "buyer",
+                                 "collection_method": "buyer_review", "independence": "buyer_independent"})
         totals = econ.evaluate(case)["totals"]
-        self.assertEqual(0, totals["verified_success_tasks"])
+        self.assertIsNone(totals["verified_success_tasks"])
+        self.assertEqual("unknown", totals["success_denominator_status"])
         self.assertIsNone(totals["roi"])
 
     def test_value_needs_source_and_real_boolean(self):
@@ -179,9 +190,11 @@ class TestTaskEconomics(unittest.TestCase):
     def test_usage_and_bill_can_share_charge_identity(self):
         case = base_case()
         case["usage"][0]["charge_id"] = "vendor:line-1"
-        case["cost_items"] = [{"cost_id": "invoice-line", "task_id": "t1", "amount": "1.50", "source_ref": "invoice:line1", "charge_id": "vendor:line-1"}]
+        case["cost_items"] = [{"cost_id": "invoice-line", "task_id": "t1", "amount": "1.50",
+                               "currency": "USD", "source_ref": "invoice:line1", "charge_id": "vendor:line-1"}]
         result = econ.evaluate(case)
-        self.assertEqual("3.50", result["totals"]["fully_loaded_cost"])
+        self.assertIsNone(result["totals"]["fully_loaded_cost"])
+        self.assertEqual("3.50", result["totals"]["attributed_cost_subtotal"])
         self.assertTrue(any(x["code"] == "duplicate_charge" for x in result["findings"]))
 
     def test_zero_verified_value_is_negative_one_roi(self):
@@ -192,8 +205,61 @@ class TestTaskEconomics(unittest.TestCase):
 
     def test_unconfirmed_and_duplicate_losses_are_excluded(self):
         case = base_case()
-        case["loss_events"] += [dict(case["loss_events"][0]), {"loss_id": "l2", "task_id": "t1", "amount": "500", "status": "estimated", "source_ref": "estimate"}]
+        case["loss_events"] += [dict(case["loss_events"][0]), {"loss_id": "l2", "task_id": "t1", "amount": "500", "currency": "USD", "status": "estimated", "source_ref": "estimate"}]
         self.assertEqual("5.00", econ.evaluate(case)["totals"]["loss_events"])
+
+    def test_missing_cost_currency_is_open_not_case_currency(self):
+        case = base_case()
+        case["usage"] = [u for u in case["usage"] if u["usage_id"] != "u3"]
+        case["cost_items"][0].pop("currency")
+        result = econ.evaluate(case)
+        self.assertIsNone(result["totals"]["fully_loaded_cost"])
+        row = next(row for row in result["unallocated"] if row["id"] == "c1")
+        self.assertIsNone(row["amount"])
+        self.assertIsNone(row["currency"])
+        self.assertIn("currency is unknown", row["reason"])
+
+    def test_missing_driver_is_unallocated_and_never_equal_split(self):
+        case = base_case()
+        case["usage"] = [u for u in case["usage"] if u["usage_id"] != "u3"]
+        case["allocation_rules"][0].pop("driver")
+        result = econ.evaluate(case)
+        self.assertEqual([], result["allocation"])
+        self.assertIsNone(result["totals"]["fully_loaded_cost"])
+        coverage = result["allocation_coverage"][0]
+        self.assertEqual("43.50", coverage["allocatable_amount"])
+        self.assertEqual("13.50", coverage["allocated_amount"])
+        self.assertEqual("30.00", coverage["unallocated_amount"])
+        self.assertEqual("0.00", coverage["non_allocatable_amount"])
+
+    def test_non_allocatable_is_separate_from_unallocated(self):
+        case = base_case()
+        case["usage"] = [u for u in case["usage"] if u["usage_id"] != "u3"]
+        case["cost_items"][2]["allocatable"] = False
+        result = econ.evaluate(case)
+        coverage = result["allocation_coverage"][0]
+        self.assertEqual("43.50", coverage["allocatable_amount"])
+        self.assertEqual("13.50", coverage["allocated_amount"])
+        self.assertEqual("0.00", coverage["unallocated_amount"])
+        self.assertEqual("30.00", coverage["non_allocatable_amount"])
+
+    def test_vendor_outcome_is_unknown_not_success_or_failure(self):
+        case = base_case()
+        case["usage"] = [u for u in case["usage"] if u["usage_id"] != "u3"]
+        case["outcomes"][0]["source_party"] = "vendor"
+        case["outcomes"][0]["independence"] = "same_vendor_control_domain"
+        result = econ.evaluate(case)
+        row = next(row for row in result["tasks"] if row["task_id"] == "t1")
+        self.assertIsNone(row["verified_success"])
+        self.assertEqual("unknown", row["success_status"])
+        self.assertIsNone(result["totals"]["cost_per_verified_success"])
+
+    def test_confirmed_loss_with_missing_amount_is_unknown_not_zero(self):
+        case = base_case()
+        case["loss_events"][0].pop("amount")
+        result = econ.evaluate(case)
+        self.assertIsNone(result["totals"]["loss_events"])
+        self.assertIsNone(result["loss_events"][0]["amount"])
 
 
 if __name__ == "__main__":

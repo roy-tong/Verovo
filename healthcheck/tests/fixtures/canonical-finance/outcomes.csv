@@ -1,0 +1,4 @@
+outcome_id,task_id,status,verified,value,value_verified,currency,source_ref,source_party,collection_method,independence,accepted_by,accepted_at
+buyer-accept-t1,t1,success,true,100.00,true,USD,buyer-acceptance:t1,buyer,buyer_acceptance,buyer_independent,Buyer Owner,2026-10-31T10:00:00Z
+buyer-reject-t2,t2,failure,true,,, ,buyer-acceptance:t2,buyer,buyer_acceptance,buyer_independent,Buyer Owner,2026-10-31T11:00:00Z
+vendor-claim-t2,t2,success,true,999.00,true,USD,vendor-portal:t2,vendor,vendor_export,same_vendor_control_domain,,

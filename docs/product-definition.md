@@ -75,3 +75,14 @@ guarantee. See [commercial scope](commercial-narrative.md).
 ## Task economics
 
 `economics` consumes explicit local case files linking tasks, runs, financialized usage, costs and outcomes. See [the contract](task-economics.md). This extends charge and delivery review without treating one as proof of the other. Automated invoice extraction, causal optimization and insurance are not shipped capabilities.
+
+## Canonical narrow finance chain (implemented 2026-11-04)
+
+`canonical_finance.py` and `scripts/run_canonical_finance.py` orchestrate the existing Period Intake, approved Rule Map and Task Economics components rather than adding another financial engine. The supported slice is known CSV/JSONL inputs, one vendor/account/currency, approved per-unit pricing and approved allocation drivers. Unsupported formats and unapproved rules fail closed; OCR/invoice2data remains unreviewed/unbooked.
+
+- Missing amount, currency or quantity is `unknown/open`, never a default currency or zero. Related totals stay unknown; attributed subtotals remain separate.
+- Allocation coverage and reconciliation are orthogonal: per-currency `allocatable = allocated + unallocated + non_allocatable`, with separate matched/difference/unknown states. Shared costs require versioned drivers and approval; missing weights are not averaged.
+- Evidence conclusions are `Invoice Matched`, `Vendor Reconciled`, `Buyer Verified` and `Delivery Accepted`, with source party, collection method, independence and recalculation status. Two vendor exports can at most support Vendor Reconciled; they do not independently prove Buyer Verified.
+- Delivery and task-economics evidence is joined through Agent traces, tasks and BuyerOutcome. Cost per Verified Success is not ROI; unverified business value never fills the ROI gap.
+
+The complex fixture covers shared API keys, seat fees, buyer-accepted and rejected delivery, and vendor-claimed value. It verifies fully loaded cost and Cost per Verified Success while leaving ROI unknown. This fixture is synthetic, not a production customer result. Real supplier data, FX, general contract parsing, arbitrary invoice formats, external identity/signature verification and OCR accuracy remain unverified.

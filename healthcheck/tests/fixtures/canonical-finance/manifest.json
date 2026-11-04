@@ -1,0 +1,16 @@
+{
+  "case_id": "synthetic-shared-key-seats-2026-10",
+  "synthetic": true,
+  "vendor": "synthetic-vendor",
+  "account_ref": "acct-1",
+  "currency": "USD",
+  "period": {"start": "2026-10-01", "end": "2026-10-31"},
+  "rule_map": "rule-map.json",
+  "sources": {
+    "tasks": [{"path": "tasks.csv", "format": "tasks-csv", "rule_id": "intake-tasks", "source_party": "buyer", "collection_method": "buyer_csv", "independence": "buyer_independent"}],
+    "runs": [{"path": "runs.jsonl", "format": "runs-jsonl", "rule_id": "intake-runs", "source_party": "buyer", "collection_method": "buyer_jsonl", "independence": "buyer_independent"}],
+    "usage": [{"path": "usage.jsonl", "format": "usage-jsonl", "rule_id": "intake-usage", "source_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain"}],
+    "bills": [{"path": "bills.csv", "format": "bills-csv", "rule_id": "intake-bills", "source_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain"}],
+    "outcomes": [{"path": "outcomes.csv", "format": "outcomes-csv", "rule_id": "intake-outcomes", "source_party": "vendor", "collection_method": "vendor_export", "independence": "same_vendor_control_domain"}]
+  }
+}

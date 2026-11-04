@@ -278,6 +278,53 @@ class TestM4DecimalArithmetic(unittest.TestCase):
             self.assertTrue(MONEY_RE.fullmatch(case["coverage"][name]))
 
 
+class TestMissingFinancialFieldsStayUnknown(unittest.TestCase):
+    def test_missing_invoice_amount_currency_quantity_and_price_fail_closed(self):
+        for field in ("amount", "currency", "quantity", "unit_price"):
+            with self.subTest(field=field):
+                bundle = GoldenBundle.copy(self)
+                bundle.set_line("line-001", **{field: None})
+                with self.assertRaises(builder.BuildError) as raised:
+                    bundle.build()
+                self.assertIn("UNKNOWN", str(raised.exception))
+
+    def test_non_finite_amount_is_refused(self):
+        bundle = GoldenBundle.copy(self)
+        bundle.set_line("line-001", amount="NaN")
+        with self.assertRaisesRegex(builder.BuildError, "non-finite"):
+            bundle.build()
+
+    def test_unverified_outcome_without_value_is_unprovable_not_zero(self):
+        bundle = GoldenBundle.copy(self)
+        path = bundle.dir / "outcomes.csv"
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            "success,false,5000.00,false", "success,false,,false"), encoding="utf-8")
+        case = bundle.build()
+        finding = _find(case, "unverified_outcome")[0]
+        self.assertIsNone(finding["amount"]["value"])
+        self.assertFalse(finding["provable"])
+        self.assertIn("UNKNOWN", finding["amount"]["basis"])
+        self.assertEqual([], bundle.validate(case))
+
+    def test_matching_credit_with_missing_amount_blocks_settlement_decision(self):
+        bundle = GoldenBundle.copy(self)
+        register, credit = bundle.credit()
+        credit.pop("amount")
+        bundle.write("invoices/credit-register-2026-11.json", register)
+        with self.assertRaisesRegex(builder.BuildError, "UNKNOWN"):
+            bundle.build()
+
+    def test_shared_driver_parameters_are_mandatory(self):
+        bundle = GoldenBundle.copy(self)
+        contract = bundle.json("contract-rules.json")
+        for rule in contract["rules"]:
+            if rule["rule_id"] == "CR-003":
+                rule["parameters"].pop("driver_version")
+        bundle.write("contract-rules.json", contract)
+        with self.assertRaisesRegex(builder.BuildError, "driver_version"):
+            bundle.build()
+
+
 def _money(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"))
 

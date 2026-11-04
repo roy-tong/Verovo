@@ -102,19 +102,18 @@ def reconcile(store: LedgerStore, period: str,
     documents = {d["id"]: d for d in store.list_documents()}
 
     groups = {}
-    charge_currencies = {}
     for line in charge_lines:
         account = documents[line["document_id"]]["account_ref"]
         scope = (line["provider"], account)
-        charge_currencies.setdefault(scope, set()).add(line["currency"])
         key = scope + (line["currency"],)
         groups.setdefault(key, {"charges": [], "usage": []})["charges"].append(line)
+    unknown_currency_usage = {}
     for event in usage_events:
         account = event.get("account_ref") or documents[event["document_id"]]["account_ref"]
         scope = (event["provider"], account)
-        currencies = charge_currencies.get(scope, set())
-        currency = event.get("currency") or (
-            next(iter(currencies)) if len(currencies) == 1 else "")
+        currency = event.get("currency") or ""
+        if not currency:
+            unknown_currency_usage.setdefault(scope, []).append(event)
         key = scope + (currency,)
         groups.setdefault(key, {"charges": [], "usage": []})["usage"].append(event)
 
@@ -161,11 +160,13 @@ def reconcile(store: LedgerStore, period: str,
             unparsed_docs = unparsed_by_scope.get((provider, account_ref), [])
             review_required = bool(
                 pending_charges or pending_usage or unparsed_docs or invalid_pricing)
-            recount_complete = not unpriced and not invalid_pricing and not any(
+            unknown_currency = [] if currency == "" else unknown_currency_usage.get(
+                (provider, account_ref), [])
+            recount_complete = not unpriced and not unknown_currency and not invalid_pricing and not any(
                 d["tier"] == "platform_usage" for d in unparsed_docs)
             if review_required:
                 variance_class, variance = CLS_REVIEW_REQUIRED, None
-            elif priced and unpriced:
+            elif priced and (unpriced or unknown_currency):
                 # 已计价小计可以展示，但绝不能与完整账单形成正式差额。
                 variance_class, variance = CLS_ESTIMATE_INCOMPLETE, None
             else:
@@ -200,6 +201,7 @@ def reconcile(store: LedgerStore, period: str,
                     {"id": d["id"], "tier": d["tier"], "file_name": d["file_name"]}
                     for d in unparsed_docs],
                 "invalid_pricing_events": [u["id"] for u in invalid_pricing],
+                "unknown_currency_usage_events": [u["id"] for u in unknown_currency],
                 "tiers_present": {
                     "bill_fact": bool(p_lines), "platform_usage": bool(p_usage),
                     "recount": recount_total is not None,

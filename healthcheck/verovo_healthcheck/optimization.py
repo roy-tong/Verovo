@@ -95,6 +95,9 @@ def simulate(case: Dict[str, Any], scenario: Dict[str, Any]) -> Dict[str, Any]:
                     continue
                 if key == "usage" and item.get("financialized") is not True:
                     continue
+                if item.get(field) in (None, ""):
+                    # A scenario must not turn an UNKNOWN source amount into zero.
+                    continue
                 if _matches(item, match, tasks, runs):
                     targets.append((item, field))
         if action == "drop":
@@ -109,8 +112,23 @@ def simulate(case: Dict[str, Any], scenario: Dict[str, Any]) -> Dict[str, Any]:
         baseline = task_economics.evaluate(case)
     except (task_economics.EconomicsError, TypeError, KeyError) as exc:
         return {"scenario_id": scenario_id, "status": "invalid", "reason": str(exc)}
-    before = _dec((baseline.get("totals") or {}).get("fully_loaded_cost"))
-    after = _dec((evaluated.get("totals") or {}).get("fully_loaded_cost"))
+    before_raw = (baseline.get("totals") or {}).get("fully_loaded_cost")
+    after_raw = (evaluated.get("totals") or {}).get("fully_loaded_cost")
+    boundary = ("模拟只重算显式假设下的成本；假设不成立时结果不成立，"
+                "这不是预测、节省承诺或因果证据。")
+    if before_raw is None or after_raw is None:
+        return {
+            "scenario_id": scenario_id,
+            "description": str(scenario.get("description") or ""),
+            "status": "blocked", "reason": "UNKNOWN cost cannot become a zero-cost scenario",
+            "applied_rows": applied, "assumptions": rules,
+            "baseline": {"fully_loaded_cost": before_raw},
+            "scenario": {"fully_loaded_cost": after_raw},
+            "delta": {"fully_loaded_cost": None, "fully_loaded_cost_pct": None},
+            "boundary": boundary,
+        }
+    before = _dec(before_raw)
+    after = _dec(after_raw)
     delta = after - before
     return {
         "scenario_id": scenario_id,
@@ -133,8 +151,7 @@ def simulate(case: Dict[str, Any], scenario: Dict[str, Any]) -> Dict[str, Any]:
             "fully_loaded_cost_pct": round(float(delta / before), 4) if before else None,
             "verified_success_tasks": (evaluated.get("totals") or {}).get("verified_success_tasks"),
         },
-        "boundary": ("模拟只重算显式假设下的成本；假设不成立时结果不成立，"
-                     "这不是预测、节省承诺或因果证据。"),
+        "boundary": boundary,
     }
 
 

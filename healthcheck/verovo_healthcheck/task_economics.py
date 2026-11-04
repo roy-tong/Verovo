@@ -79,12 +79,61 @@ def _amount(item: Dict[str, Any], field: str, label: str) -> Decimal:
 
 
 def _currency(item: Dict[str, Any], label: str, case_currency: str) -> str:
-    currency = str(item.get("currency") or case_currency).strip().upper()
+    raw = item.get("currency")
+    if raw is None or not str(raw).strip():
+        raise EconomicsError("%s currency is required; never assume the case currency" % label)
+    currency = str(raw).strip().upper()
     if currency != case_currency:
         raise EconomicsError(
             "%s currency %s differs from case currency %s; cross-currency "
             "aggregation is forbidden" % (label, currency, case_currency))
     return currency
+
+
+def buyer_evidence(item: Dict[str, Any]) -> bool:
+    """Check observer and collection provenance without assuming independence."""
+    method = str(item.get("collection_method") or "").strip().lower()
+    return bool(
+        str(item.get("source_party") or "").strip().lower() == "buyer"
+        and str(item.get("independence") or "").strip().lower() == "buyer_independent"
+        and method not in ("", "unknown", "ocr", "invoice2data")
+        and not method.startswith("vendor")
+    )
+
+
+def _buyer_verified(item: Dict[str, Any]) -> bool:
+    """Return whether a row carries explicit buyer-independent verification.
+
+    ``verified=true`` is only an assertion until its observer and collection
+    path are known.  In particular, two exports controlled by the same vendor
+    remain vendor evidence, however many rows or files they contain.
+    """
+    return bool(item.get("verified") is True
+                and str(item.get("source_ref") or "").strip()
+                and buyer_evidence(item))
+
+
+def _approval(rule: Dict[str, Any]) -> Tuple[str, str]:
+    return (
+        str(rule.get("confirmed_by") or rule.get("approved_by") or "").strip(),
+        str(rule.get("confirmed_at") or rule.get("approved_at") or "").strip(),
+    )
+
+
+def _driver_error(rule: Dict[str, Any]) -> str:
+    driver = rule.get("driver")
+    if not isinstance(driver, dict):
+        return "shared cost needs a versioned allocation driver"
+    for field in ("id", "version", "source_ref"):
+        if not str(driver.get(field) or "").strip():
+            return "allocation driver needs %s" % field
+    confirmed_by, confirmed_at = _approval(rule)
+    if not confirmed_by or not confirmed_at:
+        return "allocation rule and driver need confirmed_by/confirmed_at"
+    driver_by, driver_at = _approval(driver)
+    if (driver_by or driver_at) and (driver_by != confirmed_by or driver_at != confirmed_at):
+        return "allocation driver approval must match the rule approval"
+    return ""
 
 
 def _allocate(total: Decimal, tasks: List[str], rule: Dict[str, Any]) -> Dict[str, Decimal]:
@@ -107,7 +156,11 @@ def _allocate(total: Decimal, tasks: List[str], rule: Dict[str, Any]) -> Dict[st
                 rule.get("id"), "weights" if method == "headcount" else "values"))
         weights = {}
         for task in tasks:
-            value = source.get(task, 0)
+            if task not in source or source.get(task) in (None, ""):
+                raise EconomicsError(
+                    "allocation driver %s has no explicit weight for task %s; "
+                    "missing weights are unknown, not zero" % (rule.get("id"), task))
+            value = source.get(task)
             weight = _dec(value, "allocation weight %s" % task)
             if weight < 0:
                 raise EconomicsError("allocation weight cannot be negative: %s" % task)
@@ -127,6 +180,78 @@ def _allocate(total: Decimal, tasks: List[str], rule: Dict[str, Any]) -> Dict[st
     for task in ranked[:cents]:
         allocated[task] += Decimal("0.01")
     return allocated
+
+
+def recalculate_charge(item: Dict[str, Any], pricing_rules: Dict[str, Dict[str, Any]],
+                       case_currency: str) -> Dict[str, Any]:
+    """Recalculate one explicitly mapped per-unit charge, or stay UNKNOWN.
+
+    This is the same Decimal rule evaluation used by the canonical chain; it
+    never substitutes zero for a missing amount, currency or quantity.
+    """
+    field = "cost" if "usage_id" in item else "amount"
+    row_id = str(item.get("usage_id") or item.get("cost_id") or item.get("charge_id") or "")
+    actual_raw = item.get(field)
+    actual: Optional[Decimal] = None
+    if actual_raw not in (None, ""):
+        actual = _money(_dec(actual_raw, "%s %s" % (row_id, field)))
+    item_currency = str(item.get("currency") or "").strip().upper()
+    rule_id = str(item.get("rate_rule") or item.get("pricing_rule") or "").strip()
+    result: Dict[str, Any] = {
+        "id": row_id, "charge_id": str(item.get("charge_id") or ""),
+        "status": "unknown", "actual_amount": str(actual) if actual is not None else None,
+        "expected_amount": None, "difference": None, "currency": item_currency or None,
+        "rule_id": rule_id or None, "reason": "",
+    }
+    if actual is None:
+        result["reason"] = "actual amount is unknown"
+        return result
+    if not item_currency:
+        result["reason"] = "currency is unknown"
+        return result
+    if item_currency != case_currency:
+        result["reason"] = "cross-currency recalculation is outside this case"
+        return result
+    rule = pricing_rules.get(rule_id)
+    if rule is None:
+        result["reason"] = "no approved pricing rule is mapped"
+        return result
+    confirmed_by, confirmed_at = _approval(rule)
+    result["rule_ref"] = {"rule_id": rule_id, "version": rule.get("version"),
+                          "confirmed_by": confirmed_by, "confirmed_at": confirmed_at}
+    if not str(rule.get("version") or "").strip() or not confirmed_by or not confirmed_at:
+        result["reason"] = "pricing rule version or approval is missing"
+        return result
+    if rule.get("method") != "per_unit":
+        result["reason"] = "only approved per_unit pricing is supported"
+        return result
+    if item.get("quantity") in (None, ""):
+        result["reason"] = "quantity is unknown, not zero"
+        return result
+    quantity = _dec(item.get("quantity"), "%s quantity" % row_id)
+    if quantity < 0:
+        raise EconomicsError("quantity cannot be negative: %s" % row_id)
+    if rule.get("unit_price") in (None, ""):
+        result["reason"] = "approved unit_price is missing"
+        return result
+    unit_price = _dec(rule.get("unit_price"), "pricing rule %s unit_price" % rule_id)
+    rule_currency = str(rule.get("currency") or "").strip().upper()
+    if not rule_currency:
+        result["reason"] = "pricing rule currency is missing"
+        return result
+    if rule_currency != item_currency:
+        result["status"] = "difference"
+        result["reason"] = "pricing rule and charge currencies differ"
+        return result
+    expected = _money(quantity * unit_price)
+    difference = _money(actual - expected)
+    result.update({
+        "expected_amount": str(expected), "difference": str(difference),
+        "status": "matched" if difference == 0 else "difference",
+        "reason": "approved per-unit rule recalculated" if difference == 0
+                  else "actual amount differs from the approved per-unit recalculation",
+    })
+    return result
 
 
 def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
@@ -168,8 +293,47 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
     direct: Dict[str, Decimal] = {task_id: Decimal("0") for task_id in task_ids}
     shared_items: List[Tuple[Decimal, str, str]] = []  # amount, rule_id, cost_id
     unallocated: List[Dict[str, Any]] = []
+    unallocated_amount = Decimal("0")
+    non_allocatable_amount = Decimal("0")
+    coverage_unknown = False
     seen_cost = set()
     charge_owners = {}
+
+    def record_unallocated(kind: str, row_id: str, reason: str,
+                           amount: Optional[Decimal] = None,
+                           non_allocatable: bool = False) -> None:
+        nonlocal unallocated_amount, non_allocatable_amount, coverage_unknown
+        unallocated.append({
+            "kind": kind, "id": row_id, "reason": reason,
+            "amount": str(_money(amount)) if amount is not None else None,
+            "currency": currency if amount is not None else None,
+            "status": "open",
+        })
+        if amount is None:
+            coverage_unknown = True
+        elif non_allocatable:
+            non_allocatable_amount += amount
+        else:
+            unallocated_amount += amount
+
+    # Conflicting representations of one charge make its cost unknown. Selecting
+    # the first row would turn a reconciliation difference into a precise total.
+    charge_values: Dict[str, set] = {}
+    for item in list(usage.values()) + [x for x in cost_items if isinstance(x, dict)]:
+        charge_id = str(item.get("charge_id") or "").strip()
+        field = "cost" if "usage_id" in item else "amount"
+        if not charge_id or item.get(field) in (None, "") or not str(item.get("currency") or "").strip():
+            continue
+        try:
+            charge_values.setdefault(charge_id, set()).add(
+                (str(_dec(item.get(field), field)), str(item["currency"]).upper()))
+        except EconomicsError:
+            pass
+    conflicting_charges = {key for key, values in charge_values.items() if len(values) > 1}
+    for charge_id in sorted(conflicting_charges):
+        findings.append({"code": "charge_amount_mismatch", "severity": "review",
+                         "id": charge_id,
+                         "message": "conflicting amounts for charge %s; cost remains unknown" % charge_id})
 
     def claim_charge(item, row_id):
         # Shared identity must be supplied by the importer; never guess from time/amount.
@@ -186,28 +350,47 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
 
     # Technical usage is not a financial cost unless explicitly financialized.
     for usage_id, item in usage.items():
-        run_id = str(item.get("run_id") or "").strip()
-        run = runs.get(run_id)
-        if run is None:
-            unallocated.append({"kind": "usage", "id": usage_id,
-                                "reason": "run_id is unknown"})
+        if item.get("financialized") is not True or item.get("financial_status") == "represented_by_bill":
             continue
-        task_id = str(run.get("task_id") or "").strip()
-        if not task_id or task_id not in tasks:
-            unallocated.append({"kind": "usage", "id": usage_id,
-                                "reason": "run has no known task_id"})
+        amount: Optional[Decimal] = None
+        if item.get("cost") not in (None, "") and str(item.get("currency") or "").strip():
+            _currency(item, "usage %s" % usage_id, currency)
+            amount = _amount(item, "cost", "usage %s" % usage_id)
+            if amount < 0:
+                raise EconomicsError("usage cost cannot be negative: %s" % usage_id)
+        if item.get("cost") in (None, ""):
+            record_unallocated("usage", usage_id, "financialized usage cost is unknown")
             continue
-        if item.get("financialized") is not True:
+        if not str(item.get("currency") or "").strip():
+            record_unallocated("usage", usage_id, "financialized usage currency is unknown")
+            continue
+        if item.get("financial_status") in ("unknown", "unpriced", "difference"):
+            record_unallocated("usage", usage_id, "usage cost is open pending reconciliation",
+                               amount, non_allocatable=True)
+            continue
+        charge_id = str(item.get("charge_id") or "").strip()
+        if charge_id in conflicting_charges:
+            record_unallocated("usage", usage_id, "charge has conflicting amounts",
+                               amount, non_allocatable=True)
             continue
         source_ref = str(item.get("source_ref") or "").strip()
         if not source_ref:
-            unallocated.append({"kind": "usage", "id": usage_id,
-                                "reason": "financialized usage needs source_ref"})
+            record_unallocated("usage", usage_id, "financialized usage needs source_ref",
+                               amount, non_allocatable=True)
             continue
-        _currency(item, "usage %s" % usage_id, currency)
-        amount = _amount(item, "cost", "usage %s" % usage_id)
-        if amount < 0:
-            raise EconomicsError("usage cost cannot be negative: %s" % usage_id)
+        run_id = str(item.get("run_id") or "").strip()
+        run = runs.get(run_id)
+        if run is None:
+            record_unallocated("usage", usage_id, "run_id is unknown", amount)
+            continue
+        task_id = str(run.get("task_id") or "").strip()
+        if not task_id or task_id not in tasks:
+            record_unallocated("usage", usage_id, "run has no known task_id", amount)
+            continue
+        if item.get("allocatable") is False or item.get("allocation_eligible") is False:
+            record_unallocated("usage", usage_id, "row is explicitly non-allocatable",
+                               amount, non_allocatable=True)
+            continue
         if claim_charge(item, usage_id):
             direct[task_id] += amount
 
@@ -216,11 +399,26 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(item, dict):
             raise EconomicsError("cost_items[%d] must be an object" % index)
         cost_id = _text(item.get("cost_id"), "cost_items[%d].cost_id" % index)
-        source_ref = _text(item.get("source_ref"), "cost_items[%d].source_ref" % index)
+        source_ref = str(item.get("source_ref") or "").strip()
+        if item.get("amount") in (None, ""):
+            record_unallocated("cost_item", cost_id, "cost amount is unknown")
+            continue
         amount = _amount(item, "amount", "cost_items[%d]" % index)
         if amount < 0:
             raise EconomicsError("cost item amount cannot be negative: %s" % cost_id)
+        if not str(item.get("currency") or "").strip():
+            record_unallocated("cost_item", cost_id, "cost currency is unknown")
+            continue
         _currency(item, "cost item %s" % cost_id, currency)
+        if not source_ref:
+            record_unallocated("cost_item", cost_id, "financial source_ref is unknown",
+                               amount, non_allocatable=True)
+            continue
+        charge_id = str(item.get("charge_id") or "").strip()
+        if charge_id in conflicting_charges or item.get("financial_status") in ("unknown", "difference"):
+            record_unallocated("cost_item", cost_id, "charge has conflicting or open amounts",
+                               amount, non_allocatable=True)
+            continue
         dedupe = (
             source_ref,
             str(_money(amount)),
@@ -235,19 +433,26 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
             continue
         seen_cost.add(cost_id)
         seen_cost.add(dedupe)
+        if item.get("allocatable") is False or item.get("allocation_eligible") is False:
+            record_unallocated("cost_item", cost_id, "row is explicitly non-allocatable",
+                               amount, non_allocatable=True)
+            continue
         task_id = str(item.get("task_id") or "").strip()
         if task_id:
             if task_id not in tasks:
-                unallocated.append({"kind": "cost_item", "id": cost_id,
-                                    "reason": "unknown task_id %s" % task_id})
+                record_unallocated("cost_item", cost_id, "unknown task_id %s" % task_id, amount)
                 continue
             if claim_charge(item, cost_id):
                 direct[task_id] += amount
             continue
         rule_id = str(item.get("allocation_rule") or "").strip()
         if not rule_id or rule_id not in rules:
-            unallocated.append({"kind": "cost_item", "id": cost_id,
-                                "reason": "shared cost needs a known allocation_rule"})
+            record_unallocated("cost_item", cost_id,
+                               "shared cost needs a known allocation_rule", amount)
+            continue
+        driver_error = _driver_error(rules[rule_id])
+        if driver_error:
+            record_unallocated("cost_item", cost_id, driver_error, amount)
             continue
         if claim_charge(item, cost_id):
             shared_items.append((amount, rule_id, cost_id))
@@ -256,23 +461,34 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
     allocation_details: List[Dict[str, Any]] = []
     for amount, rule_id, cost_id in shared_items:
         rule = rules[rule_id]
-        shares = _allocate(amount, task_ids, rule)
+        try:
+            shares = _allocate(amount, task_ids, rule)
+        except EconomicsError as exc:
+            record_unallocated("cost_item", cost_id, str(exc), amount)
+            continue
         for task_id, share in shares.items():
             allocated[task_id] += share
+        confirmed_by, confirmed_at = _approval(rule)
         allocation_details.append({
             "cost_id": cost_id, "amount": str(_money(amount)),
             "rule_id": rule_id, "rule_version": rule.get("version"),
-            "method": rule.get("method"), "shares": {k: str(v) for k, v in shares.items()},
+            "method": rule.get("method"), "driver": rule.get("driver"),
+            "confirmed_by": confirmed_by, "confirmed_at": confirmed_at,
+            "shares": {k: str(v) for k, v in shares.items()},
         })
 
-    # Outcomes are separate evidence. Only verified success enters success/value.
+    # Outcomes are separate evidence. Buyer verification, not a bare verified
+    # flag, controls the success denominator and verified business value.
     outcome_rows: List[Dict[str, Any]] = []
     verified_success = set()
     verified_value: Dict[str, Decimal] = {}
     seen_outcomes = set()
     task_statuses = {}
+    outcome_status: Dict[str, Optional[bool]] = {task_id: None for task_id in task_ids}
+    denominator_unknown = set(task_ids)
+    value_complete = True
     for item in outcomes:
-        if isinstance(item, dict) and item.get("verified") is True and item.get("source_ref"):
+        if isinstance(item, dict) and _buyer_verified(item):
             task_statuses.setdefault(item.get("task_id"), set()).add(item.get("status"))
     for index, item in enumerate(outcomes):
         if not isinstance(item, dict):
@@ -281,7 +497,6 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         if task_id not in tasks:
             raise EconomicsError("outcome references unknown task: %s" % task_id)
         status = str(item.get("status") or "")
-        verified = item.get("verified") is True
         source_ref = str(item.get("source_ref") or "").strip()
         identity = (task_id, source_ref, status)
         if source_ref and identity in seen_outcomes:
@@ -289,29 +504,72 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
                              "task_id": task_id, "message": "duplicate outcome excluded"})
             continue
         seen_outcomes.add(identity)
-        if len(task_statuses.get(task_id, set())) > 1:
-            verified = False
+        buyer_verified = _buyer_verified(item)
+        conflict = len(task_statuses.get(task_id, set())) > 1
+        if conflict:
+            buyer_verified = False
             findings.append({"code": "conflicting_outcome", "severity": "review",
                              "task_id": task_id, "message": "conflicting task states require reconciliation"})
-        row = {"task_id": task_id, "status": status, "verified": verified,
-               "source_ref": source_ref}
-        if status == "success" and verified and source_ref:
+        decisive = buyer_verified and not conflict
+        if decisive:
+            denominator_unknown.discard(task_id)
+            outcome_status[task_id] = status == "success"
+        if decisive and status == "success":
             verified_success.add(task_id)
         else:
             findings.append({"code": "unverified_outcome", "severity": "review",
                              "task_id": task_id,
-                             "message": "outcome is not verified success; excluded from success denominator"})
+                             "message": "outcome is not buyer-verified success; denominator remains unknown"})
+        if item.get("verified") is True and not buyer_verified and \
+                str(item.get("source_party") or "").lower() == "vendor":
+            findings.append({"code": "vendor_outcome_not_independent", "severity": "review",
+                             "task_id": task_id,
+                             "message": "vendor assertions and repeated vendor exports are not buyer verification"})
+        row = {"task_id": task_id, "status": status,
+               "verified": True if decisive else None,
+               "verification_status": "verified" if decisive else "unknown",
+               "success_status": ("success" if outcome_status[task_id] is True else
+                                  "not_successful" if outcome_status[task_id] is False else "unknown"),
+               "source_ref": source_ref,
+               "source_party": item.get("source_party") or "unknown",
+               "collection_method": item.get("collection_method") or "unknown",
+               "independence": item.get("independence") or "unknown"}
         if item.get("value") is not None:
-            if _currency(item, "outcome %s" % task_id, currency) and item.get("value_verified") is True and verified and source_ref and status == "success":
-                value = _dec(item.get("value"), "outcome value %s" % task_id)
-                if value < 0:
-                    raise EconomicsError("outcome value cannot be negative: %s" % task_id)
+            value = _dec(item.get("value"), "outcome value %s" % task_id)
+            if value < 0:
+                raise EconomicsError("outcome value cannot be negative: %s" % task_id)
+            currency_known = bool(str(item.get("currency") or "").strip())
+            if currency_known and item.get("value_status") != "unknown":
+                _currency(item, "outcome %s" % task_id, currency)
+            if (currency_known and item.get("value_status") != "unknown"
+                    and item.get("value_verified") is True and decisive and status == "success"):
                 verified_value[task_id] = verified_value.get(task_id, Decimal("0")) + value
             else:
+                value_complete = False
                 findings.append({"code": "unverified_value", "severity": "review",
                                  "task_id": task_id,
-                                 "message": "business value is not verified and is excluded from ROI"})
+                                 "message": "business value or currency is not buyer-verified; ROI remains open"})
+        elif item.get("value_verified") is True:
+            value_complete = False
+            findings.append({"code": "unverified_value", "severity": "review",
+                             "task_id": task_id,
+                             "message": "verified value flag has no amount; value remains unknown"})
         outcome_rows.append(row)
+
+    cost_open_kinds = {
+        "missing_amount", "missing_currency", "invalid_amount", "unallocated_cost",
+        "charge_amount_mismatch", "invoice_draft", "invoice_pending",
+        "unfinancialized_cost", "negative_amount", "currency_mismatch",
+        "duplicate_charge", "missing_charge_id",
+    }
+    case_open_items = _list(case, "open_items")
+    case_cost_open = case.get("financial_status") == "open" or any(
+        isinstance(item, dict) and item.get("kind") in cost_open_kinds
+        and item.get("domain", "finance") == "finance"
+        and item.get("status", "open") != "resolved"
+        for item in case_open_items)
+    financial_candidates = sum(1 for item in usage.values() if item.get("financialized") is True) + len(cost_items)
+    cost_complete = bool(financial_candidates) and not unallocated and not coverage_unknown and not case_cost_open
 
     rows: List[Dict[str, Any]] = []
     total_cost = Decimal("0")
@@ -320,42 +578,67 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         shared_cost = _money(allocated[task_id])
         total = _money(direct_cost + shared_cost)
         total_cost += total
+        success = outcome_status[task_id]
         rows.append({
             "task_id": task_id, "type": task.get("type", ""),
             "direct_cost": str(direct_cost), "allocated_cost": str(shared_cost),
             "fully_loaded_cost": str(total),
-            "verified_success": task_id in verified_success,
+            "cost_status": "attributed_subtotal" if not cost_complete else "complete",
+            "verified_success": success,
+            "success_status": ("success" if success is True else
+                               "not_successful" if success is False else "unknown"),
             "verified_value": str(_money(verified_value.get(task_id, Decimal("0"))))
             if task_id in verified_value else None,
         })
 
     success_count = len(verified_success)
-    successful_cost = total_cost if success_count else None
-    cost_per_success = (
-        _money(total_cost / Decimal(success_count)) if success_count else None
-    )
+    cost_per_success: Optional[Decimal] = None
+    if not cost_complete:
+        cost_per_success_reason = "cost is unknown or incomplete; open allocation/reconciliation items block the ratio"
+    elif denominator_unknown:
+        cost_per_success_reason = "buyer outcome evidence is missing or conflicting; success denominator is unknown"
+    elif not success_count:
+        cost_per_success_reason = "no buyer-verified success; no ratio is defined"
+    else:
+        cost_per_success = _money(total_cost / Decimal(success_count))
+        cost_per_success_reason = "complete attributed cost divided by buyer-verified successful tasks"
+
     verified_value_total = sum(verified_value.values(), Decimal("0"))
     roi = None
-    roi_reason = "no verified business value in the case currency"
-    if unallocated:
-        roi_reason = "unallocated records make total cost incomplete; reconcile before ROI"
-    elif verified_value and total_cost > 0:
+    if not cost_complete:
+        roi_reason = "cost is unknown or incomplete; reconcile allocation before ROI"
+    elif not value_complete:
+        roi_reason = "business value evidence is incomplete; unverified values never fill the gap"
+    elif not verified_value:
+        roi_reason = "no verified business value in the case currency"
+    elif total_cost <= 0:
+        roi_reason = "ROI denominator requires a positive complete cost"
+    else:
         roi = str(((verified_value_total - total_cost) / total_cost).quantize(
             Decimal("0.0001"), rounding=ROUND_HALF_UP))
         roi_reason = "verified value and fully loaded cost in the same currency/period"
 
     loss_total = Decimal("0")
+    loss_complete = True
     seen_losses = set()
     loss_rows = []
     for index, item in enumerate(loss_events):
         if not isinstance(item, dict):
             raise EconomicsError("loss_events[%d] must be an object" % index)
-        _currency(item, "loss event %d" % index, currency)
-        amount = _dec(item.get("amount", 0), "loss amount")
-        if amount < 0:
-            raise EconomicsError("loss amount cannot be negative")
+        amount: Optional[Decimal] = None
+        if item.get("amount") not in (None, "") and str(item.get("currency") or "").strip():
+            _currency(item, "loss event %d" % index, currency)
+            amount = _dec(item.get("amount"), "loss amount")
+            if amount < 0:
+                raise EconomicsError("loss amount cannot be negative")
+        else:
+            if item.get("status") == "confirmed":
+                loss_complete = False
+            findings.append({"code": "unknown_loss_amount", "severity": "review",
+                             "message": "confirmed loss amount/currency is open, never zero"})
         identity = item.get("loss_id") or item.get("source_ref")
-        if (identity and identity not in seen_losses and item.get("status") == "confirmed"
+        if (amount is not None and identity and identity not in seen_losses
+                and item.get("status") == "confirmed"
                 and item.get("source_ref") and item.get("task_id") in tasks):
             loss_total += amount
             seen_losses.add(identity)
@@ -364,15 +647,31 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
                              "message": "loss excluded from confirmed loss total"})
         loss_rows.append({
             "loss_id": item.get("loss_id", ""), "task_id": item.get("task_id", ""),
-            "amount": str(_money(_dec(item.get("amount", 0), "loss amount"))),
-            "status": item.get("status", ""), "source_ref": item.get("source_ref", ""),
+            "amount": str(_money(amount)) if amount is not None else None,
+            "currency": item.get("currency") or None,
+            "status": item.get("status", "unknown"), "source_ref": item.get("source_ref", ""),
         })
 
+    coverage_amounts_known = not coverage_unknown and not case_cost_open
+    allocatable = total_cost + unallocated_amount + non_allocatable_amount
+    allocation_coverage = [{
+        "currency": currency,
+        "status": "open" if unallocated or not coverage_amounts_known else "complete",
+        "allocatable_amount": str(_money(allocatable)) if coverage_amounts_known else None,
+        "allocated_amount": str(_money(total_cost)) if coverage_amounts_known else None,
+        "unallocated_amount": str(_money(unallocated_amount)) if coverage_amounts_known else None,
+        "non_allocatable_amount": str(_money(non_allocatable_amount)) if coverage_amounts_known else None,
+        "open_items": len(unallocated) + (1 if case_cost_open else 0),
+        "identity": "allocatable = allocated + unallocated + non_allocatable",
+    }]
+    reported_success_count: Optional[int] = (
+        None if denominator_unknown and not success_count else success_count)
     coverage = {
         "tasks": len(tasks), "runs": len(runs), "usage": len(usage),
         "financial_documents": len(documents), "cost_items": len(cost_items),
         "outcomes": len(outcomes),
-        "verified_success_tasks": success_count,
+        "verified_success_tasks": reported_success_count,
+        "outcome_unknown_tasks": len(denominator_unknown),
         "unallocated_items": len(unallocated),
     }
     result = {
@@ -380,24 +679,29 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         "case_id": case_id, "currency": currency, "period": period,
         "coverage": coverage,
         "totals": {
-            "fully_loaded_cost": str(_money(total_cost)),
-            "verified_success_tasks": success_count,
+            "cost_status": "complete" if cost_complete else "unknown",
+            "attributed_cost_subtotal": str(_money(total_cost)),
+            "fully_loaded_cost": str(_money(total_cost)) if cost_complete else None,
+            "verified_success_tasks": reported_success_count,
+            "success_denominator_status": "unknown" if denominator_unknown else "complete",
             "cost_per_verified_success": str(cost_per_success) if cost_per_success is not None else None,
-            "verified_business_value": str(_money(verified_value_total)),
+            "cost_per_verified_success_reason": cost_per_success_reason,
+            "verified_business_value": str(_money(verified_value_total)) if verified_value else None,
             "roi": roi, "roi_reason": roi_reason,
-            "loss_events": str(_money(loss_total)),
+            "loss_events": str(_money(loss_total)) if loss_complete else None,
         },
         "tasks": rows,
         "allocation": allocation_details,
+        "allocation_coverage": allocation_coverage,
         "unallocated": unallocated,
         "findings": findings,
         "outcomes": outcome_rows,
         "loss_events": loss_rows,
         "boundary": (
-            "Local deterministic calculation only. Costs are attributable only when "
-            "task/run linkage and financial source are explicit; unallocated items are "
-            "not zero. ROI requires verified value in the same currency and period. "
-            "Simulated savings and estimated value are not realized benefits."
+            "Local deterministic calculation only. Missing amount/currency/quantity and "
+            "unallocated costs remain open, never zero. Buyer-verified outcomes control "
+            "Cost per Verified Success; ROI is a separate verified-value calculation. "
+            "Vendor exports are not independent buyer evidence."
         ),
     }
     return result
@@ -419,11 +723,15 @@ def report_text(result: Dict[str, Any]) -> str:
             result["period"].get("start"), result["period"].get("end")),
         "",
         "Coverage: %s" % json.dumps(result["coverage"], ensure_ascii=False, sort_keys=True),
-        "Fully loaded cost: %s %s" % (result["currency"], total["fully_loaded_cost"]),
+        "Fully loaded cost: %s" % (
+            ("%s %s" % (result["currency"], total["fully_loaded_cost"]))
+            if total["fully_loaded_cost"] is not None else "unknown (open financial items)"),
+        "Attributed cost subtotal: %s %s" % (result["currency"], total["attributed_cost_subtotal"]),
         "Verified successful tasks: %s" % total["verified_success_tasks"],
         "Cost per verified success: %s" % (
             ("%s %s" % (result["currency"], total["cost_per_verified_success"]))
-            if total["cost_per_verified_success"] is not None else "unavailable (no verified success)"),
+            if total["cost_per_verified_success"] is not None
+            else "unknown (%s)" % total["cost_per_verified_success_reason"]),
         "ROI: %s" % (total["roi"] if total["roi"] is not None else "null (%s)" % total["roi_reason"]),
         "Loss events: %s %s" % (result["currency"], total["loss_events"]),
         "",
@@ -453,11 +761,14 @@ def report_markdown(result: Dict[str, Any]) -> str:
         "# Task economics — %s" % result["case_id"], "",
         "- Currency: `%s`" % result["currency"],
         "- Period: `%s..%s`" % (result["period"].get("start"), result["period"].get("end")),
-        "- Fully loaded cost: **%s %s**" % (result["currency"], total["fully_loaded_cost"]),
+        "- Fully loaded cost: **%s**" % (
+            ("%s %s" % (result["currency"], total["fully_loaded_cost"]))
+            if total["fully_loaded_cost"] is not None else "unknown"),
+        "- Attributed cost subtotal: **%s %s**" % (result["currency"], total["attributed_cost_subtotal"]),
         "- Verified success tasks: **%s**" % total["verified_success_tasks"],
         "- Cost per verified success: **%s**" % (
             ("%s %s" % (result["currency"], total["cost_per_verified_success"]))
-            if total["cost_per_verified_success"] is not None else "unavailable"),
+            if total["cost_per_verified_success"] is not None else "unknown"),
         "- ROI: **%s**" % (total["roi"] if total["roi"] is not None else "null"),
         "- Loss events: **%s %s**" % (result["currency"], total["loss_events"]),
         "", "## Coverage", "", "| Item | Count |", "|---|---|",

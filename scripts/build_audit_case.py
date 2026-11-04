@@ -111,16 +111,29 @@ def _read_jsonl(path: Path) -> List[Dict[str, Any]]:
             row = json.loads(line)
         except json.JSONDecodeError as exc:
             raise BuildError(f"{path}:{number}: invalid JSON: {exc}") from exc
-        if isinstance(row, dict):
-            rows.append(row)
+        if not isinstance(row, dict):
+            raise BuildError(f"{path}:{number}: JSONL rows must be objects")
+        rows.append(row)
     return rows
 
 
 def _dec(value: Any, field: str) -> Decimal:
+    if value is None or isinstance(value, bool) or (isinstance(value, str) and not value.strip()):
+        raise BuildError(f"{field}: value is UNKNOWN, not zero")
     try:
-        return Decimal(str(value))
+        number = Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError) as exc:
         raise BuildError(f"{field}: not a decimal number: {value!r}") from exc
+    if not number.is_finite():
+        raise BuildError(f"{field}: non-finite numbers are refused")
+    return number
+
+
+def _quantity(value: Any, field: str) -> Decimal:
+    quantity = _dec(value, field)
+    if quantity < 0:
+        raise BuildError(f"{field}: negative quantity needs an explicit reversal rule")
+    return quantity
 
 
 def _money(value: Decimal) -> Decimal:
@@ -177,6 +190,9 @@ def _rule_ref(rules: Dict[str, Dict[str, Any]], rule_id: str) -> Dict[str, Any]:
     rule = rules.get(rule_id)
     if not rule:
         raise BuildError(f"rule {rule_id} is not confirmed in contract-rules.json")
+    for field in ("version", "confirmed_by", "confirmed_at"):
+        if not str(rule.get(field) or "").strip():
+            raise BuildError(f"rule {rule_id} has no confirmed {field}; approval is UNKNOWN")
     return {
         "rule_id": rule_id,
         "version": str(rule.get("version")),
@@ -222,10 +238,7 @@ def _affected(path: str, line_id: str) -> Dict[str, str]:
 
 
 def _line_amount(line: Dict[str, Any]) -> Decimal:
-    raw = line.get("amount")
-    if raw is None or (isinstance(raw, str) and not raw.strip()):
-        return Decimal("0.00")
-    return _dec(raw, f"invoice line {line.get('line_id')} amount")
+    return _dec(line.get("amount"), f"invoice line {line.get('line_id')} amount")
 
 
 def _load_lines(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -234,8 +247,14 @@ def _load_lines(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
         invoice = _read_json(_inside(root, relative))
         for line in invoice.get("lines") or []:
             if not isinstance(line, dict):
-                continue
+                raise BuildError(f"{relative}: every invoice line must be an object")
             row = dict(line)
+            if not str(row.get("line_id") or "").strip():
+                raise BuildError(f"{relative}: invoice line_id is required")
+            _line_amount(row)
+            if not str(row.get("currency") or "").strip():
+                raise BuildError(
+                    f"invoice line {row['line_id']} currency is UNKNOWN; coverage is blocked")
             row["_source"] = relative
             row["_invoice_id"] = invoice.get("invoice_id")
             lines.append(row)
@@ -248,7 +267,7 @@ def _load_credits(root: Path, manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
         register = _read_json(_inside(root, relative))
         for credit in register.get("credits") or []:
             if not isinstance(credit, dict):
-                continue
+                raise BuildError(f"{relative}: every credit note must be an object")
             row = dict(credit)
             row["_source"] = relative
             row["_register_id"] = register.get("register_id")
@@ -260,12 +279,11 @@ def _credit_matches(credit: Dict[str, Any], charge_id: str,
                     amount: Decimal, currency: str) -> bool:
     if str(credit.get("charge_id")) != str(charge_id):
         return False
+    if not str(credit.get("currency") or "").strip():
+        raise BuildError(f"credit note {credit.get('credit_id')} currency is UNKNOWN")
     if str(credit.get("currency")) != str(currency):
         return False
-    try:
-        credit_amount = _dec(credit.get("amount") or 0, "credit note amount")
-    except BuildError:
-        return False
+    credit_amount = _dec(credit.get("amount"), "credit note amount")
     return _money(credit_amount) == amount
 
 
@@ -423,7 +441,10 @@ def _discount_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, A
         if line.get("duplicate_of") or line.get("discount_rule") != discount_rule:
             continue
         task_id = str(line.get("task_id") or "")
-        by_task[task_id] = by_task.get(task_id, 0) + int(line.get("quantity") or 0)
+        quantity = _quantity(line.get("quantity"), f"invoice line {line.get('line_id')} quantity")
+        if quantity != quantity.to_integral_value():
+            raise BuildError(f"invoice line {line.get('line_id')} discount quantity must be integral")
+        by_task[task_id] = by_task.get(task_id, 0) + int(quantity)
     findings: List[Dict[str, Any]] = []
     for line in lines:
         if line.get("duplicate_of") or line.get("discount_rule") != discount_rule:
@@ -525,6 +546,9 @@ def _shared_cost_findings(lines: List[Dict[str, Any]], tasks: List[Dict[str, str
     if not active:
         return findings
     allocation = _rule_param(rules, "CR-003", "allocation", "str")
+    driver_id = _rule_param(rules, "CR-003", "driver_id", "str")
+    driver_version = _rule_param(rules, "CR-003", "driver_version", "str")
+    driver_source = _rule_param(rules, "CR-003", "driver_source", "str")
     if allocation != "equal":
         raise BuildError(
             f"rule CR-003 confirms allocation {allocation!r}; the builder only "
@@ -549,9 +573,9 @@ def _shared_cost_findings(lines: List[Dict[str, Any]], tasks: List[Dict[str, str
                 "value": _s(misallocated),
                 "basis": (
                     f"Line {line['line_id']} assigns the whole {_s(total)} "
-                    f"shared fee to {line.get('task_id')}; the confirmed rule splits it "
-                    f"across {len(active)} active tasks ({_s(share)} each for the "
-                    "first share)."
+                    f"shared fee to {line.get('task_id')}; confirmed driver {driver_id} "
+                    f"version {driver_version} ({driver_source}) splits it across "
+                    f"{len(active)} active tasks ({_s(share)} each for the first share)."
                 ),
             },
             "status": "identified",
@@ -569,12 +593,9 @@ def _outcome_findings(outcomes: List[Dict[str, str]], rules: Dict[str, Dict[str,
     for outcome in outcomes:
         if str(outcome.get("verified")).strip().lower() == "true":
             continue
-        try:
-            claimed = _dec(outcome.get("value") or 0, "outcome value")
-        except BuildError:
-            claimed = Decimal("0.00")
-        if claimed <= 0:
-            continue
+        claimed = None if outcome.get("value") in (None, "") else _dec(
+            outcome.get("value"), "outcome value")
+        claim_text = _s(claimed) if claimed is not None else "an UNKNOWN amount"
         findings.append({
             "case_id": case_id,
             "classification": "unverified_outcome",
@@ -583,7 +604,7 @@ def _outcome_findings(outcomes: List[Dict[str, str]], rules: Dict[str, Dict[str,
                 "currency": currency,
                 "value": None,
                 "basis": (
-                    f"Outcome {outcome['outcome_id']} claims {_s(claimed)} {currency} "
+                    f"Outcome {outcome['outcome_id']} claims {claim_text} {currency} "
                     f"from {outcome.get('source_ref')} but has no buyer-owned verification."
                 ),
             },
@@ -592,7 +613,7 @@ def _outcome_findings(outcomes: List[Dict[str, str]], rules: Dict[str, Dict[str,
             "rule_ref": _rule_ref(rules, "CR-008"),
             "provable": False,
             "reason": (
-                f"The claimed {_s(claimed)} {currency} value is unverified: "
+                f"The claimed {claim_text} {currency} value is unverified: "
                 f"verified=false and the source is {outcome.get('source_ref')}, "
                 "not a buyer-owned record; its value cannot enter ROI."
             ),
@@ -614,11 +635,11 @@ def _rate_findings(lines: List[Dict[str, Any]], rules: Dict[str, Dict[str, Any]]
         if str(line.get("currency")) != currency:
             continue
         contract_price = contract_prices[rule_id]
-        billed_price = _dec(line.get("unit_price") or 0,
+        billed_price = _dec(line.get("unit_price"),
                             f"invoice line {line.get('line_id')} unit_price")
+        quantity = _quantity(line.get("quantity"), f"invoice line {line.get('line_id')} quantity")
         if billed_price == contract_price:
             continue
-        quantity = int(line.get("quantity") or 0)
         difference = _money((billed_price - contract_price) * quantity)
         if difference <= 0:
             continue

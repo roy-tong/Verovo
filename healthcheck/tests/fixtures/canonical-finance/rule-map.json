@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "rules": [
+    {"rule_id":"intake-tasks","kind":"intake","format":"tasks-csv","version":"1","confirmed_by":"Buyer Finance","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#intake-tasks"},
+    {"rule_id":"intake-runs","kind":"intake","format":"runs-jsonl","version":"1","confirmed_by":"Buyer Finance","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#intake-runs"},
+    {"rule_id":"intake-usage","kind":"intake","format":"usage-jsonl","version":"1","confirmed_by":"Buyer Finance","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#intake-usage"},
+    {"rule_id":"intake-bills","kind":"intake","format":"bills-csv","version":"1","confirmed_by":"Buyer Finance","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#intake-bills"},
+    {"rule_id":"intake-outcomes","kind":"intake","format":"outcomes-csv","version":"1","confirmed_by":"Buyer Finance","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#intake-outcomes"},
+    {"rule_id":"api-request","kind":"pricing","method":"per_unit","unit_price":"0.020","currency":"USD","version":"2026-10","confirmed_by":"Buyer Procurement","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#api-request"},
+    {"rule_id":"seat-month","kind":"pricing","method":"per_unit","unit_price":"8.00","currency":"USD","version":"2026-10","confirmed_by":"Buyer Procurement","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#seat-month"},
+    {
+      "rule_id":"shared-key-driver","kind":"allocation","method":"headcount","version":"2026-10",
+      "basis":{"weights":{"t1":"2","t2":"1"}},
+      "driver":{"id":"shared-key-usage","version":"2026-10","source_ref":"drivers.csv#shared-key-usage"},
+      "confirmed_by":"Buyer Finance","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#shared-key-driver"
+    },
+    {
+      "rule_id":"seat-driver","kind":"allocation","method":"headcount","version":"2026-10",
+      "basis":{"weights":{"t1":"2","t2":"1"}},
+      "driver":{"id":"seat-assignments","version":"2026-10","source_ref":"drivers.csv#seat-assignments"},
+      "confirmed_by":"Buyer Finance","confirmed_at":"2026-10-01T00:00:00Z","source_ref":"rule-map.json#seat-driver"
+    }
+  ]
+}

@@ -123,8 +123,11 @@ class ReconcileTest(unittest.TestCase):
         bill(self.store, "99.00")
         usage(self.store, "500", tool="search")  # 无政策 → 未计价
         results = reconcile(self.store, "2026-10")
-        self.assertEqual(results[0]["variance_class"], CLS_UNPRICED_USAGE)
-        self.assertEqual(results[0]["detail"]["unpriced_usage_qty"], "500")
+        unknown = next(row for row in results if row["currency"] == "")
+        self.assertEqual(unknown["variance_class"], CLS_UNPRICED_USAGE)
+        self.assertEqual(unknown["detail"]["unpriced_usage_qty"], "500")
+        usd = next(row for row in results if row["currency"] == "USD")
+        self.assertIsNone(usd["variance"], "missing usage currency must not become a USD zero")
 
     def test_unlinked_items_disclosed(self):
         bill(self.store, "99.00")                     # 无 tool 标签

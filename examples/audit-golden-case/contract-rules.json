@@ -35,7 +35,10 @@
       "confirmed_at": "2026-10-02T09:10:00Z",
       "source": "Order Form 4 section 3.1",
       "parameters": {
-        "allocation": "equal"
+        "allocation": "equal",
+        "driver_id": "active-task-set",
+        "driver_version": "2026-10",
+        "driver_source": "tasks.csv#status=active"
       }
     },
     {

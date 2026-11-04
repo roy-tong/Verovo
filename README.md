@@ -66,7 +66,7 @@ records and review coverage before making a financial decision.
 
 ## Try a buyer review locally
 
-The `review` command is part of the **v0.10.0** tag.
+The `review` command is part of the **v0.12.0** release.
 Python 3.9+, standard library only:
 
 ```bash
@@ -96,16 +96,15 @@ truth; the tool does not infer contract terms or judge arbitrary AI output quali
 
 ## Re-count a bill in 60 seconds
 
-For the existing tagged CLI:
+Install the current CLI release:
 
 ```bash
-python3 -m pip install "git+https://github.com/roy-tong/verovo@v0.10.0#subdirectory=healthcheck"
+python3 -m pip install "verovo==0.12.0"
 verovo recount --sample
 ```
 
-The `verovo` PyPI project is not yet published (checked 2026-10-31). The Git tag
-installs existing commands; use the main checkout above for the new buyer review.
-CLI and Provider SDK releases have separate version numbers.
+The `verovo` project is published on PyPI. The Provider SDK
+(`@verovo/mcp`) has its own release number and is not tied to the CLI version.
 
 `prepare` maps supported exports; `recount` applies a selected vendor rule set;
 `dispute` organizes supported differences; `recovery` records supplier responses

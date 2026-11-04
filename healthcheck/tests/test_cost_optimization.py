@@ -77,6 +77,18 @@ class ScenarioTests(unittest.TestCase):
         result = optimization.simulate(CASE, {"id": "bad", "rules": [{"action": "teleport"}]})
         self.assertEqual("invalid", result["status"])
 
+    def test_unknown_baseline_cannot_become_a_zero_cost_scenario(self):
+        case = copy.deepcopy(CASE)
+        case["cost_items"].append({"cost_id": "open", "amount": "9.00", "currency": "USD",
+                                   "source_ref": "bill:open"})
+        result = optimization.simulate(case, {
+            "id": "unsafe-zero", "rules": [{"match": {"vendor": "missing"}, "action": "drop"}],
+        })
+        self.assertEqual("blocked", result["status"])
+        self.assertIsNone(result["baseline"]["fully_loaded_cost"])
+        self.assertIsNone(result["scenario"]["fully_loaded_cost"])
+        self.assertIsNone(result["delta"]["fully_loaded_cost"])
+
     def test_proposals_carry_evidence_and_human_gate(self):
         payload = optimization.propose(CASE, scenarios={"scenarios": [{
             "id": "halve-a",

@@ -1,0 +1,5 @@
+driver_id,version,task_id,weight
+shared-key-usage,2026-10,t1,2
+shared-key-usage,2026-10,t2,1
+seat-assignments,2026-10,t1,2
+seat-assignments,2026-10,t2,1

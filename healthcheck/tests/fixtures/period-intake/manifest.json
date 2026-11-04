@@ -2,7 +2,7 @@
   "case_id": "period-2026-10",
   "currency": "USD",
   "period": {"start": "2026-10-01", "end": "2026-10-31"},
-  "allocation_rules": [{"id": "equal", "version": "1", "method": "equal"}],
+  "allocation_rules": [{"id": "equal", "version": "1", "method": "equal", "driver": {"id": "explicit-equal-task-set", "version": "1", "source_ref": "tasks.csv#t1,t2"}, "confirmed_by": "Buyer Finance", "confirmed_at": "2026-10-01T00:00:00Z"}],
   "sources": {
     "tasks": [{"path": "tasks.csv", "format": "tasks-csv"}],
     "runs": [{"path": "runs.jsonl", "format": "runs-jsonl"}],

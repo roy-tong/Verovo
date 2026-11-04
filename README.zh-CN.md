@@ -42,7 +42,7 @@ Verovo 连接买方日志、供应商账单、财务记录和业务结果：先�
 
 ## 本地运行一次完整核验
 
-新 `review` 命令是 **main 分支预览功能，尚不在 v0.9.0 标签中**。需要 Python 3.9+，无额外运行依赖。
+`review` 命令已包含在 **v0.12.0** 发布中。需要 Python 3.9+，无额外运行依赖。
 
 ```bash
 git clone https://github.com/roy-tong/verovo.git
@@ -71,12 +71,11 @@ Agent 宿主可通过 MCP 只读调用同一核验（`verovo-mcp`：`verovo_revi
 ## 使用已有核账工具
 
 ```bash
-python3 -m pip install "git+https://github.com/roy-tong/verovo@v0.9.0#subdirectory=healthcheck"
+python3 -m pip install "verovo==0.12.0"
 verovo recount --sample
 ```
 
-截至 2026-10-31，`verovo` 尚未发布到 PyPI。标签安装提供已有命令；新 `review` 功能使用上面的 main 分支。
-CLI 与 Provider SDK 独立发布，不共用版本号。
+`verovo` 已发布到 PyPI。CLI 与 Provider SDK 独立发布，不共用版本号。
 
 `prepare` 整理支持的导出，`recount` 按选定规则复算，`dispute` 整理差异，
 `recovery` 单独记录供应商认可与实际更正。规则估算差额不是已追回金额。
