@@ -1,0 +1,7 @@
+line,source,amount_usd,reason_code,note
+usage_charges,recalc,38462.06,base,"four input buckets + output, list price"
+enterprise_seats,invoice,6000.00,seat_not_in_cost_api,seat-based enterprise spend; not in usage/cost API
+credits,invoice,-20000.00,credit_only_on_invoice,committed-use credit; invoice only
+tax,invoice,1956.96,tax_only_on_invoice,tax is not a usage line
+unexplained_residual,derived,144.23,price_tier_mismatch,residual after known lines; owner unassigned
+cache_read_rounding,derived,7254.73,cache_read_rounded_to_zero,cost export drops cache reads below one cent

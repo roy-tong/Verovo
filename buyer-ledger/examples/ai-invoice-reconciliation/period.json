@@ -1,0 +1,12 @@
+{
+ "vendor": "anthropic",
+ "account": "acme-prod",
+ "period": "2026-10",
+ "currency": "USD",
+ "synthetic": true,
+ "recalc_total": "38462.06",
+ "cost_total": "31207.33",
+ "cache_gap": "7254.73",
+ "invoice_total": "26563.25",
+ "residual": "144.23"
+}

@@ -1,0 +1,7 @@
+{
+ "input_uncached": "3.00",
+ "cache_read": "0.30",
+ "cache_write_5m": "3.75",
+ "cache_write_1h": "6.00",
+ "output": "15.00"
+}
