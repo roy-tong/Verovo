@@ -38,6 +38,24 @@ export VEROVO_LLM_BASE_URL=... VEROVO_LLM_API_KEY=... VEROVO_LLM_MODEL=...
 
 核心仅使用 Python ≥3.9 标准库。LLM 端点必须使用 HTTPS；仅本机端点允许 HTTP。
 
+## AI invoice reconciliation（公开方法页 + 可跑样例）
+
+- 方法页：[docs/ai-invoice-reconciliation.md](docs/ai-invoice-reconciliation.md) ——
+  7 个失效模式：缓存取整、四段输入价、席位、credits/税/汇率、月末修订窗口、
+  币种、共享 key 归属。
+- 可跑样例：[examples/ai-invoice-reconciliation](examples/ai-invoice-reconciliation)：
+
+```bash
+cd examples/ai-invoice-reconciliation
+python3 make_demo.py   # 生成合成账单（一个供应商、一个账户、一个账期）
+python3 reconcile.py   # 输出 reconciliation.csv + sample-report.md
+```
+
+- 合成数据，不是客户案例；样例断言
+  `recalc + seats + credits + tax + residual = invoice total`。
+- 这不是产品完整功能，是“把发票、成本导出、用量导出对到分”的最小可复现件；
+  真实账期适配、PDF/XLSX、席位/承诺/汇率仍需按客户材料做。
+
 ## 文件导入与 Agent 首次适配
 
 ```bash

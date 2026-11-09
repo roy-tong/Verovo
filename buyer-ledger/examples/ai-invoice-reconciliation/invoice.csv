@@ -1,0 +1,6 @@
+line,amount,note
+usage_charges,38462.06,vendor usage charges (synthetic)
+enterprise_seats,6000.00,"seat-based enterprise, not in cost API"
+credits,-20000.00,committed-use credit
+tax,1956.96,8% synthetic tax
+unexplained_residual,144.23,price-tier difference on 1h cache write
