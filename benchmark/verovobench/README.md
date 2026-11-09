@@ -19,8 +19,9 @@
               │                   build_instance()     （rng 由 profile+seed 派生）
               ▼                           │
    ┌──────────────────────────────────────┴─────────────────────┐
-   │ verovobench-instances.jsonl（每行 1 实例）                       │
+   │ verovobench-instances.jsonl（每行 1 实例）                   │
    │  = {invoice, profile_doc, ground_truth, seed_key, ...}      │
+   │  （文件不在 git 树内：fetch_instances.sh 下载或 generator 再生）│
    └──────────┬──────────────────────────────────┬───────────────┘
               ▼                                  ▼
       eval_reconciler.py                  validate.py
@@ -62,6 +63,21 @@ python3 eval_reconciler.py --reconciler null     # 空预测基线，打通评�
 python3 generator.py --full --seed 7 --per-class 10 --n-events 120 --out bigger.jsonl
 python3 validate.py --instances bigger.jsonl
 ```
+
+### 获取全量数据文件（不在 git 树内）
+
+`verovobench-instances.jsonl`（约 90MB）自 2026-11-09 起移出 git 树以保持 clone
+轻量，两条等效路径任选其一，产物 bit-exact 相同
+（sha256 `31b76a7053e97ddc8a67c3c0865d1d6045086bad049d67bc92495007e39d7bb6`）：
+
+```bash
+bash fetch_instances.sh                          # 从 GitHub Release 下载并校验
+python3 generator.py --full --seed 42            # 或本地确定性再生（无需网络）
+```
+
+[Release 下载页](https://github.com/roy-tong/Verovo/releases/tag/verovobench-data-v0.2)。
+`eval_reconciler.py`、`validate.py` 与 s2-baselines 的默认路径均指向本目录的
+该文件名——fetch 或再生后无需改参数即可运行。
 
 v0.2 全量默认（seed 42）：**5600 实例 = 7 profile × 16 类 × 50**，每类 350 条、
 类分布完全均匀；单实例约 15KB（含完整 invoice 与 profile_doc），文件约 90MB。
