@@ -235,6 +235,39 @@ class CanonicalFinanceTests(unittest.TestCase):
         self.assertEqual("partial", result["finance_status"])
         self.assertIsNone(result["economics"]["totals"]["fully_loaded_cost"])
 
+    def test_usage_lane_difference_blocks_complete_when_bill_lane_is_unknown(self):
+        # Frozen failure sample (review 2026-11-04): a bill row that cannot be
+        # repriced (no mapped pricing rule) used to hide a usage-lane rule
+        # difference — the known-wrong amount stayed inside a finance-complete
+        # total with no open item.  A known difference on any lane must block
+        # completion and keep the disputed amount out of confirmed totals.
+        self.bill("ch-api-1", amount="21.00", rate_rule="")
+        self.usage("u1", cost="21.00")
+        result = canonical_finance.run(self.bundle)
+        row = next(row for row in result["intake_report"]["reconciliation_rows"]
+                   if row["charge_id"] == "ch-api-1")
+        self.assertEqual("unknown", row["recalculation"]["bill"]["status"])
+        self.assertEqual("difference", row["recalculation"]["usage"]["status"])
+        self.assertEqual("FAIL", self.conclusion(result, "Rule Repriced", "ch-api-1")["status"])
+        usage = next(item for item in result["case"]["usage"] if item["usage_id"] == "u1")
+        self.assertEqual("difference", usage["financial_status"])
+        mismatch = next(item for item in result["intake_report"]["charge_amount_mismatches"]
+                        if item.get("kind") == "approved_rule_recalculation"
+                        and item["charge_id"] == "ch-api-1")
+        # 金额字段按 lane 命名：usage lane 差额不得把实际金额写进名为 bill 的字段
+        self.assertEqual(["usage"], mismatch["difference_lanes"])
+        self.assertNotIn("bill", mismatch)
+        self.assertEqual("21.00", mismatch["bill_amount"])
+        self.assertEqual("21.00", mismatch["usage_amount"])
+        self.assertEqual("20.00", mismatch["expected_amount"])
+        self.assertTrue(any(item["kind"] == "charge_amount_mismatch"
+                            and item.get("record_id") == "ch-api-1"
+                            and item.get("status") != "resolved"
+                            for item in result["case"]["open_items"]))
+        self.assertEqual("partial", result["finance_status"])
+        self.assertEqual("partial", result["status"])
+        self.assertIsNone(result["economics"]["totals"]["fully_loaded_cost"])
+
     def test_missing_bill_amount_is_open_and_blocks_complete_totals(self):
         self.bill("ch-api-1", amount="")
         result = canonical_finance.run(self.bundle)
