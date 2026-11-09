@@ -63,12 +63,14 @@ def import_file(store: LedgerStore, path, provider, tier, period="",
         if not use_agent_if_new:
             return {"document_id": doc_id, "duplicate": False,
                     "charge_lines": 0, "usage_events": 0, "fingerprint": fingerprint,
-                    "notes": ["no approved parse rule; run parse --agent or save a manual rule"]}
+                    "notes": ["no approved parse rule; run parse --agent, or "
+                              "preset apply for known export formats"]}
         if not (llm_client and llm_client.configured):
             return {"document_id": doc_id, "duplicate": False,
                     "charge_lines": 0, "usage_events": 0, "fingerprint": fingerprint,
                     "notes": ["LLM not configured: set VEROVO_LLM_BASE_URL / "
-                              "VEROVO_LLM_API_KEY / VEROVO_LLM_MODEL, or save a rule manually"]}
+                              "VEROVO_LLM_API_KEY / VEROVO_LLM_MODEL for --agent "
+                              "drafting, or preset apply for known export formats"]}
         spec, golden = parsing.agent_generate_spec(
             file_name, text, provider, doc_type, llm_client)
         if save_rule:
