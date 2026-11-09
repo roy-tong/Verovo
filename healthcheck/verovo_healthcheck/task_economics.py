@@ -26,6 +26,8 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, ROUND_DOWN
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from . import money
+
 
 class EconomicsError(ValueError):
     """Invalid case structure or an unsafe financial assumption."""
@@ -44,7 +46,9 @@ def _dec(value: Any, field: str) -> Decimal:
 
 
 def _money(value: Decimal) -> Decimal:
-    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # Money Contract (V-2): cents-exact quantization is ROUND_HALF_UP by
+    # contract; money_contract tests freeze the HALF_EVEN divergence class.
+    return money.quantize_cents(value)
 
 
 def _text(value: Any, field: str) -> str:
@@ -240,16 +244,12 @@ def _allocate(total: Decimal, tasks: List[str], rule: Dict[str, Any]) -> Dict[st
     denominator = sum(weights.values(), Decimal("0"))
     if denominator <= 0:
         raise EconomicsError("allocation weights sum to zero")
-    total = _money(total)
-    # Largest remainder: preserve cents without negative shares or charging zero weights.
-    exact = {task: total * weights[task] / denominator for task in tasks}
-    allocated = {task: value.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
-                 for task, value in exact.items()}
-    cents = int((total - sum(allocated.values())) * 100)
-    ranked = sorted(tasks, key=lambda task: exact[task] - allocated[task], reverse=True)
-    for task in ranked[:cents]:
-        allocated[task] += Decimal("0.01")
-    return allocated
+    # Largest remainder via the Money Contract (money.allocate): the
+    # sum(allocated) == total identity is enforced by money_contract tests.
+    try:
+        return money.allocate(_money(total), weights)
+    except money.MoneyError as exc:
+        raise EconomicsError(str(exc))
 
 
 def recalculate_charge(item: Dict[str, Any], pricing_rules: Dict[str, Dict[str, Any]],
