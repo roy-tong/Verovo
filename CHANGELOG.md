@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.14.0 - 2026-11-09
+
+Closes the V-1 reliability gap from the 2026-11-04 review: a known,
+unresolved rule difference can no longer hide inside a finance-complete
+total, and difference amounts are named by the lane they came from.
+
+### Fixed
+
+- **Usage-lane rule difference blocks finance completion** (V-1): a bill row
+  that cannot be repriced (no mapped pricing rule) hid a usage-lane rule
+  difference — `_usage_item` returned a shallow copy so
+  `financial_status`/`recalculation_status` never propagated, no finance open
+  item was created, and the known-wrong amount stayed inside a
+  finance-complete total with a non-null `fully_loaded_cost`. Frozen sample:
+  bill=usage=21.00 against an approved rule of 20.00 must stay **partial**.
+- **Lane-named difference amounts**: repricing-difference entries now carry
+  `bill_amount` / `usage_amount` / `expected_amount` / `difference_lanes`;
+  the ambiguous `bill` / `expected` / `lane` keys are gone. When the
+  difference comes from the usage lane, the usage record's amount is no
+  longer written under a field named `bill`.
+
+### Verification
+
+- Merged against main `c72345d`; `tests/` + `healthcheck/tests/` 652 passed,
+  buyer-ledger / lab / repository-root suites pass, frozen samples included.
+- Synthetic fixture only; no real supplier or customer data.
 ## v0.13.0 - 2026-11-04
 
 Independent completion axes and evidence provenance: finance can finish without
