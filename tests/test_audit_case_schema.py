@@ -11,6 +11,8 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from _root_support import load_json
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -20,8 +22,6 @@ BUNDLE = ROOT / "examples" / "audit-golden-case"
 CASE_PATH = BUNDLE / "audit-case.json"
 
 
-def load_json(path):
-    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 class TestAuditSchemas(unittest.TestCase):

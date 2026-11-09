@@ -8,6 +8,8 @@ import unittest
 from decimal import Decimal
 from pathlib import Path
 
+from _root_support import load_json
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -20,8 +22,6 @@ EXPECTED_PATH = BUNDLE / "expected-findings.json"
 RULES_PATH = BUNDLE / "contract-rules.json"
 
 
-def load_json(path):
-    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 class TestAuditGoldenCase(unittest.TestCase):
