@@ -345,7 +345,11 @@
           "accepted_at": {"type": "string"},
           "value_status": {"type": "string"},
           "source_party": {"type": "string"},
+          "source_affiliation": {"type": "string"},
+          "control_domain": {"type": "string"},
+          "collector_party": {"type": "string"},
           "collection_method": {"type": "string"},
+          "confirmation_process": {"type": "string"},
           "independence": {"type": "string"}
         }
       }
