@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to reconcile AI agent usage with provider invoices — Verovo</title>
+  <meta name="description" content="A three-step method to reconcile AI usage exports with provider invoices: get the billing rule text, get reconcilable records, recalculate under the vendor's own rules and mark what cannot be settled. Free browser tool included.">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="canonical" href="https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html">
+  <!-- GSC/Bing verification meta goes on the line below this comment -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Verovo">
+  <meta property="og:title" content="How to reconcile AI agent usage with provider invoices">
+  <meta property="og:description" content="Three steps, seven failure modes, one free browser recount tool. Written for the person who has to explain the AI line at month-end.">
+  <meta property="og:url" content="https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .post { max-width: 44rem; margin: 0 auto; padding: 96px 24px 80px; }
+    .post-back { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--secondary); }
+    .post-back:hover { color: var(--spec); }
+    .post-k { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ok); margin: 26px 0 12px; }
+    .post h1 { font-size: 2.0rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin: 10px 0 14px; }
+    .post-meta { font-size: 0.85rem; color: var(--secondary); margin-bottom: 40px; }
+    .post p { font-size: 1.0rem; line-height: 1.7; color: var(--text); margin: 0 0 18px; }
+    .post h2 { font-size: 1.25rem; font-weight: 600; margin: 40px 0 14px; letter-spacing: -0.01em; }
+    .post ul, .post ol { margin: 0 0 18px 22px; }
+    .post li { font-size: 1.0rem; line-height: 1.65; margin-bottom: 8px; }
+    .post pre { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; overflow-x: auto; margin: 0 0 18px; }
+    .post code { font-family: var(--mono); font-size: 0.88rem; color: var(--ok); }
+    .post table { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 0 0 18px; }
+    .post th, .post td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .post th { font-weight: 600; color: var(--secondary); }
+    .post blockquote { border-left: 3px solid var(--border); margin: 0 0 18px; padding: 4px 16px; color: var(--secondary); }
+    .post-note { border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); padding: 14px 18px; font-size: 0.92rem; margin: 0 0 18px; }
+  </style>
+</head>
+<body>
+  <main class="post">
+    <a class="post-back" href="../">← VEROVO</a>
+    <p class="post-k">Buyer-side · Reconciliation</p>
+    <h1>How to reconcile AI agent usage with provider invoices</h1>
+    <p class="post-meta">2026-11-15 · Method companion to <a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/docs/ai-invoice-reconciliation.md">buyer-ledger/docs/ai-invoice-reconciliation.md</a> · every failure mode below is reproducible from that repository</p>
+
+    <p>Your AI invoice and your usage export are two different documents, produced by two different systems, for two different purposes. <strong>They will not match — and each reason they don't match has a shape you can check.</strong> This post gives you the three-step method, the seven failure modes we see most, and a free tool that runs the arithmetic in your browser.</p>
+
+    <h2>The three steps</h2>
+    <ol>
+      <li><strong>Get the billing rule text.</strong> Not the pricing page — the rule: what counts as one billable thing, at what granularity. Per resolution? Per operation, or per attempt? Which token buckets, at which multipliers?</li>
+      <li><strong>Get reconcilable records.</strong> An invoice line and a usage export you can actually join: same window, same keys, line-level. Aggregate totals cannot be reconciled, only compared.</li>
+      <li><strong>Recalculate under the vendor's own rules, then mark every row.</strong> Each line becomes one of three verdicts: <code>PASS</code> (recalculation agrees), <code>FAIL</code> (discrepancy with a locatable cause), or <code>UNPROVABLE</code> (the evidence to decide is missing — never guessed).</li>
+    </ol>
+    <p>The third step is where most teams stop early. The value is not the total; it is the row-level verdict list you can hand to a vendor conversation.</p>
+
+    <h2>Seven failure modes, four classes</h2>
+    <p>From our working checklist (<a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/docs/ai-invoice-reconciliation.md">full version with runnable examples</a>):</p>
+    <table>
+      <tr><th>Class</th><th>Failure modes</th><th>Typical symptom</th><th>Owner</th></tr>
+      <tr><td>Precision &amp; buckets</td><td>cache reads rounded to $0.00; input priced as one bucket when it is four</td><td>naive <code>tokens × price</code> is off by 10–40%</td><td>Engineering</td></tr>
+      <tr><td>Commercial overlays</td><td>seats &amp; enterprise contracts; credits, commitments, tax, amortization, FX</td><td>invoice lines with no usage counterpart</td><td>Finance</td></tr>
+      <tr><td>Timing</td><td>month-end revision window</td><td>the "final" number changes 7 days later</td><td>Finance / engineering</td></tr>
+      <tr><td>Allocation</td><td>currency normalization; shared/historical/personal keys</td><td>30–60% of spend reads "unallocated"</td><td>Engineering</td></tr>
+    </table>
+    <p><strong>Order matters: fix precision problems before arguing about commercial overlays.</strong> Otherwise you are comparing a wrong usage number to a right invoice number — and you will lose the conversation on arithmetic instead of winning it on substance.</p>
+
+    <h2>What a reconciled row looks like</h2>
+    <p>A finished check is boring on purpose. Every row: the invoice amount, your recalculation, the rule applied, the source of that rule, and the verdict. Rows that cannot be decided say <code>UNPROVABLE</code> with the missing evidence named. See a synthetic end-to-end example in the <a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/examples/ai-invoice-reconciliation">runnable example</a> (cost.csv, usage.csv, reconcile.py — all local, no accounts).</p>
+
+    <h2>Resolution-based support bills are the sharpest case</h2>
+    <p>Per-resolution AI billing (Intercom Fin, Zendesk AI, and peers) bills outcomes that <strong>the vendor's own system marked as resolved</strong>. The buyer-side question is not "was the count right" but "who attested this resolution" — and the answer is in the billing rule text. Our rule cards for six AI support vendors live in the repository (<code>registry/vendor-rules.json</code>), each with its source and a confidence grade; <a href="../recount.html">the recount tool runs in your browser</a> and uploads nothing. Start with <a href="../blog/resolution-bill-check.html">who attested your resolutions</a> for that specific method.</p>
+
+    <h2>Boundaries, stated plainly</h2>
+    <div class="post-note">
+      Verovo's checks are rule-based and local. Rule coverage is catalogued, not live-validated across every vendor account; a <code>PASS</code> means "recalculation under the stated rule agrees", not "the invoice is fair". Verovo does not recover money and does not promise to. If you want a human look, <a href="../services.html">free measurement runs</a> accept 20–100 line anonymized samples (first response usually within 24 hours).
+    </div>
+
+    <h2>Reproduce the method yourself</h2>
+    <pre><code>pipx install verovo
+verovo recount --list-vendors     # six vendors, each rule with source + confidence
+verovo demo                       # synthetic end-to-end, no accounts, no upload</code></pre>
+    <p>Or use <a href="../recount.html">recount.html</a> — same rules, your browser, zero upload. The full seven-mode checklist with commands: <a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/docs/ai-invoice-reconciliation.md">ai-invoice-reconciliation.md</a>.</p>
+
+    <p class="post-k" style="margin-top:44px">Related</p>
+    <ul>
+      <li><a href="../blog/resolution-bill-check.html">Who attested your resolutions</a> — the resolution-billing audit method</li>
+      <li><a href="../faq.html">FAQ · 常见问题（中文）</a> — the same checks in Chinese, with sourced numbers</li>
+      <li><a href="../examples/buyer-review.html">A full synthetic buyer review</a> — PASS / FAIL / UNPROVABLE on a real output</li>
+    </ul>
+  </main>
+</body>
+</html>
