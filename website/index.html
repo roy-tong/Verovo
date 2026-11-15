@@ -173,6 +173,18 @@ python3 -m buyer_ledger fetch --recipe bill.recipe.json --period 2026-10 --cdp h
 <p class="note">Research preview: 26 tools cataloged across China and overseas. Cataloged is not connected, and 0 tools have live customer-bill validation. <a href="tools.html">See the support matrix and limits →</a></p>
 </div></section>
 
+<section class="section" id="reconciliation" aria-label="Worked invoice reconciliation"><div class="wrap">
+<h2 class="reveal">A $26,563.25 AI invoice, reconciled to the cent.</h2>
+<p class="body-secondary reveal">One synthetic bill, one vendor, one period. The check recomputes usage from the four input buckets plus output, then reconciles invoice lines one by one until only the unexplained residual remains.</p>
+<div class="who-grid">
+<div class="who-card reveal"><span class="who-k">Recalculated from usage</span><p>$38,462.06 — list price across four input buckets and output, from the synthetic usage export.</p><span class="who-v">Independent recalculation</span></div>
+<div class="who-card reveal"><span class="who-k">Invoice total</span><p>$26,563.25 — after $20,000.00 of credits, plus $6,000.00 seats and $1,956.96 tax that never appear in usage data.</p><span class="who-v">Known lines explained</span></div>
+<div class="who-card reveal"><span class="who-k">Unexplained residual</span><p>$144.23 left after every known line. It stays visible and needs an owner; it is not a refund claim.</p><span class="who-v">Unknown stays visible</span></div>
+</div>
+<p class="note">Synthetic sample, not a client bill: one vendor, one period, USD, seeded generator (<code>random.seed(42)</code>), Decimal <code>ROUND_HALF_UP</code> to the cent. Identity: 38,462.06 + 6,000.00 − 20,000.00 + 1,956.96 + 144.23 = 26,563.25. The cost export is $7,254.73 below the recalculation because cache reads are rounded to $0.00 — a metering gap, not an invoice error. <strong>Matching to the cent proves the arithmetic agrees under the supplied prices, rules and inputs. It does not prove the usage export is complete, the price is fair, or the service was delivered</strong>; what the export cannot support stays UNPROVABLE. Reproduce: <code>cd buyer-ledger/examples/ai-invoice-reconciliation &amp;&amp; python3 make_demo.py &amp;&amp; python3 reconcile.py</code> (<a href="https://github.com/roy-tong/verovo/tree/main/buyer-ledger/examples/ai-invoice-reconciliation">fixture and scripts</a>).</p>
+<div class="trial-actions"><a class="btn btn-primary" href="blog/ai-invoice-reconciliation.html">Read the method: seven failure modes</a><a class="btn btn-ghost" href="blog/resolution-bill-check.html">Per-resolution bills: who attested them?</a></div>
+</div></section>
+
 <section class="section" id="buyer-workflow" aria-label="Buyer review workflow"><div class="wrap">
 <h2 class="reveal">From records to a decision your team can use.</h2>
 <div class="trial-points">
@@ -486,6 +498,7 @@ verovo validate summary.json</pre><p>Auto-discovery prefers Codex when both runt
           <a href="https://github.com/roy-tong/verovo/blob/main/whitepaper/measuring-software-used-by-ai-agents.md" target="_blank" rel="noopener">Whitepaper</a>
           <a href="blog/outcome-yardstick.html">Blog: the outcome yardstick</a>
           <a href="blog/resolution-bill-check.html">Blog: who attested your resolutions</a>
+          <a href="blog/context-availability.html">Blog: why context availability decides the metric</a>
           <a href="https://github.com/roy-tong/verovo/tree/main/lab" target="_blank" rel="noopener">Lab</a>
         </nav>
       </div>

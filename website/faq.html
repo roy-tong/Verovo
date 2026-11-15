@@ -207,6 +207,7 @@ h2.sect{margin-top:36px}
 <li><strong>Zendesk AI Agents：USD 2.0 / 次解决 [P]</strong>——只有 LLM 判定为解决才计费（文档 2026-08-25 修订）；LLM 判定不在 counts 导出里，<strong>那些行只能标 cannot settle，不猜</strong>。</li>
 <li><strong>HubSpot Breeze：USD 0.5 / 次解决 [S]</strong>——二手来源，结论携带较弱置信度。</li>
 </ul>
+<p>规则之外还有一个问题：这些「解决」是谁签字的？供应商自己的 AI 标记、自己的计量、自己的账单——<a href="blog/resolution-bill-check.html">这层怎么本地核对</a>单独写过。</p>
 <p><code>verovo recount --list-vendors</code> 打印当前规则集；规则登记在 <a href="https://github.com/roy-tong/verovo/blob/main/healthcheck/verovo_healthcheck/vendor-rules.json">vendor-rules.json</a>。免费人工核对入口：<a href="https://github.com/roy-tong/verovo/issues/6">issue #6</a> / <a href="services.html">免费任务页</a>。</p>
 </div>
 

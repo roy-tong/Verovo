@@ -20,6 +20,8 @@
 - [Quality](https://github.com/roy-tong/verovo/blob/main/standard/QUALITY.md): evidence and claim discipline
 - [Conformance pack](https://github.com/roy-tong/verovo/blob/main/conformance/pack/README.md): supported checks and fixture requirements
 - [Claims index](https://roy-tong.github.io/Verovo/claims.html): dated reproductions, corrections and upstream responses
+- [AI invoice reconciliation](https://github.com/roy-tong/verovo/blob/main/buyer-ledger/docs/ai-invoice-reconciliation.md): seven failure modes and a runnable synthetic bill reconciled to the cent
+- [Per-resolution bills](https://roy-tong.github.io/Verovo/blog/resolution-bill-check.html): who attested each resolution
 - [Vocabularies](https://github.com/roy-tong/verovo/blob/main/registry/vocabularies.yaml): canonical enums
 - [Metric registry](https://github.com/roy-tong/verovo/blob/main/registry/metrics.yaml): machine-readable contracts
 

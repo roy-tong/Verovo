@@ -1,6 +1,6 @@
 # Verovo
 
-> Buyer-side AI service charge and delivery verification. Independent workflows with explicit criteria; local tools and sample measurement runs are free. Enterprise scope and commercial acceptance remain under validation. Last reviewed: 2026-11-14.
+> Buyer-side AI service charge and delivery verification. Independent workflows with explicit criteria; local tools and sample measurement runs are free. Enterprise scope and commercial acceptance remain under validation. Last reviewed: 2026-11-15.
 
 ## Start here
 
@@ -11,6 +11,8 @@
 - [Healthcheck](https://github.com/roy-tong/verovo/blob/main/healthcheck/README.md): local session checks, sharing and supported commands; install from PyPI `pipx install verovo` (current release 0.13.0, 2026-11-04)
 - [SDK](https://github.com/roy-tong/verovo/blob/main/sdk/README.md): Provider SDK `@verovo/mcp` on npm, independently versioned
 - [Release notes](https://roy-tong.github.io/Verovo/releases.html): independent package versions and dated releases
+- [AI invoice reconciliation](https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html): three-step method, seven failure modes and a free browser recount; the reproducible sample lives in `buyer-ledger/examples/ai-invoice-reconciliation`
+- [Per-resolution bills](https://roy-tong.github.io/Verovo/blog/resolution-bill-check.html): who attested each resolution, and how to check that bill locally
 
 ## Measurement and evidence
 
