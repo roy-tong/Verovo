@@ -53,8 +53,15 @@ jobs:
           git fetch origin gh-pages
           git checkout gh-pages
           git checkout main -- website/
-          # the site serves from the repo root of gh-pages
-          cp -r website/. ./
+          # The site serves from the repo root of gh-pages. rsync --delete
+          # removes pages that were deleted/renamed in website/; the excludes
+          # preserve files that gh-pages owns and the site build does not
+          # produce (.nojekyll for Pages, status.json written by conformance).
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.nojekyll' \
+            --exclude='status.json' \
+            website/ ./
           rm -rf website
           git add -A
           git commit -m "deploy: website sync (${GITHUB_SHA:0:7})" || echo "gh-pages unchanged"

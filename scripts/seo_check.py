@@ -30,6 +30,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+# Logic is duplicated across the three repos by design (no shared package yet):
+# keep the logic below the config block identical, and change site differences
+# only in this block.
 # --- per-repository configuration -------------------------------------------
 SITE_BASE = "https://roy-tong.github.io/Verovo/"
 SITE_DIRNAME = "website"
