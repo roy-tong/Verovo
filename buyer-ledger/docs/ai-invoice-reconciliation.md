@@ -17,7 +17,7 @@ or the founder who is also the finance team.
 
 | # | Failure mode | Typical symptom | Who owns it |
 |---|---|---|---|
-| 1 | Cache reads rounded to $0.00 | A day with millions of cache tokens shows $0.00 | Engineering |
+| 1 | Cache reads omitted from the export, or rounded per line | The cost export has no cache-read line, or per-line amounts are under $0.01 | Engineering |
 | 2 | Input tokens are four buckets | Naive `tokens × price` is off by 10–40% | Engineering |
 | 3 | Seats and enterprise contracts | The cost API total is lower than the invoice | Finance / procurement |
 | 4 | Credits, commitments, tax, amortization, FX | Invoice lines with no usage counterpart | Finance |
@@ -30,29 +30,37 @@ comparing a wrong usage number to a right invoice number.
 
 ---
 
-## 1. Cache reads rounded to $0.00
+## 1. Cache reads omitted from the export, or rounded per line
 
-Anthropic's Console gives you two CSVs. The **Cost** export is in dollars,
-rounded to the cent. The **Usage** export is in tokens, with no dollars. A day
-of cache reads can be millions of tokens and still round to `$0.00` in the Cost
-export.
+Anthropic's Console gives you two CSVs. The **Cost** export is in dollars; the
+**Usage** export is in tokens, with no dollars. Two different things can happen
+to the cache-read bucket, and they need different evidence:
 
-This is not a vendor bug. It is a display/precision choice. But if you sum the
-Cost export and compare it to `tokens × price`, you will under-count cache
-reads by however much was rounded away.
+- **Omission**: the cost export has no cache-read line at all. The gap on a
+  cache-heavy day equals that day's cache charge. At 50M–500M tokens and
+  $0.30/M, that is $15–$150 per row — far above a cent, so it cannot be a
+  rounding artifact.
+- **Rounding**: each exported line is quantized to the cent. Only rows below
+  half a cent can disappear; on a 90-row month this shifts the total by at most
+  a few cents, not thousands of dollars.
+
+Do not label an omitted bucket as "rounded to $0.00". The synthetic example in
+this repository exercises the **omission** case; it does not model per-line
+rounding.
 
 **How to check**
 
 ```bash
 cd examples/ai-invoice-reconciliation
 python3 reconcile.py
-# Then open cost.csv and usage.csv for the same day:
-# cost.csv: cache read cost = 0.00
-# usage.csv: cache_read tokens = millions
+# Then compare cost.csv and usage.csv for the same day:
+# - no cache-read cost line, or gap == tokens/1e6 * cache price  -> omission
+# - per-line gap < $0.005                                       -> rounding
 ```
 
-**What the residual looks like**: a positive gap between recalculated usage and
-the cost export, concentrated on high-cache-read days.
+**What the residual-like gap looks like**: a positive gap between recalculated
+usage and the cost export, concentrated on high-cache-read rows. The pattern
+supports a candidate; it does not by itself prove the cause.
 
 ---
 

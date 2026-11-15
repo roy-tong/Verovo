@@ -59,7 +59,7 @@
     <p>From our working checklist (<a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/docs/ai-invoice-reconciliation.md">full version with runnable examples</a>):</p>
     <table>
       <tr><th>Class</th><th>Failure modes</th><th>Typical symptom</th><th>Owner</th></tr>
-      <tr><td>Precision &amp; buckets</td><td>cache reads rounded to $0.00; input priced as one bucket when it is four</td><td>naive <code>tokens × price</code> is off by 10–40%</td><td>Engineering</td></tr>
+      <tr><td>Precision &amp; buckets</td><td>cache reads omitted from the cost export, or rounded per line; input priced as one bucket when it is four</td><td>naive <code>tokens × price</code> is off by 10–40%</td><td>Engineering</td></tr>
       <tr><td>Commercial overlays</td><td>seats &amp; enterprise contracts; credits, commitments, tax, amortization, FX</td><td>invoice lines with no usage counterpart</td><td>Finance</td></tr>
       <tr><td>Timing</td><td>month-end revision window</td><td>the "final" number changes 7 days later</td><td>Finance / engineering</td></tr>
       <tr><td>Allocation</td><td>currency normalization; shared/historical/personal keys</td><td>30–60% of spend reads "unallocated"</td><td>Engineering</td></tr>

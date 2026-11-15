@@ -94,11 +94,40 @@ class DifferenceQualificationTest(unittest.TestCase):
                          "unresolved")
         tmp.cleanup()
 
-    def test_B_confirmed_explanation_requires_declared_evidence(self):
-        # 有显式 synthetic ground truth 声明（make_demo 注入清单）→ 允许
-        # confirmed，但必须标注 synthetic_ground_truth 且给出 basis_refs，
-        # 不得冒充真实独立证据。
+    def test_golden_fixture_values_are_frozen(self):
+        # 预先写死期望值：不靠反算 residual 自证，改动生成器或价格表会立刻红。
+        self.assertFalse((EXAMPLE_DIR / "ground-truth.json").exists(),
+                         "the published demo must not ship a ground-truth file")
         proc, workdir, tmp = run_example()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        doc = self.load(workdir)
+        self.assertEqual(doc["totals"]["recalc_total"], "38462.06")
+        self.assertEqual(doc["totals"]["cost_total"], "31207.33")
+        self.assertEqual(doc["totals"]["cache_gap"], "7254.73")
+        self.assertEqual(doc["totals"]["invoice_total"], "26563.25")
+        self.assertEqual(doc["totals"]["unexplained_residual"], "144.23")
+        self.assertEqual(doc["line_checks"]["rows"], 90)
+        self.assertEqual(doc["line_checks"]["matched"], 90)
+        self.assertEqual(doc["line_checks"]["mismatched"], 0)
+        residual = self.diff(doc, "unexplained_residual")
+        self.assertEqual(residual["qualification"], "unresolved")
+        self.assertEqual(residual["status"], "UNPROVABLE")
+        self.assertEqual(residual["root_cause"], "unknown")
+        self.assertEqual(residual["amount_usd"], "144.23")
+        cache_gap = self.diff(doc, "cache_gap")
+        self.assertEqual(cache_gap["status"], "UNPROVABLE")
+        self.assertEqual(cache_gap["root_cause"], "unknown")
+        tmp.cleanup()
+
+    def test_B_confirmed_explanation_requires_declared_evidence(self):
+        # 有显式 synthetic ground truth 声明 → 允许 confirmed，但必须标注
+        # synthetic_ground_truth 且给出 basis_refs，不得冒充真实独立证据。
+        # 发布样例不随附 ground-truth.json，这里显式复制示例声明来启用该路径。
+        def with_ground_truth(workdir):
+            (workdir / "ground-truth.json").write_text(
+                (workdir / "ground-truth.example.json").read_text(encoding="utf-8"),
+                encoding="utf-8")
+        proc, workdir, tmp = run_example(mutate=with_ground_truth)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         doc = self.load(workdir)
         residual = self.diff(doc, "unexplained_residual")
@@ -125,12 +154,14 @@ class DifferenceQualificationTest(unittest.TestCase):
         self.assertGreaterEqual(
             len(hypotheses), 2,
             "cache gap must keep at least two candidate explanations")
-        self.assertIn("cache_read_rounded_to_zero", hypotheses)
-        self.assertNotEqual(hypotheses, {"cache_read_rounded_to_zero"},
+        self.assertIn("cache_read_omitted_from_export", hypotheses)
+        self.assertNotEqual(hypotheses, {"cache_read_omitted_from_export"},
                             "rounding must not be the only candidate")
         for explanation in cache_gap["explanations"]:
             self.assertEqual(explanation["confidence_kind"], "heuristic")
         self.assertNotEqual(cache_gap["qualification"], "confirmed")
+        self.assertEqual(cache_gap["status"], "UNPROVABLE")
+        self.assertEqual(cache_gap["root_cause"], "unknown")
         tmp.cleanup()
 
     def test_D_multiple_candidates_keep_difference_open(self):

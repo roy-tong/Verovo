@@ -2,9 +2,10 @@
 
 > **Synthetic demo, not a client.** One vendor (anthropic), one account
 > (acme-prod), one period (2026-10), USD. The numbers are
-> generated to exercise the reconciliation; they are not a real bill. Any
-> confirmed cause below rests on the generator's declared synthetic injection
-> (synthetic_ground_truth), never on real independent evidence.
+> generated to exercise the reconciliation; they are not a real bill. The
+> published sample confirms no cause: the generator's synthetic injection is
+> available only as ground-truth.example.json, and tests copy it to exercise
+> the confirmed path (synthetic_ground_truth, never independent evidence).
 
 ## Page 1 · Totals
 
@@ -20,12 +21,14 @@
 | Coverage (gross, excl. credits) | 99.69% |
 
 **Read this first:** the cost export is 7,254.73 lower than the
-recalculated usage — that is an observed difference with 3
-candidate explanations (rounding/omission, time window, async revision);
-none is confirmed. The invoice carries 20,000.00 of credits,
+recalculated usage — the cost export carries no cache-read bucket, and each
+row's gap equals that row's cache-read charge (an omission, not a cent-level
+rounding). Whether that omission is the whole cause still has
+3 candidates (omission, time window, async
+revision); none is confirmed. The invoice carries 20,000.00 of credits,
 6,000.00 of seats and 1,956.96 of tax that never appear in the usage
 API (classified adjustments, not open differences). After those known lines,
-144.23 carries qualification `confirmed`, confirmed only by the synthetic declaration in ground-truth.json — never by real independent evidence.
+144.23 is still unexplained: qualification `unresolved`, status `UNPROVABLE`, root cause `unknown`; the price-tier hypothesis needs the contract price table.
 
 All 90 rows agree between usage×prices and the cost export, and the invoice usage line equals the recalculation (38462.06).
 
@@ -37,8 +40,8 @@ All 90 rows agree between usage×prices and the cost export, and the invoice usa
 | enterprise_seats | invoice | 6000.00 | `invoice_only_adjustment` | `not_a_vendor_error` | - |
 | credits | invoice | -20000.00 | `invoice_only_adjustment` | `not_a_vendor_error` | - |
 | tax | invoice | 1956.96 | `invoice_only_adjustment` | `not_a_vendor_error` | - |
-| unexplained_residual | derived | 144.23 | `observed_difference` | `confirmed` | price_tier_mismatch(confirmed); commitment_true_up(heuristic); usage_window_revision(heuristic) |
-| cache_read_gap | derived | 7254.73 | `observed_difference` | `unresolved` | cache_read_rounded_to_zero(heuristic); time_window_revision(heuristic); async_export_revision(heuristic) |
+| unexplained_residual | derived | 144.23 | `observed_difference` | `unresolved` | price_tier_mismatch(heuristic); commitment_true_up(heuristic); usage_window_revision(heuristic) |
+| cache_read_gap | derived | 7254.73 | `observed_difference` | `unresolved` | cache_read_omitted_from_export(heuristic); time_window_revision(heuristic); async_export_revision(heuristic) |
 
 **Identity (sanity only):** 38,462.06 + 6,000.00 + (-20,000.00) +
 1,956.96 + 144.23 = 26,563.25. This holds by
@@ -49,8 +52,8 @@ checks in `line-checks.csv` are the independent cross-check.
 
 ### unexplained_residual — 144.23 (invoice_higher)
 
-- qualification: `confirmed` · state: **closed**
-- candidate/confirmed: `price_tier_mismatch` (confirmed · synthetic_ground_truth) — basis: ground-truth.json#injections[unexplained_residual]
+- qualification: `unresolved` · status: `UNPROVABLE` · root cause: `unknown` · state: **open (multi-candidate, unconfirmed)**
+- candidate/confirmed: `price_tier_mismatch` (heuristic) — basis: reconciliation.json#totals.unexplained_residual
 - candidate/confirmed: `commitment_true_up` (heuristic) — basis: reconciliation.json#totals.unexplained_residual
 - candidate/confirmed: `usage_window_revision` (heuristic) — basis: reconciliation.json#totals.unexplained_residual
 - missing evidence: approved contract price table (currency, validity, unit, cache tier)
@@ -58,12 +61,12 @@ checks in `line-checks.csv` are the independent cross-check.
 
 ### cache_gap — 7,254.73 (cost_export_lower)
 
-- qualification: `unresolved` · state: **open (multi-candidate, unconfirmed)**
-- candidate/confirmed: `cache_read_rounded_to_zero` (heuristic) — basis: line-checks.csv (90/90 rows: gap equals the row's cache-read amount)
+- qualification: `unresolved` · status: `UNPROVABLE` · root cause: `unknown` · state: **open (multi-candidate, unconfirmed)**
+- candidate/confirmed: `cache_read_omitted_from_export` (heuristic) — basis: line-checks.csv (90/90 rows: gap equals the row's cache-read amount)
 - candidate/confirmed: `time_window_revision` (heuristic) — basis: period.json#period
 - candidate/confirmed: `async_export_revision` (heuristic) — basis: cost.csv (regeneration timestamp unknown)
 - missing evidence: export generation timestamps for usage.csv and cost.csv
-- missing evidence: vendor statement on cache-read rounding policy
+- missing evidence: vendor statement on cache-read export policy (omitted bucket vs rounding)
 
 **Missing to close the period**
 

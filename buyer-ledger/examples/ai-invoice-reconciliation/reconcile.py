@@ -101,7 +101,7 @@ def build_line_checks(usage: list[dict], cost: list[dict],
 
     每行记录三个可复核事实：重算金额、导出金额、两者之差；result 只声明
     「差额是否恰好等于该行 cache-read 金额」这一模式一致性，不宣称根因。
-    该模式一致性是 cache_read_rounded_to_zero 候选的行级证据（basis），
+    该模式一致性是 cache_read_omitted_from_export 候选的行级证据（basis），
     但时间窗/异步修订候选无法被它排除。
     """
     cost_by_key = {(r["date"], r["team"]): Decimal(r["cost_usd"]) for r in cost}
@@ -161,6 +161,7 @@ def qualify_residual(residual: Decimal, ground_truth: dict | None) -> dict:
     ]
     qualification = QUAL_UNRESOLVED
     confirmed_note = None
+    confirmed_hypothesis = None
     injection = None
     if ground_truth:
         injection = next((i for i in ground_truth.get("injections", [])
@@ -199,6 +200,8 @@ def qualify_residual(residual: Decimal, ground_truth: dict | None) -> dict:
             "right_source": "usage.csv x prices.json + invoice-only lines",
         },
         "qualification": qualification,
+        "status": "UNPROVABLE" if qualification == QUAL_UNRESOLVED else "CONFIRMED_SYNTHETIC",
+        "root_cause": confirmed_hypothesis if qualification == QUAL_CONFIRMED else "unknown",
         "closed": qualification == QUAL_CONFIRMED,
         "follow_up": "supplier_dispute_candidate" if qualification == QUAL_UNRESOLVED else None,
         "explanations": explanations,
@@ -212,9 +215,11 @@ def qualify_residual(residual: Decimal, ground_truth: dict | None) -> dict:
 def qualify_cache_gap(cache_gap: Decimal, line_summary: dict) -> dict:
     """observed_difference: cost export 与重计价之间的差额事实。
 
-    AC V01 C：该差额可能来自舍入、时间窗或异步修订。行级模式一致性
-    （每行差额恰等于该行 cache-read 金额）支持舍入/省略候选，但不能排除
-    其他解释，因此这里永远保持多候选 heuristic、资格 unresolved。
+    AC V01 C：该差额可能来自导出遗漏 cache-read 桶、时间窗或异步修订。
+    行级模式一致性（每行差额恰等于该行 cache-read 金额）支持「导出口径
+    遗漏」候选，但不能排除其他解释，因此这里永远保持多候选 heuristic、
+    资格 unresolved。注意：每条记录的遗漏金额为 $15-$150，不是半分钱
+    量级的舍入误差，因此候选名不使用 rounded_to_zero。
     """
     matched, total = line_summary["matched"], line_summary["rows"]
     return {
@@ -228,15 +233,19 @@ def qualify_cache_gap(cache_gap: Decimal, line_summary: dict) -> dict:
             "right_source": "cost.csv",
         },
         "qualification": QUAL_UNRESOLVED,
+        "status": "UNPROVABLE",
+        "root_cause": "unknown",
         "closed": False,
         "follow_up": "buyer_data_review",
         "explanations": [
-            {"hypothesis": "cache_read_rounded_to_zero", "confidence_kind": "heuristic",
+            {"hypothesis": "cache_read_omitted_from_export", "confidence_kind": "heuristic",
              "basis_refs": [f"line-checks.csv ({matched}/{total} rows: gap equals "
                             "the row's cache-read amount)"],
              "rule_id": None, "reviewer": None,
-             "note": "row-level pattern supports omission/rounding but cannot "
-                     "exclude the candidates below"},
+             "note": "the cost export has no cache-read bucket; each row's gap "
+                     "equals that row's cache-read charge ($15-$150), far above "
+                     "a cent-level rounding. The pattern supports omission but "
+                     "cannot exclude the candidates below"},
             {"hypothesis": "time_window_revision", "confidence_kind": "heuristic",
              "basis_refs": ["period.json#period"],
              "rule_id": None, "reviewer": None,
@@ -249,7 +258,7 @@ def qualify_cache_gap(cache_gap: Decimal, line_summary: dict) -> dict:
         ],
         "missing_evidence": [
             "export generation timestamps for usage.csv and cost.csv",
-            "vendor statement on cache-read rounding policy",
+            "vendor statement on cache-read export policy (omitted bucket vs rounding)",
         ],
     }
 
@@ -423,7 +432,7 @@ def main(data_dir: Path = HERE) -> None:
         lines = [
             f"### {diff['id']} — {money(Decimal(diff['amount_usd']))} ({diff['direction']})",
             "",
-            f"- qualification: `{diff['qualification']}` · state: **{state}**",
+            f"- qualification: `{diff['qualification']}` · status: `{diff['status']}` · root cause: `{diff['root_cause']}` · state: **{state}**",
         ]
         for e in diff["explanations"]:
             tag = " · synthetic_ground_truth" if e.get("synthetic_ground_truth") else ""
@@ -451,15 +460,17 @@ def main(data_dir: Path = HERE) -> None:
         f"never by real independent evidence."
         if residual_diff["qualification"] == QUAL_CONFIRMED else
         f"{money(residual)} is still unexplained: qualification "
-        f"`{QUAL_UNRESOLVED}`; the amount alone proves no cause.")
+        f"`{QUAL_UNRESOLVED}`, status `UNPROVABLE`, root cause `unknown`; "
+        f"the price-tier hypothesis needs the contract price table.")
 
     report = f"""# AI invoice reconciliation sample (synthetic)
 
 > **Synthetic demo, not a client.** One vendor ({period['vendor']}), one account
 > ({period['account']}), one period ({period['period']}), USD. The numbers are
-> generated to exercise the reconciliation; they are not a real bill. Any
-> confirmed cause below rests on the generator's declared synthetic injection
-> (synthetic_ground_truth), never on real independent evidence.
+> generated to exercise the reconciliation; they are not a real bill. The
+> published sample confirms no cause: the generator's synthetic injection is
+> available only as ground-truth.example.json, and tests copy it to exercise
+> the confirmed path (synthetic_ground_truth, never independent evidence).
 
 ## Page 1 · Totals
 
@@ -474,9 +485,11 @@ def main(data_dir: Path = HERE) -> None:
 {coverage_block}
 
 **Read this first:** the cost export is {money(cache_gap)} lower than the
-recalculated usage — that is an observed difference with {len(cache_gap_diff['explanations'])}
-candidate explanations (rounding/omission, time window, async revision);
-none is confirmed. The invoice carries {money(abs(credits))} of credits,
+recalculated usage — the cost export carries no cache-read bucket, and each
+row's gap equals that row's cache-read charge (an omission, not a cent-level
+rounding). Whether that omission is the whole cause still has
+{len(cache_gap_diff['explanations'])} candidates (omission, time window, async
+revision); none is confirmed. The invoice carries {money(abs(credits))} of credits,
 {money(seats)} of seats and {money(tax)} of tax that never appear in the usage
 API (classified adjustments, not open differences). After those known lines,
 {residual_read}

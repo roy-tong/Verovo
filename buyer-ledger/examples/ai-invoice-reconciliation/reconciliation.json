@@ -47,20 +47,21 @@
     "left_source": "invoice.csv",
     "right_source": "usage.csv x prices.json + invoice-only lines"
    },
-   "qualification": "confirmed",
-   "closed": true,
-   "follow_up": null,
+   "qualification": "unresolved",
+   "status": "UNPROVABLE",
+   "root_cause": "unknown",
+   "closed": false,
+   "follow_up": "supplier_dispute_candidate",
    "explanations": [
     {
      "hypothesis": "price_tier_mismatch",
-     "confidence_kind": "confirmed",
+     "confidence_kind": "heuristic",
      "basis_refs": [
-      "ground-truth.json#injections[unexplained_residual]"
+      "reconciliation.json#totals.unexplained_residual"
      ],
      "rule_id": null,
      "reviewer": null,
-     "synthetic_ground_truth": true,
-     "note": "confirmed ONLY by the generator's declared synthetic injection; a real confirmation would need an approved contract price table or a vendor confirmation"
+     "note": "plausible if the contract tier for 1h cache write differs; requires the approved price table"
     },
     {
      "hypothesis": "commitment_true_up",
@@ -99,18 +100,20 @@
     "right_source": "cost.csv"
    },
    "qualification": "unresolved",
+   "status": "UNPROVABLE",
+   "root_cause": "unknown",
    "closed": false,
    "follow_up": "buyer_data_review",
    "explanations": [
     {
-     "hypothesis": "cache_read_rounded_to_zero",
+     "hypothesis": "cache_read_omitted_from_export",
      "confidence_kind": "heuristic",
      "basis_refs": [
       "line-checks.csv (90/90 rows: gap equals the row's cache-read amount)"
      ],
      "rule_id": null,
      "reviewer": null,
-     "note": "row-level pattern supports omission/rounding but cannot exclude the candidates below"
+     "note": "the cost export has no cache-read bucket; each row's gap equals that row's cache-read charge ($15-$150), far above a cent-level rounding. The pattern supports omission but cannot exclude the candidates below"
     },
     {
      "hypothesis": "time_window_revision",
@@ -135,7 +138,7 @@
    ],
    "missing_evidence": [
     "export generation timestamps for usage.csv and cost.csv",
-    "vendor statement on cache-read rounding policy"
+    "vendor statement on cache-read export policy (omitted bucket vs rounding)"
    ]
   }
  ],

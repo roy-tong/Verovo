@@ -13,7 +13,7 @@
  "not_declared": [
   {
    "affects": "cache_gap",
-   "why": "the cache-read omission is deliberately not declared; reconcile.py must keep the cache gap multi-candidate (rounding / time window / async revision) because no independent evidence exists"
+   "why": "the cache-read omission is deliberately not declared; reconcile.py must keep the cache gap multi-candidate (omitted bucket / time window / async revision) because no independent evidence exists"
   }
  ]
 }

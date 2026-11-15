@@ -2,13 +2,16 @@
 """Generate a synthetic one-vendor, one-account, one-period AI bill.
 
 The numbers are synthetic and clearly labeled. They exist to exercise the
-reconciliation logic: four input buckets, cache reads dropped from the cost
-export, seats/credits/tax only on the invoice, and a small unexplained
-residual injected as a 1h-cache-write tier difference.
+reconciliation logic: four input buckets, the cost export omitting the
+cache-read bucket entirely (an omission, not a cent-level rounding artifact),
+seats/credits/tax only on the invoice, and a small unexplained residual
+injected as a 1h-cache-write tier difference.
 
-V-01: the injected scenario is declared in ground-truth.json so that
-reconcile.py can mark the residual `confirmed` *only* under an explicit
-`synthetic_ground_truth` label. The cache omission is deliberately NOT
+V-01: the injected scenario is written to ground-truth.example.json. The
+published demo does NOT ship ground-truth.json, so reconcile.py keeps the
+residual UNPROVABLE; tests copy the example file to ground-truth.json to
+exercise the `confirmed` path only under an explicit `synthetic_ground_truth`
+label. The cache omission is deliberately NOT
 declared as ground truth — the cache gap must stay multi-candidate, because
 in a real reconciliation no generator exists to vouch for it.
 """
@@ -57,7 +60,9 @@ def main() -> None:
             usage_rows.append({"date": day, "team": team, **tokens,
                                "recalc_usd": f"{cost:.2f}"})
 
-    # Cost export: cache reads are dropped (rounded to $0.00) on every row.
+    # Cost export: the cache-read bucket is omitted on every row. Each omitted
+    # amount is $15-$150 (50M-500M tokens at $0.30/M), i.e. far above a cent,
+    # so the gap demonstrates an omitted line item, not rounding to $0.00.
     cost_rows = []
     cost_total = Decimal("0")
     for row in usage_rows:
@@ -93,6 +98,8 @@ def main() -> None:
     # V-01 合成 ground truth：生成器对注入情景的自证声明。它允许 reconcile.py
     # 把 residual 标为 confirmed，但必须显式携带 synthetic_ground_truth，
     # 不得冒充真实独立证据；cache 扣除故意不声明，留给多候选假设。
+    # 注意：发布用的示例不随附 ground-truth.json，只写 ground-truth.example.json；
+    # reconcile.py 不会读取示例文件，公开样例的 residual 因此保持 UNPROVABLE。
     ground_truth = {
         "schema": "verovo.example-ground-truth/1",
         "synthetic": True,
@@ -111,10 +118,15 @@ def main() -> None:
             {"affects": "cache_gap",
              "why": "the cache-read omission is deliberately not declared; "
                     "reconcile.py must keep the cache gap multi-candidate "
-                    "(rounding / time window / async revision) because no "
-                    "independent evidence exists"},
+                    "(omitted bucket / time window / async revision) because "
+                    "no independent evidence exists"},
         ],
     }
+    (HERE / "ground-truth.example.json").write_text(
+        json.dumps(ground_truth, indent=1, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    # 发布样例不带 ground-truth.json：复制示例文件才会启用 confirmed 路径。
+    (HERE / "ground-truth.json").unlink(missing_ok=True)
     with (HERE / "usage.csv").open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(usage_rows[0]))
         w.writeheader()
@@ -138,10 +150,7 @@ def main() -> None:
         "invoice_total": f"{invoice_total:.2f}",
         "residual": f"{residual:.2f}",
     }, indent=1), encoding="utf-8")
-    (HERE / "ground-truth.json").write_text(
-        json.dumps(ground_truth, indent=1, ensure_ascii=False) + "\n",
-        encoding="utf-8")
-    print(f"wrote usage/cost/invoice/ground-truth for {len(usage_rows)} rows")
+    print(f"wrote usage/cost/invoice/ground-truth.example for {len(usage_rows)} rows")
     print(f"recalc={recalc_total} cost_export={cost_total} "
           f"cache_gap={cache_gap} invoice={invoice_total} residual={residual}")
 

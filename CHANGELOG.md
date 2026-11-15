@@ -6,6 +6,13 @@ V-01 (differential cause qualification): an amount difference and its cause
 are now separate claims in the ai-invoice-reconciliation example; no cause is
 inferred from a non-zero difference alone.
 
+V-SEO-01/02 (example attribution): the synthetic cost export now omits the
+cache-read bucket instead of pretending cent-level rounding swallowed $15-$150
+rows; the candidate is `cache_read_omitted_from_export`. The published sample
+ships no `ground-truth.json`, so the 144.23 residual stays `unresolved` /
+`UNPROVABLE` with `root_cause: unknown`; tests copy `ground-truth.example.json`
+to exercise the confirmed path. A frozen-value test pins the 90-row totals.
+
 V-02 (period import and human field mapping): one local billing period is
 scanned and proposed as a mapping draft; only a human confirmation produces the
 canonical bundle Period Intake consumes. Original files are never modified,

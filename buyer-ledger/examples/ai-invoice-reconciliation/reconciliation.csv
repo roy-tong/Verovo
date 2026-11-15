@@ -3,5 +3,5 @@ usage_charges,recalc,38462.06,component,matched_by_line_checks,-,line-checks.csv
 enterprise_seats,invoice,6000.00,invoice_only_adjustment,not_a_vendor_error,-,invoice.csv#enterprise_seats,seat-based enterprise spend; not in usage/cost API
 credits,invoice,-20000.00,invoice_only_adjustment,not_a_vendor_error,-,invoice.csv#credits,committed-use credit; invoice only
 tax,invoice,1956.96,invoice_only_adjustment,not_a_vendor_error,-,invoice.csv#tax,tax is not a usage line
-unexplained_residual,derived,144.23,observed_difference,confirmed,price_tier_mismatch(confirmed); commitment_true_up(heuristic); usage_window_revision(heuristic),reconciliation.json#observed_differences,residual after known lines; cause not proven by the amount; owner unassigned
-cache_read_gap,derived,7254.73,observed_difference,unresolved,cache_read_rounded_to_zero(heuristic); time_window_revision(heuristic); async_export_revision(heuristic),line-checks.csv,"cost export vs recalculation; multi-candidate, not fixed"
+unexplained_residual,derived,144.23,observed_difference,unresolved,price_tier_mismatch(heuristic); commitment_true_up(heuristic); usage_window_revision(heuristic),reconciliation.json#observed_differences,residual after known lines; cause not proven by the amount; owner unassigned
+cache_read_gap,derived,7254.73,observed_difference,unresolved,cache_read_omitted_from_export(heuristic); time_window_revision(heuristic); async_export_revision(heuristic),line-checks.csv,"cost export vs recalculation; multi-candidate, not fixed"
