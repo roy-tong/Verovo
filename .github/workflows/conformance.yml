@@ -355,8 +355,9 @@ jobs:
     if: ${{ vars.ENABLE_STATUS_SYNC == 'true' }}
     permissions:
       contents: write
+    # Serialise with website-deploy.yml: both push gh-pages.
     concurrency:
-      group: status-sync
+      group: gh-pages-deploy
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -377,6 +378,10 @@ jobs:
             git pull --rebase origin main
             git push origin main
           fi
+      - name: SEO gate before the mirror (same gate as website-deploy.yml)
+        run: |
+          python3 scripts/seo_check.py --selftest
+          python3 scripts/seo_check.py
       - name: Mirror website/ to gh-pages (the live site)
         run: |
           git fetch origin gh-pages

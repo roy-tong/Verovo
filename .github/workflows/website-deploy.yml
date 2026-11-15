@@ -1,0 +1,61 @@
+name: website
+
+# Verovo serves the site from the gh-pages branch. Before this workflow the
+# only mirror step lived inside conformance's status-sync job, which is gated
+# by vars.ENABLE_STATUS_SYNC and therefore never ran for website-only commits:
+# on 2026-11-15 the live site was still the 2026-11-04 build while main had
+# three newer website commits (including a page that returned 404).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "scripts/seo_check.py"
+      - ".github/workflows/website-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Failure-injection self-test (the gate must be able to fail)
+        run: python3 scripts/seo_check.py --selftest
+      - name: Sitemap, canonical, links, JSON-LD and review dates
+        run: python3 scripts/seo_check.py
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure git
+        run: |
+          git config user.name "verovo-ci"
+          git config user.email "actions@users.noreply.github.com"
+      - name: Mirror website/ to gh-pages (the live site)
+        run: |
+          git fetch origin gh-pages
+          git checkout gh-pages
+          git checkout main -- website/
+          # the site serves from the repo root of gh-pages
+          cp -r website/. ./
+          rm -rf website
+          git add -A
+          git commit -m "deploy: website sync (${GITHUB_SHA:0:7})" || echo "gh-pages unchanged"
+          git push origin HEAD:gh-pages
