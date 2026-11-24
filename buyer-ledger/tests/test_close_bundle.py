@@ -573,5 +573,37 @@ class BundleCliTests(CloseBundleTestBase):
         self.assertIn("calculation.json", payload["missing"])
 
 
+class BusinessTerminalSummaryTests(unittest.TestCase):
+    def test_terminal_summary_starts_with_the_buyer_decision(self):
+        payload = {
+            "bundle": {"case_id": "case-1", "revision_label": "r1",
+                       "scope": {"buyer": "buyer-1", "vendor": "vendor-1",
+                                 "account": "acct-1", "currency": "USD"}},
+            "state": "ready", "state_label": "ready", "axes": [], "verdicts": [],
+            "charges": {"identity": {"invoice_total": "25.00",
+                                     "open_difference": "5.00", "holds": False},
+                        "findings_count": 1},
+            "delivery": {"verdict": {"status": "PASS"}, "rows": [{}]},
+            "coverage": {},
+            "economics": {"status": "complete", "cost_per_verified_success": "20.00",
+                          "roi": "4.0"},
+            "disputes": {"open_items": [{}], "external_action_executed": False,
+                         "payment_authorization": False},
+            "renewal": {"signoff": {}}, "warnings": [], "missing": [], "faults": [],
+            "boundary": "test boundary",
+        }
+        text = close_bundle.render_summary(payload)
+
+        main = text.split("--- 核验明细 ---", 1)[0]
+        self.assertIn("Verovo 业务结论", main)
+        self.assertIn("当前不建议直接付款或续约", main)
+        self.assertIn("供应商账单 25.00 USD", main)
+        self.assertIn("未解释差额 5.00 USD", main)
+        self.assertIn("每个已验证成功任务成本 20.00 USD", main)
+        for token in ("axes:", "verdicts:", "charges:", "delivery:", "PASS", "state:"):
+            self.assertNotIn(token, main)
+        self.assertIn("charges:", text)
+
+
 if __name__ == "__main__":
     unittest.main()

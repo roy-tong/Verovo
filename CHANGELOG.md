@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changed
+
+- Buyer-close reports and terminal summaries now lead with the payment/renewal recommendation, invoice and open difference, accepted tasks, cost per verified success and whether value can be judged. Root-cause groups replace raw item IDs in the main answer; axes, verdict codes, line-level reconciliation and replay metadata remain in the appendix. Open items never become payment authorization, and unknown economics never become zero or ROI.
+
 ## v0.18.0 - 2026-11-24
 
 ### Added
