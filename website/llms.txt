@@ -1,6 +1,6 @@
 # Verovo
 
-> Verovo is the independent measurement and audit layer for AI agents. Compare rules, invoices, usage, delivery and buyer acceptance for one period; prepare line-level spend actions and measure task economics. Supplier self-attestation leaves buyer acceptance unproven.
+> Know what your AI agents spent, whether the bill is right, and whether the spend was worth it. Verovo tracks AI spend, audits charges independently, prepares line-level buyer actions, and compares task costs with verified outcomes. Spend Monitoring, Control, Audit and Optimization remain distinct; real-time control and causal contribution are separate roadmap work.
 
 ## Start here
 
@@ -14,6 +14,7 @@
 - [AI invoice reconciliation](https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html): three-step method, seven failure modes and a free browser recount; the reproducible sample lives in `buyer-ledger/examples/ai-invoice-reconciliation`
 - [Per-resolution bills](https://roy-tong.github.io/Verovo/blog/resolution-bill-check.html): who attested each resolution, and how to check that bill locally
 - [Verovo technical blog](https://roy-tong.github.io/Verovo/blog/): deterministic replay, control domains and buyer evidence
+- [AI spend optimization method](https://roy-tong.github.io/Verovo/blog/ai-spend-optimization.html): Monitoring, Control, Audit and Optimization; cost per verified success; tool removal and replacement experiments; current L1–L3 versus future L4–L5 boundaries
 - [Deterministic replay for AI charges, with the unknowns intact](https://roy-tong.github.io/Verovo/blog/03-verovo-deterministic-replay-with-unknowns.html): counting grain, content-addressed revisions, Decimal arithmetic and OCR integrity
 - [A vendor export is not buyer evidence](https://roy-tong.github.io/Verovo/blog/06-verovo-a-vendor-export-is-not-buyer-evidence.html): provenance, outcome observer grades, completion axes and evidence-only handoffs
 
