@@ -1,3 +1,13 @@
+## Unreleased
+
+### Fixed
+
+- Unresolved audit items are ordered by amount importance (same currency only), payment due date, evidence confidence, persistent loss and systemic-error signal. Findings on the same invoice line collapse to one exposure; the report shows both gross and de-duplicated exposure and keeps different/unknown currencies out of the sum instead of treating them as zero.
+
+### Tests
+
+- 3 new priority regressions plus the existing 443 Buyer Ledger and 663 healthcheck tests pass; selftest remains PASS.
+
 ## v0.18.0 - 2026-11-24
 
 ### Added
