@@ -2,9 +2,9 @@
 
 <img src="assets/verovo-logo-card.png" alt="Verovo" width="300">
 
-**The independent measurement and audit layer for AI agents.**
+**Know what your AI agents spent, whether the bill is right, and whether the spend was worth it.**
 
-**Make every dollar spent on AI services make sense.** Verovo helps teams audit agent and tool charges, connect spending to verified task outcomes, and decide what to pay, fix or compare next.
+Verovo helps teams track AI spend, audit charges independently, and compare costs with verified task outcomes. Finance, operations and engineering can decide what to pay, hold, fix or choose next.
 
 [Website](https://roy-tong.github.io/Verovo/) · [中文](README.zh-CN.md) · [Buyer guide](docs/buyer-review.md) · [Replay example](https://roy-tong.github.io/Verovo/examples/replayable-period.html) · [Discord](https://discord.gg/UqrM8MCXb)
 
@@ -12,15 +12,18 @@
 [![PyPI](https://img.shields.io/pypi/v/verovo)](https://pypi.org/project/verovo/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
-## Audit every charge. Measure every outcome.
+## Track spend. Audit charges. Understand value.
 
-A total invoice cannot tell you which line needs evidence, whether a retry was worth it, or which tool should handle the next task. Verovo connects supplier rules, invoices, usage, delivery and buyer acceptance so finance, operations and engineering can answer three questions:
+A total invoice cannot tell you where money is going, which line needs evidence, whether a retry was worth it, or which tool should handle the next task. Verovo connects supplier rules, invoices, usage, delivery and buyer acceptance across four buyer questions:
 
-- **What should happen to this charge?** Recalculate supported bills and turn the findings into a line-level worklist: ready for payment, evidence required, review required, unreviewed, partially settled or settled. Clean recommendations are bound to normalized source content and contract versions; settlement is verified from applied credit evidence.
-- **Was the work delivered?** Check observed delivery against the buyer’s own acceptance criteria without treating a failed outcome as automatic proof of a billing error.
-- **Which option is worth choosing?** Connect direct and allocated task costs with verified outcomes, cost per verified success and explicit scenario comparisons.
+| Capability | Question | What Verovo provides |
+| --- | --- | --- |
+| Spend Monitoring | Where is money going? | Usage and cost records, task aggregation and cost drivers; real-time observation and anomaly detection are the next build focus |
+| Spend Control | Should spending continue? | Disposition and control recommendations today; budget and hold integrations require an authorized external execution system |
+| Spend Audit | Was the charge correct? | Independent recalculation, line-level actions, evidence supplements, revisions, review, signoff and period replay |
+| Spend Optimization | Was the spend worth it? | Task economics and scenario comparisons today; tool removal, replacement and replay experiments are the path to incremental contribution |
 
-Financial correctness, control (authorization), delivery and economic value remain separate conclusions. Missing evidence stays visible instead of becoming a zero or a pass.
+Financial correctness, control, delivery and economic value remain separate conclusions. Missing evidence stays visible instead of becoming a zero or a pass.
 
 ## From one billing period to a clear next move
 

@@ -43,7 +43,7 @@ SITEMAP_EXEMPT = {"404.html"}
 ALLOW_NOINDEX: set[str] = {"assets/social-preview.html"}
 # Deployment acceptance: key pages must contain these strings once live.
 REQUIRED_MARKERS: dict[str, tuple[str, ...]] = {
-    "index.html": ("Make every dollar", "Offline synthetic Audit Case"),
+    "index.html": ("Audit AI spend", "Offline synthetic Audit Case"),
     "blog/ai-invoice-reconciliation.html": ("reconcile", "UNPROVABLE"),
     "blog/resolution-bill-check.html": ("resolutions",),
     "faq.html": ("解决量",),

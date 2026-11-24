@@ -1,6 +1,6 @@
 # Verovo
 
-> Verovo is the independent measurement and audit layer for AI agents. Review one supplier period, prepare line-level spend actions, check delivery and measure task economics. Financial correctness, control (authorization), delivery and economic value remain separate conclusions; the buyer's actual decision is recorded separately and is never inferred from them.
+> Know what your AI agents spent, whether the bill is right, and whether the spend was worth it. Verovo tracks AI spend, audits charges independently, prepares line-level buyer actions, and compares costs with verified task outcomes. Real-time control and causal contribution remain separate roadmap work.
 
 OVO family boundary: Prove Anything is the family-level result-proof protocol candidate; an agent saying “done” remains a claim to verify. Verified Capability Factory is a gated research candidate, not a Verovo dependency. Verovo stays buyer-first and is not becoming a generalized verification platform; charges, delivery, coverage and buyer decisions remain separate.
 
@@ -17,6 +17,7 @@ OVO family boundary: Prove Anything is the family-level result-proof protocol ca
 - [SDK](https://github.com/roy-tong/Verovo/blob/main/sdk/README.md): Provider SDK `@verovo/mcp` on npm, independently versioned
 - [Release notes](https://roy-tong.github.io/Verovo/releases.html): independent package versions and dated releases
 - [AI invoice reconciliation](https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html): three-step method, seven failure modes and a free browser recount; the reproducible sample lives in `buyer-ledger/examples/ai-invoice-reconciliation`
+- [AI spend optimization method](https://roy-tong.github.io/Verovo/blog/ai-spend-optimization.html): separate Monitoring, Control, Audit and Optimization; calculate cost per verified success; use tool removal, replacement and replay before claiming incremental contribution
 - [Per-resolution bills](https://roy-tong.github.io/Verovo/blog/resolution-bill-check.html): who attested each resolution, and how to check that bill locally
 
 ## Measurement and evidence
