@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 # The command is also `verovo`. JSON exports keep the stable tool tag
 # "verovo-healthcheck" from schema v1 — do not rename inside exports.
 name = "verovo"
-version = "0.17.2"
+version = "0.18.0"
 description = "Independent measurement and audit for AI agents. Review charges, prepare line-level spend actions, and measure task economics with explicit evidence gaps."
 readme = "README.md"
 requires-python = ">=3.9"
