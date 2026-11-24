@@ -1,19 +1,23 @@
 """Project an existing Audit Case into a buyer spend-action worklist."""
 from __future__ import annotations
 
+import hashlib
 import json
 import re
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from . import money
 
-CENT = Decimal("0.01")
+
 ACTION_ORDER = (
     "evidence_required",
     "review_required",
     "unreviewed",
     "ready_for_payment",
+    "partially_settled",
     "settled",
 )
 EVIDENCE_CLASSIFICATIONS = {
@@ -24,22 +28,21 @@ EVIDENCE_CLASSIFICATIONS = {
 OPEN_STATUSES = {"identified", "validated", "accepted"}
 CLOSED_STATUSES = {"realized", "dismissed"}
 CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
+DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class SpendActionError(ValueError):
     pass
 
 
-def _money(value: Any, field: str) -> str:
+def _money(value: Any, field: str, currency: str) -> str:
     if value is None or isinstance(value, bool):
         raise SpendActionError("%s: amount is UNKNOWN, not zero" % field)
     try:
-        number = Decimal(str(value))
-    except (InvalidOperation, ValueError, TypeError):
-        raise SpendActionError("%s: amount is not decimal" % field) from None
-    if not number.is_finite():
-        raise SpendActionError("%s: amount must be finite" % field)
-    return str(number.quantize(CENT, rounding=ROUND_HALF_UP))
+        number = money.parse_exact(value, field=field)
+    except money.MoneyError as exc:
+        raise SpendActionError(str(exc)) from exc
+    return money.display_for_currency(number, currency)
 
 
 def _currency(value: Any, field: str) -> str:
@@ -61,6 +64,18 @@ def _inside(root: Path, relative: Any) -> Path:
     return candidate
 
 
+def _source_digest(path: Path) -> str:
+    data = path.read_bytes()
+    if path.suffix.lower() in {".json", ".jsonl", ".csv", ".txt", ".md", ".yaml", ".yml"}:
+        try:
+            text = data.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            pass
+        else:
+            data = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
+
+
 def _validate_case(case: Any) -> None:
     if not isinstance(case, dict):
         raise SpendActionError("audit case must be an object")
@@ -75,6 +90,9 @@ def _validate_case(case: Any) -> None:
     if not isinstance(coverage, dict):
         raise SpendActionError("coverage must be an object")
     _currency(coverage.get("currency"), "coverage.currency")
+    finding_ids = [_finding_id(finding) for finding in case["findings"]]
+    if len(set(finding_ids)) != len(finding_ids):
+        raise SpendActionError("duplicate finding_id in audit case")
 
 
 def _invoice_paths(case: Dict[str, Any], manifest: Optional[Dict[str, Any]]) -> List[str]:
@@ -126,8 +144,8 @@ def _load_invoice_lines(root: Path, paths: List[str]) -> Dict[Tuple[str, str], D
             key = (relative, line["line_id"])
             if key in lines:
                 raise SpendActionError("duplicate invoice line %s#%s" % key)
-            amount = _money(line.get("amount"), "%s#%s.amount" % key)
             currency = _currency(line.get("currency"), "%s#%s.currency" % key)
+            amount = _money(line.get("amount"), "%s#%s.amount" % key, currency)
             lines[key] = {
                 "source": {
                     "kind": "invoice_line",
@@ -138,6 +156,85 @@ def _load_invoice_lines(root: Path, paths: List[str]) -> Dict[Tuple[str, str], D
                 "amount": {"currency": currency, "value": amount},
             }
     return lines
+
+
+def _load_charge_reviews(root: Path, case: Dict[str, Any],
+                         manifest: Optional[Dict[str, Any]]) -> Dict[Tuple[str, str], Dict[str, Any]]:
+    if not manifest:
+        return {}
+    raw_reviews = manifest.get("charge_reviews", [])
+    if not isinstance(raw_reviews, list):
+        raise SpendActionError("manifest charge_reviews must be an array")
+    reviews = {}
+    for raw in raw_reviews:
+        if not isinstance(raw, dict):
+            raise SpendActionError("each charge review must be an object")
+        required = (
+            "invoice_source_id", "line_id", "source_digest", "rule_version",
+            "reviewed_by", "reviewed_at",
+        )
+        for field in required:
+            if not isinstance(raw.get(field), str) or not raw[field].strip():
+                raise SpendActionError("charge review needs %s" % field)
+        key = (raw["invoice_source_id"], raw["line_id"])
+        if key in reviews:
+            raise SpendActionError("duplicate charge review for %s#%s" % key)
+        source_path = _inside(root, raw["invoice_source_id"])
+        actual_digest = _source_digest(source_path)
+        valid = True
+        reason = "Versioned clean review matches the invoice bytes and contract version."
+        if not DIGEST_RE.fullmatch(raw["source_digest"]):
+            raise SpendActionError("charge review source_digest must be 64 lowercase hex characters")
+        if raw["source_digest"] != actual_digest:
+            valid = False
+            reason = "The invoice digest changed; the previous clean review is no longer valid."
+        contract_version = case.get("contract_version")
+        if contract_version and raw["rule_version"] != contract_version:
+            valid = False
+            reason = "The review rule_version does not match the case contract_version."
+        try:
+            datetime.fromisoformat(raw["reviewed_at"].replace("Z", "+00:00"))
+        except ValueError:
+            raise SpendActionError("charge review reviewed_at must be an ISO timestamp") from None
+        reviews[key] = {
+            "invoice_source_id": raw["invoice_source_id"],
+            "line_id": raw["line_id"],
+            "source_digest": actual_digest,
+            "rule_version": raw["rule_version"],
+            "reviewed_by": raw["reviewed_by"],
+            "reviewed_at": raw["reviewed_at"],
+            "valid": valid,
+            "reason": reason,
+        }
+    return reviews
+
+
+def _load_credit_records(root: Path, case: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    paths = sorted({
+        ref["path"]
+        for finding in case["findings"]
+        for ref in finding.get("evidence_refs", [])
+        if isinstance(ref, dict) and str(ref.get("path", "")).endswith(".json")
+    })
+    records = {}
+    for relative in paths:
+        document_path = _inside(root, relative)
+        try:
+            document = json.loads(document_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SpendActionError("cannot read credit evidence %s: %s" % (relative, exc)) from exc
+        if not isinstance(document, dict) or "credits" not in document:
+            continue
+        if not isinstance(document["credits"], list):
+            raise SpendActionError("%s.credits must be an array" % relative)
+        for credit in document["credits"]:
+            if not isinstance(credit, dict) or not isinstance(credit.get("credit_id"), str):
+                raise SpendActionError("%s contains a credit without credit_id" % relative)
+            credit_id = credit["credit_id"]
+            if credit_id in records:
+                raise SpendActionError("duplicate credit_id %s" % credit_id)
+            records[credit_id] = dict(credit, source_path=relative)
+    return records
 
 
 def _finding_id(finding: Dict[str, Any]) -> str:
@@ -202,12 +299,106 @@ def _entry(entry_id: str, source: Dict[str, Any], action: str, reason: str,
     }
 
 
-def _summarize(actions: List[Dict[str, Any]], default_currency: str) -> Dict[str, Any]:
-    counts = {action: 0 for action in ACTION_ORDER}
+def _settlement_for_line(finding: Dict[str, Any], line: Dict[str, Any],
+                         credits: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    reference = finding.get("settlement_ref")
+    finding_amount = finding.get("amount", {})
+    currency = finding_amount.get("currency", line["amount"]["currency"])
+    if not reference:
+        return {
+            "status": "resolution_claimed",
+            "reference": None,
+            "applied_amount": None,
+            "detail": "The finding is marked realized, but no settlement_ref or verifiable credit/payment evidence was supplied.",
+        }
+    if not isinstance(reference, str) or not reference.startswith("credit-note:"):
+        return {
+            "status": "resolution_claimed",
+            "reference": reference,
+            "applied_amount": None,
+            "detail": "The finding is marked realized, but the settlement reference is not a supported credit-note reference.",
+        }
+    credit_id = reference.split(":", 1)[1]
+    credit = credits.get(credit_id)
+    if credit is None:
+        return {
+            "status": "resolution_claimed",
+            "reference": reference,
+            "applied_amount": None,
+            "detail": "The finding is marked realized, but the referenced credit note was not found in the supplied evidence.",
+        }
+    applied_amount = None
+    if credit.get("amount") is not None:
+        applied_amount = {
+            "currency": _currency(credit.get("currency"), "%s.currency" % credit_id),
+            "value": _money(credit.get("amount"), "%s.amount" % credit_id, currency),
+        }
+    if credit.get("applied") is not True or not str(credit.get("applied_at") or "").strip():
+        return {
+            "status": "credit_issued",
+            "reference": reference,
+            "applied_amount": applied_amount,
+            "detail": "A credit note exists, but it has not been applied with an applied_at date.",
+        }
+    if applied_amount is None:
+        return {
+            "status": "settlement_mismatch",
+            "reference": reference,
+            "applied_amount": None,
+            "detail": "The applied credit has no readable amount, so settlement cannot be verified.",
+        }
+    if applied_amount["currency"] != currency:
+        return {
+            "status": "settlement_mismatch",
+            "reference": reference,
+            "applied_amount": applied_amount,
+            "detail": "The credit currency does not match the finding currency.",
+        }
+    line_charge_id = line.get("charge_id")
+    credit_charge_id = credit.get("charge_id")
+    if line_charge_id and credit_charge_id and line_charge_id != credit_charge_id:
+        return {
+            "status": "settlement_mismatch",
+            "reference": reference,
+            "applied_amount": applied_amount,
+            "detail": "The credit charge_id does not match the affected invoice line.",
+        }
+    expected = Decimal(str(finding_amount.get("value")))
+    applied = Decimal(applied_amount["value"])
+    if applied < expected:
+        return {
+            "status": "partially_settled",
+            "reference": reference,
+            "applied_amount": applied_amount,
+            "detail": "The applied credit covers only part of the finding amount; the line is not fully settled.",
+        }
+    if applied > expected:
+        return {
+            "status": "settlement_mismatch",
+            "reference": reference,
+            "applied_amount": applied_amount,
+            "detail": "The applied credit exceeds the finding amount; the settlement needs reconciliation.",
+        }
+    return {
+        "status": "settlement_verified",
+        "reference": reference,
+        "applied_amount": applied_amount,
+        "detail": "The applied credit matches the finding amount, currency and charge identity.",
+    }
+
+
+def _settlement_action(settlement: Dict[str, Any]) -> str:
+    if settlement["status"] == "settlement_verified":
+        return "settled"
+    if settlement["status"] == "partially_settled":
+        return "partially_settled"
+    return "review_required"
+
+
+def _amount_coverage(actions: List[Dict[str, Any]], default_currency: str) -> List[Dict[str, Any]]:
     grouped: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for row in actions:
         action = row["action"]
-        counts[action] += 1
         amount = row["amount"]
         currency = amount["currency"] if amount else default_currency
         key = (action, currency)
@@ -229,9 +420,19 @@ def _summarize(actions: List[Dict[str, Any]], default_currency: str) -> Dict[str
         known_count = bucket.pop("known_count")
         bucket["known_value"] = str(bucket["known_value"]) if known_count else None
         amounts.append(bucket)
+    return amounts
+
+
+def _summarize(actions: List[Dict[str, Any]], default_currency: str) -> Dict[str, Any]:
+    counts = {action: 0 for action in ACTION_ORDER}
+    for row in actions:
+        counts[row["action"]] += 1
+    invoice_actions = [row for row in actions if row["source"]["kind"] == "invoice_line"]
+    case_actions = [row for row in actions if row["source"]["kind"] != "invoice_line"]
     return {
         "counts": {action: counts[action] for action in ACTION_ORDER if counts[action]},
-        "amounts": amounts,
+        "amounts": _amount_coverage(invoice_actions, default_currency),
+        "case_level_amounts": _amount_coverage(case_actions, default_currency),
     }
 
 
@@ -242,7 +443,8 @@ def build_action_list(case: Dict[str, Any], case_root: Path,
     root = Path(case_root).resolve()
     default_currency = _currency(case["coverage"]["currency"], "coverage.currency")
     lines = _load_invoice_lines(root, _invoice_paths(case, manifest))
-    clean = set(manifest.get("clean_charge_lines", [])) if manifest else set()
+    reviews = _load_charge_reviews(root, case, manifest)
+    credits = _load_credit_records(root, case)
     open_by_line: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
     realized_by_line: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
     case_actions = []
@@ -258,9 +460,10 @@ def build_action_list(case: Dict[str, Any], case_root: Path,
             value = finding_amount.get("value") if isinstance(finding_amount, dict) else None
             amount = None
             if value is not None:
+                currency = _currency(finding_amount.get("currency"), "%s.currency" % finding_id)
                 amount = {
-                    "currency": _currency(finding_amount.get("currency"), "%s.currency" % finding_id),
-                    "value": _money(value, "%s.amount.value" % finding_id),
+                    "currency": currency,
+                    "value": _money(value, "%s.amount.value" % finding_id, currency),
                 }
             case_actions.append(_entry(
                 "finding:%s" % finding_id,
@@ -282,11 +485,16 @@ def build_action_list(case: Dict[str, Any], case_root: Path,
             elif status == "realized":
                 realized_by_line.setdefault(key, []).append(finding)
 
+    for key in set(open_by_line) | set(realized_by_line):
+        if key not in lines:
+            raise SpendActionError("affected line not found: %s#%s" % key)
+
     actions = list(case_actions)
     for key, line in lines.items():
         open_findings = open_by_line.get(key, [])
         realized_findings = realized_by_line.get(key, [])
         path, line_id = key
+        settlement = None
         if open_findings:
             primary = sorted(
                 open_findings,
@@ -299,16 +507,21 @@ def build_action_list(case: Dict[str, Any], case_root: Path,
             reason = "; ".join(_reason(finding) for finding in open_findings)
             classification = _classification(primary)
         elif realized_findings:
-            action = "settled"
-            reason = "Settlement evidence is recorded; no duplicate payment action is proposed."
+            primary = sorted(realized_findings, key=_finding_id)[0]
+            settlement = _settlement_for_line(primary, line, credits)
+            action = _settlement_action(settlement)
+            reason = settlement["detail"]
             classification = None
-        elif line_id in clean:
+        elif key in reviews and reviews[key]["valid"]:
             action = "ready_for_payment"
-            reason = "The line is explicitly confirmed clean in the period manifest; the buyer still decides whether to pay."
+            reason = reviews[key]["reason"] + " The buyer still decides whether to pay."
             classification = None
         else:
             action = "unreviewed"
-            reason = "The line is not explicitly confirmed clean and has no affected-line finding; absence of a finding is not payment clearance."
+            reason = reviews[key]["reason"] if key in reviews else (
+                "The line is not explicitly confirmed clean and has no affected-line finding; "
+                "absence of a finding is not payment clearance."
+            )
             classification = None
         finding_ids = sorted(
             _finding_id(finding) for finding in open_findings + realized_findings
@@ -323,6 +536,13 @@ def build_action_list(case: Dict[str, Any], case_root: Path,
             classification,
         )
         row["charge_id"] = line["charge_id"]
+        if settlement is not None:
+            row["settlement"] = settlement
+        if key in reviews:
+            review = dict(reviews[key])
+            review.pop("valid")
+            review.pop("reason")
+            row["charge_review"] = review
         actions.append(row)
 
     actions.sort(key=lambda row: (

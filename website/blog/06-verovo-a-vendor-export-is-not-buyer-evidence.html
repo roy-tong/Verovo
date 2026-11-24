@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verovo: a vendor export is not buyer evidence — Verovo</title>
+  <meta name="description" content="Control domains, procedural provenance checks, outcome observer grades, canonical completion axes, and evidence-only handoffs.">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="canonical" href="https://roy-tong.github.io/Verovo/blog/06-verovo-a-vendor-export-is-not-buyer-evidence.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Verovo">
+  <meta property="og:title" content="Verovo: a vendor export is not buyer evidence">
+  <meta property="og:description" content="Control domains, procedural provenance checks, outcome observer grades, canonical completion axes, and evidence-only handoffs.">
+  <meta property="og:url" content="https://roy-tong.github.io/Verovo/blog/06-verovo-a-vendor-export-is-not-buyer-evidence.html">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Verovo: a vendor export is not buyer evidence", "description": "Control domains, procedural provenance checks, outcome observer grades, canonical completion axes, and evidence-only handoffs.", "datePublished": "2026-11-24", "dateModified": "2026-11-24", "inLanguage": "en", "author": {"@type": "Person", "name": "Roy Tong", "url": "https://github.com/roy-tong"}, "mainEntityOfPage": "https://roy-tong.github.io/Verovo/blog/06-verovo-a-vendor-export-is-not-buyer-evidence.html", "codeRepository": "https://github.com/roy-tong/Verovo", "isAccessibleForFree": true, "wordCount": 1578}</script>
+  <style>
+:root{--panel:#10151b;--text:#f2f5f7;--muted:#8b96a3;--line:#252d36;--accent:#76a5ff;--accent-soft:rgba(118,165,255,.1);--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+body{background:#090c10;color:var(--text);font:16px/1.7 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;margin:0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.post-back,.post-k,.post-meta{font-family:var(--mono)}.post-k{color:var(--accent)}
+pre{background:var(--panel);border:1px solid var(--line)}code{background:var(--panel);border:1px solid var(--line)}
+th{background:var(--panel);color:var(--muted)}.note{border-left:3px solid var(--accent);background:var(--accent-soft)}
+
+*{box-sizing:border-box}html{scroll-behavior:smooth}.skip-link{position:absolute;left:12px;top:-60px;padding:8px 12px;background:Canvas;color:CanvasText;z-index:20}.skip-link:focus{top:12px}
+.post{max-width:860px;margin:0 auto;padding:52px 24px 72px}.post-back{display:inline-block;font-size:.78rem;letter-spacing:.08em;margin-bottom:28px}.post-k{font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin:0 0 12px}
+.post h1{font-size:clamp(2rem,5vw,3rem);line-height:1.16;letter-spacing:-.025em;margin:0 0 16px}.post-meta{font-size:.8rem;line-height:1.6;color:var(--muted);margin-bottom:36px}.post h2{font-size:1.45rem;line-height:1.3;margin:42px 0 14px;letter-spacing:-.01em}.post h3{font-size:1.08rem;margin:28px 0 10px}.post p{margin:0 0 18px}.post ul,.post ol{margin:0 0 20px;padding-left:1.5rem}.post li{margin-bottom:8px}.post blockquote{margin:0 0 20px;padding:10px 16px;color:var(--muted);border-left:3px solid var(--line)}
+.post pre{border-radius:8px;padding:16px 18px;overflow-x:auto;margin:0 0 20px;line-height:1.55;font-size:.88rem}.post code{font-family:var(--mono);font-size:.9em;border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}.post pre code{display:block;border:0;padding:0;overflow-wrap:normal}.post table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:.92rem}.post th,.post td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}.post th{font-weight:600}.table-scroll{overflow-x:auto;outline-offset:4px}.note{padding:12px 16px;border-radius:0 8px 8px 0;margin:0 0 20px}.post-footer{border-top:1px solid var(--line);margin-top:44px;padding-top:20px;color:var(--muted);font-size:.88rem}.post-footer ul{padding-left:1.2rem}.post-footer a{overflow-wrap:anywhere}
+.cards{display:grid;gap:18px;margin-top:28px}.card{border:1px solid var(--line);border-radius:10px;padding:22px}.card h2{font-size:1.3rem;margin:0 0 10px}.card p{color:var(--muted);margin:0 0 14px}.card .read{font-size:.85rem}.blog-links{margin-top:30px}.blog-links li{margin-bottom:10px}
+@media(max-width:640px){.post{padding:32px 18px 56px}.post h1{font-size:2rem}.post h2{font-size:1.3rem}.post table{font-size:.84rem}.post th,.post td{padding:8px}.post pre{font-size:.8rem;padding:13px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to article</a>
+<main class="post" id="content">
+  <nav aria-label="Article navigation"><a class="post-back" href="./">← VEROVO TECHNICAL BLOG</a></nav>
+  <p class="post-k">Verovo · Engineering deep dive</p>
+  <h1>Verovo: a vendor export is not buyer evidence</h1>
+  <p class="post-meta">24 November 2026 · 7 min read · 1,578 words · <a href="06-verovo-a-vendor-export-is-not-buyer-evidence.md">Markdown source</a></p>
+  <article aria-label="Verovo: a vendor export is not buyer evidence">
+<p><em>Control domains, procedural provenance checks, outcome observer grades, canonical completion axes, and evidence-only handoffs.</em></p>
+<p>Two CSV files can contain identical rows and still fail to reconcile anything meaningful. If the same vendor produced both exports, the files establish consistency inside one control domain. They do not establish independent confirmation by the buyer.</p>
+<p>This is the control-domain problem, and it sits underneath AI billing, delivery acceptance, and task economics. A buyer-side verifier needs to know more than whether <code>amount_a == amount_b</code>. It needs to know who controlled each source, who collected it, how it was confirmed, and whether the claimed acceptance identity has any authority.</p>
+<p>Verovo makes those relationships explicit. Its buyer-evidence checks are procedural metadata checks, not cryptographic identity proof. That is a narrower and more useful claim: inconsistent provenance can be rejected deterministically instead of being upgraded by a plausible filename or a <code>verified=true</code> field.</p>
+<h2>Buyer provenance is a conjunction, not a label</h2>
+<p>The provenance vocabulary contains eight normalized fields:</p>
+<pre tabindex="0"><code class="language-text">source_party
+source_affiliation
+control_domain
+collector_party
+collection_method
+independence
+confirmation_process
+source_path
+</code></pre>
+<p><code>source_association</code> and <code>collected_by</code> are accepted as aliases for affiliation and collector, then projected into the canonical names. Missing values become <code>unknown</code>.</p>
+<p>The current buyer-evidence review requires all of the following:</p>
+<ul>
+<li><code>source_party</code>, <code>source_affiliation</code>, <code>control_domain</code>, and <code>collector_party</code> are exactly <code>buyer</code>;</li>
+<li><code>independence=buyer_independent</code>;</li>
+<li>a non-empty <code>source_ref</code> exists;</li>
+<li>collection is not <code>ocr</code>, <code>invoice2data</code>, <code>self_declared</code>, <code>self_attested</code>, or unknown;</li>
+<li>confirmation is not self-declared, self-attested, or unknown;</li>
+<li>none of the source, path, collection, confirmation, affiliation, domain, or collector fields carries an explicit vendor-control marker.</li>
+</ul>
+<p>In simplified form:</p>
+<pre tabindex="0"><code class="language-python">qualified = (
+    all(field == &quot;buyer&quot; for field in PARTY_FIELDS)
+    and independence == &quot;buyer_independent&quot;
+    and source_ref
+    and collection_method not in UNQUALIFIED_METHODS
+    and confirmation_process not in UNQUALIFIED_CONFIRMATION
+    and not any_vendor_control_markers
+)
+</code></pre>
+<p>A <code>buyer</code> row under a manifest path containing an explicit vendor marker fails closed. A vendor path cannot be relabeled as buyer independence. Two vendor-controlled exports may support <code>Vendor Reconciled</code>; they cannot support <code>Buyer Verified</code>.</p>
+<p>The output also distinguishes <code>independence_assertion</code> from <code>independence_basis</code>. A clean result is only <code>procedural_metadata_only</code>. This is not identity cryptography, and the implementation says so rather than treating metadata as a signature.</p>
+<h2>Outcome class and observer grade are separate axes</h2>
+<p>Outcome verification has the same coercion problem as source independence. “Resolved” is not one homogeneous unit.</p>
+<p>A public synthetic fixture models a per-resolution dispute with ten records:</p>
+<pre tabindex="0"><code class="language-text">outcome_class:
+  resolved            4
+  assumed_resolved    3
+  escalated           2
+  abandoned           1
+
+observer_grade:
+  affected_party      5
+  self_attested       5
+</code></pre>
+<p>I copied the fixture to a temporary directory and ran its shipped reproduction. The actual output was:</p>
+<pre tabindex="0"><code class="language-text">Provider headline: resolved + assumed_resolved
+  7/10 = 70%
+
+Audited: resolved + affected_party attested only
+  4/10 = 40%
+
+Gap: 30 percentage points
+UNPROVABLE: 10/10 records carry no incrementality evidence
+REPRODUCED
+</code></pre>
+<p>The four audited records require both <code>outcome_class=resolved</code> and <code>observer_grade=affected_party</code>. The three assumed resolutions do not enter that denominator. Escalations do not become resolutions regardless of observer grade.</p>
+<p>The final line is equally important: none of the ten records contains incrementality evidence, so the fixture cannot prove that the AI caused the resolution. That does not make the count zero. It limits the claim to the specified outcome and observer definitions.</p>
+<p>The <a href="https://github.com/roy-tong/Verovo/blob/main/conformance/evidence/assumed-resolution/run_case.py">case runner</a> computes both rates and generates the settlement disclosure through the shipped code. It models a dispute shape; it is not Intercom customer data or an accusation about a supplier.</p>
+<h2>Period intake is a join with explicit loss reporting</h2>
+<p>A canonical period joins five kinds of input:</p>
+<pre tabindex="0"><code class="language-text">tasks.csv      task identity and type
+runs.jsonl     execution identity and task linkage
+usage.jsonl    technical usage and optional financial amount
+bills.csv      supplier charge representation
+outcomes.csv   delivery and business outcome evidence
+</code></pre>
+<p>The intake layer preserves gaps rather than hiding them in totals:</p>
+<div class="table-scroll" role="region" aria-label="Scrollable table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Input condition</th>
+<th>Intake behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Repeated <code>run_id</code> or <code>usage_id</code></td>
+<td>Later row ignored and duplicate opened</td>
+</tr>
+<tr>
+<td>Repeated <code>charge_id</code></td>
+<td>First booked representation kept, duplicate reported, completeness damaged</td>
+</tr>
+<tr>
+<td>Cost without currency</td>
+<td><code>financial_status=unknown</code>; case currency is not assumed</td>
+</tr>
+<tr>
+<td>Financialized usage without cost</td>
+<td><code>unpriced</code> plus <code>missing_amount</code>, never zero</td>
+</tr>
+<tr>
+<td>Pricing rule without quantity</td>
+<td><code>missing_quantity</code>, never zero</td>
+</tr>
+<tr>
+<td>Currency different from case</td>
+<td>Row excluded and named; canonical run rejects the mixed-currency case</td>
+</tr>
+<tr>
+<td>Bill or usage without task linkage</td>
+<td>Cost remains unallocated rather than equally distributed</td>
+</tr>
+<tr>
+<td>Shared run linked to multiple task candidates</td>
+<td>No single task is chosen silently</td>
+</tr>
+</tbody>
+</table></div>
+<p>One vendor, one account, and one currency are hard canonical scope constraints. A matching bill cannot bypass the single-vendor check. An approved pricing rule can recalculate a charge, but rule repricing and cross-source reconciliation remain different axes.</p>
+<p>The implementation also indexes task, run, and outcome coverage sets once rather than rescanning every source row for every task. The 4,000-row synthetic benchmark in the release notes fell from about 0.66 seconds to 0.071 seconds with identical coverage output. That optimization is useful because it did not change the evidence semantics.</p>
+<h2>Completion has four axes, and FAIL can be complete</h2>
+<p>Canonical finance does not return one universal health score. It returns four completion statuses:</p>
+<ul>
+<li><code>finance_status</code>: are financial records, reconciliation gaps, and cost allocation closed?</li>
+<li><code>verification_status</code>: do applicable outcomes have decisive buyer-procedural verification?</li>
+<li><code>delivery_status</code>: does every task have decisive Delivery Accepted PASS or FAIL evidence?</li>
+<li><code>economics_status</code>: are applicable outcome economics, including cost and success/value evidence, complete?</li>
+</ul>
+<p>An omitted outcomes source makes verification, delivery, and economics <code>not_applicable</code>; it does not make a finance-only period partial. A present but empty outcomes source cannot hide the economics gap.</p>
+<p>A decisive delivery <code>FAIL</code> is complete evidence. The buyer has enough information to reject delivery; uncertainty is not the same as a negative result. This rule prevents the reporting layer from treating only favorable outcomes as finished work.</p>
+<p>ROI is also separate from Cost per Verified Success. Missing verified value can leave ROI null while cost and verified-success cost remain computable. An unverified vendor outcome is unknown, not a success and not a failure.</p>
+<h2>Acceptance identity comes from a controlled organization</h2>
+<p>Delivery acceptance needs more than an <code>accepted_by</code> string. The manifest must declare a controlled buyer organization with <code>org_id</code> and a non-empty <code>acceptance_signers</code> list.</p>
+<p>For every acceptance row, canonical finance checks:</p>
+<ol>
+<li>the controlled organization exists;</li>
+<li>the signer is not the vendor;</li>
+<li>the signer belongs to the authorized signer list;</li>
+<li>any declared <code>accepted_by_org</code> matches that organization's ID or name.</li>
+</ol>
+<p>A forged buyer label, unknown organization, vendor self-acceptance, or missing authority produces <code>UNPROVABLE</code>. A buyer-verified success also needs <code>accepted_by</code> and <code>accepted_at</code>; missing timestamps produce <code>UNKNOWN</code>.</p>
+<p>There is an additional cross-check: if a task has an unqualified acceptance row, a charge-level Buyer Verified <code>PASS</code> for that task is downgraded to <code>UNPROVABLE</code>. A clean arithmetic result cannot compensate for unauthorized acceptance on the same task.</p>
+<p>This is procedural authority rather than self-description. The manifest's controlled organization is the credential boundary recognized by the implementation.</p>
+<h2>A hash proves handoff integrity, not external truth</h2>
+<p>Growovo can hand execution and outcome records to Verovo. The importer verifies the handoff schema, recomputes SHA-256 over the body excluding <code>integrity_sha256</code> and <code>generated_at</code>, rejects credential-like fields recursively, and requires:</p>
+<pre tabindex="0"><code class="language-text">booking_status = evidence_only_not_canonical
+external_action_executed_by_export = false
+</code></pre>
+<p>The imported evidence record then states:</p>
+<pre tabindex="0"><code class="language-text">source_integrity_verified = true
+integrity_meaning = unchanged_json_body_not_external_truth
+receipt_verified_by_verovo = false
+business_outcome_observed_by_verovo = false
+payment_authorization = false
+terminal_state = DELIVERED_WITH_GAP
+premises_do_not_upgrade_grade = true
+</code></pre>
+<p>This is a precise integrity boundary. The hash shows that the JSON body has not changed since Growovo computed it. It does not prove that an external action happened, a supplier accepted delivery, or revenue exists. Booking requires separate source mapping and review.</p>
+<p>The same distinction appears in Provider Manifest admission. A local document can declare engine identity, process executable hash, resource limits, readiness checks, coverage, cleanup, and raw snapshot digests. Required failed or unknown checks refuse admission; optional ones degrade it; unreleased cleanup refuses it. The result still has <code>live_engine_contacted=false</code>. A well-formed adapter contract is not a live integration test.</p>
+<h2>Reuse means preserving definitions across periods</h2>
+<p>A second accounting period should reuse provenance requirements, source mappings, outcome classes, observer grades, and completion semantics. It should not reuse the previous period's acceptance or independence claims automatically.</p>
+<p>The useful comparison is therefore more than amount deltas:</p>
+<ul>
+<li>which sources changed control domain or collector;</li>
+<li>which links became missing or ambiguous;</li>
+<li>which outcome denominators changed definition;</li>
+<li>which acceptance signers lost or gained authority;</li>
+<li>which completion axes changed;</li>
+<li>how much human work was needed to resolve new gaps.</li>
+</ul>
+<p>I ran the task-economics, period-intake, coverage, and canonical-finance suites for this article: 54 tests passed. They cover duplicate identities, cross-currency and cross-account scope, missing amounts, vendor-controlled relabeling, forged buyer strings, vendor self-acceptance, empty outcomes, decisive delivery failure, unpriced usage, and unallocated shared cost.</p>
+<p>The implementation's central constraint is conservative but enabling: evidence from different parties can answer different questions, and a missing answer can remain visible without blocking every calculation. A buyer can reconcile one charge, leave delivery unresolved, and still know exactly which evidence must arrive next.</p>
+<h3>Source and verification links</h3>
+<ul>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/task_economics.py"><code>task_economics.py</code>: provenance and buyer-evidence qualification</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/period_intake.py"><code>period_intake.py</code>: source joins, exclusions, and coverage</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/canonical_finance.py"><code>canonical_finance.py</code>: completion axes and acceptance authority</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/buyer_ledger/growovo_handoff.py"><code>growovo_handoff.py</code>: evidence-only integrity import</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/provider_contract.py"><code>provider_contract.py</code>: local adapter admission</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/conformance/evidence/assumed-resolution/run_case.py">Assumed-resolution evidence case</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/tests/test_canonical_finance.py">Canonical-finance tests</a></li>
+</ul>
+  </article>
+  <footer class="post-footer">
+    <p><strong>Also in this Verovo series</strong></p>
+    <ul><li><a href="03-verovo-deterministic-replay-with-unknowns.html">Verovo: deterministic replay for AI charges, with the unknowns intact</a> — Decimal arithmetic, counting grain, content-addressed revisions, OCR integrity, and line-level buyer disposition.</li></ul>
+    <p><a href="./">Blog index</a> · <a href="06-verovo-a-vendor-export-is-not-buyer-evidence.md">Download Markdown</a> · <a href="https://github.com/roy-tong/Verovo">Source repository</a></p>
+  </footer>
+</main>
+</body>
+</html>

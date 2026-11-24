@@ -24,7 +24,7 @@ python3 healthcheck/verovo spend-actions \
   --json spend-actions.json --markdown spend-actions.md
 ```
 
-The command produces `ready_for_payment`, `evidence_required`, `review_required`, `unreviewed` and `settled` actions with owner roles, reasons, finding links and per-currency amount coverage. Only explicitly confirmed clean lines become ready for payment; an unflagged line is not implicitly cleared. It never executes or authorizes payment.
+The command produces `ready_for_payment`, `evidence_required`, `review_required`, `unreviewed`, `partially_settled` and `settled` actions with owner roles, reasons, finding links and per-currency amount coverage. Only versioned reviews bound to normalized source content and contract versions become ready for payment. A Finding marked `realized` becomes settled only after an applied credit is independently verified. It never executes or authorizes payment.
 
 ## Check a Provider Manifest
 

@@ -37,6 +37,20 @@ class SpendActionSchemaTests(unittest.TestCase):
             self.assertIsInstance(row["finding_ids"], list)
             if row["amount"] is not None:
                 self.assertRegex(row["amount"]["value"], r"^\d+\.\d{2}$")
+        settled = next(row for row in result["actions"] if row["source"]["kind"] == "invoice_line" and row["source"]["line_id"] == "line-003")
+        self.assertEqual(settled["settlement"]["status"], "settlement_verified")
+        ready = next(row for row in result["actions"] if row["source"]["kind"] == "invoice_line" and row["source"]["line_id"] == "line-004")
+        self.assertIn("source_digest", ready["charge_review"])
+
+    def test_schema_supports_currency_specific_minor_units(self):
+        import re
+        schema = json.loads((ROOT / "schemas" / "spend-action-list.schema.json").read_text(encoding="utf-8"))
+        pattern = schema["$defs"]["amount"]["properties"]["value"]["pattern"]
+        self.assertIsNotNone(re.fullmatch(pattern, "1.234"))
+        self.assertIsNotNone(re.fullmatch(pattern, "1.23"))
+        self.assertIsNone(re.fullmatch(pattern, "1.2"))
+        self.assertIn("partially_settled", schema["$defs"]["settlement"]["properties"]["status"]["enum"])
+        self.assertIn("case_level_amounts", schema["properties"]["summary"]["required"])
 
 
 if __name__ == "__main__":

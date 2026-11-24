@@ -8,7 +8,7 @@ Buyer-first independent measurement and audit of **AI agent charges, delivery an
 
 - Buyer `review` tasks: explicit scope and criteria, local JSON observations, separate charges/delivery conclusions, evidence hashes and offline reports.
 - Supported billing recounts, evidence preparation, discrepancy and recovery records.
-- `spend-actions`: an existing Audit Case becomes a line-level worklist with clean, evidence, review, unreviewed and settled actions. It does not execute or authorize payment.
+- `spend-actions`: an existing Audit Case becomes a line-level worklist with ready/evidence/review/unreviewed/partially_settled/settled actions. Clean recommendations bind normalized source content and contract versions; settlement requires independently verified applied credit. It does not execute or authorize payment.
 - `provider check`: local Provider Manifest validation and admission with explicit readiness, version, resource-limit, coverage and cleanup semantics. It does not claim live engine contact.
 - Task economics, canonical period proofs, Buyer Ledger tooling and catalog; cataloged platforms are not live-validated.
 - Local developer diagnostics, conformance and free measurement runs.

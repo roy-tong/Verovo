@@ -16,7 +16,7 @@
 
 A total invoice cannot tell you which line needs evidence, whether a retry was worth it, or which tool should handle the next task. Verovo connects supplier rules, invoices, usage, delivery and buyer acceptance so finance, operations and engineering can answer three questions:
 
-- **What should happen to this charge?** Recalculate supported bills and turn the findings into a line-level worklist: ready for payment, evidence required, review required, unreviewed or settled.
+- **What should happen to this charge?** Recalculate supported bills and turn the findings into a line-level worklist: ready for payment, evidence required, review required, unreviewed, partially settled or settled. Clean recommendations are bound to normalized source content and contract versions; settlement is verified from applied credit evidence.
 - **Was the work delivered?** Check observed delivery against the buyer’s own acceptance criteria without treating a failed outcome as automatic proof of a billing error.
 - **Which option is worth choosing?** Connect direct and allocated task costs with verified outcomes, cost per verified success and explicit scenario comparisons.
 
@@ -50,7 +50,7 @@ python3 healthcheck/verovo spend-actions \
   --json spend-actions.json --markdown spend-actions.md
 ```
 
-The synthetic case produces three evidence actions, four review actions, one unreviewed line, two lines ready for payment and one settled line. Only explicitly confirmed clean lines can become ready for payment; the report does not execute or authorize payment.
+The synthetic case produces three evidence actions, four review actions, one unreviewed line, two lines ready for payment and one settled line. Only versioned reviews bound to normalized source content and contract versions can become ready for payment; `realized` becomes settled only after the applied credit is independently verified. The report does not execute or authorize payment.
 
 ## See the economics behind each task
 

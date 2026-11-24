@@ -34,6 +34,24 @@
     "line-004",
     "line-009"
   ],
+  "charge_reviews": [
+    {
+      "invoice_source_id": "invoices/invoice-2026-10.json",
+      "line_id": "line-004",
+      "source_digest": "91955b39536b884236abc29373fffe758042a26be6d5713ce336c17a5a8c717c",
+      "rule_version": "MSA-2026-03 / Order Form 4",
+      "reviewed_by": "Maya Chen, Procurement Lead",
+      "reviewed_at": "2026-11-03T09:00:00Z"
+    },
+    {
+      "invoice_source_id": "invoices/invoice-2026-10.json",
+      "line_id": "line-009",
+      "source_digest": "91955b39536b884236abc29373fffe758042a26be6d5713ce336c17a5a8c717c",
+      "rule_version": "MSA-2026-03 / Order Form 4",
+      "reviewed_by": "Maya Chen, Procurement Lead",
+      "reviewed_at": "2026-11-03T09:00:00Z"
+    }
+  ],
   "notes": [
     "Synthetic data. It exercises the audit-case contract, not a real vendor relationship.",
     "The EUR line is deliberately outside USD coverage; no FX rate is inferred.",

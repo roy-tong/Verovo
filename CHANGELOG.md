@@ -1,3 +1,16 @@
+## v0.17.2 - 2026-11-23
+
+### Changed
+
+- Spend Actions now requires versioned `charge_reviews` for `ready_for_payment`: invoice path, line id, source SHA-256, contract version, reviewer and review time must all match. Text digests normalize LF/CRLF for cross-platform checkouts. Legacy `clean_charge_lines` alone no longer clears a line, and changed content invalidates the previous review.
+- `realized` no longer implies `settled`. Applied credit evidence must match the finding amount, currency and charge identity. Added `partially_settled`, `resolution_claimed`, `credit_issued` and `settlement_mismatch` handling, with `settlement_verified` only for a complete match.
+- Invoice-line and case-level amounts are reported separately. Missing affected lines and duplicate finding IDs fail closed.
+- Added explicit three-minor-unit currency support for BHD, IQD, JOD, KWD, LYD, OMR and TND in the shared Money Contract; existing two-decimal behavior is unchanged.
+
+### Tests
+
+- Added 12 adversarial tests for cross-invoice ID collisions, stale reviews, CRLF normalization, missing affected lines, missing/unapplied/partial credits, KWD precision, case-level amount separation and duplicate finding IDs. 659 healthcheck tests and 69 root tests pass.
+
 ## v0.17.1 - 2026-11-23
 
 ### Changed

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verovo: deterministic replay for AI charges, with the unknowns intact — Verovo</title>
+  <meta name="description" content="Decimal arithmetic, counting grain, content-addressed revisions, OCR integrity, and line-level buyer disposition.">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="canonical" href="https://roy-tong.github.io/Verovo/blog/03-verovo-deterministic-replay-with-unknowns.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Verovo">
+  <meta property="og:title" content="Verovo: deterministic replay for AI charges, with the unknowns intact">
+  <meta property="og:description" content="Decimal arithmetic, counting grain, content-addressed revisions, OCR integrity, and line-level buyer disposition.">
+  <meta property="og:url" content="https://roy-tong.github.io/Verovo/blog/03-verovo-deterministic-replay-with-unknowns.html">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Verovo: deterministic replay for AI charges, with the unknowns intact", "description": "Decimal arithmetic, counting grain, content-addressed revisions, OCR integrity, and line-level buyer disposition.", "datePublished": "2026-11-24", "dateModified": "2026-11-24", "inLanguage": "en", "author": {"@type": "Person", "name": "Roy Tong", "url": "https://github.com/roy-tong"}, "mainEntityOfPage": "https://roy-tong.github.io/Verovo/blog/03-verovo-deterministic-replay-with-unknowns.html", "codeRepository": "https://github.com/roy-tong/Verovo", "isAccessibleForFree": true, "wordCount": 2126}</script>
+  <style>
+:root{--panel:#10151b;--text:#f2f5f7;--muted:#8b96a3;--line:#252d36;--accent:#76a5ff;--accent-soft:rgba(118,165,255,.1);--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+body{background:#090c10;color:var(--text);font:16px/1.7 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;margin:0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.post-back,.post-k,.post-meta{font-family:var(--mono)}.post-k{color:var(--accent)}
+pre{background:var(--panel);border:1px solid var(--line)}code{background:var(--panel);border:1px solid var(--line)}
+th{background:var(--panel);color:var(--muted)}.note{border-left:3px solid var(--accent);background:var(--accent-soft)}
+
+*{box-sizing:border-box}html{scroll-behavior:smooth}.skip-link{position:absolute;left:12px;top:-60px;padding:8px 12px;background:Canvas;color:CanvasText;z-index:20}.skip-link:focus{top:12px}
+.post{max-width:860px;margin:0 auto;padding:52px 24px 72px}.post-back{display:inline-block;font-size:.78rem;letter-spacing:.08em;margin-bottom:28px}.post-k{font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin:0 0 12px}
+.post h1{font-size:clamp(2rem,5vw,3rem);line-height:1.16;letter-spacing:-.025em;margin:0 0 16px}.post-meta{font-size:.8rem;line-height:1.6;color:var(--muted);margin-bottom:36px}.post h2{font-size:1.45rem;line-height:1.3;margin:42px 0 14px;letter-spacing:-.01em}.post h3{font-size:1.08rem;margin:28px 0 10px}.post p{margin:0 0 18px}.post ul,.post ol{margin:0 0 20px;padding-left:1.5rem}.post li{margin-bottom:8px}.post blockquote{margin:0 0 20px;padding:10px 16px;color:var(--muted);border-left:3px solid var(--line)}
+.post pre{border-radius:8px;padding:16px 18px;overflow-x:auto;margin:0 0 20px;line-height:1.55;font-size:.88rem}.post code{font-family:var(--mono);font-size:.9em;border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}.post pre code{display:block;border:0;padding:0;overflow-wrap:normal}.post table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:.92rem}.post th,.post td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}.post th{font-weight:600}.table-scroll{overflow-x:auto;outline-offset:4px}.note{padding:12px 16px;border-radius:0 8px 8px 0;margin:0 0 20px}.post-footer{border-top:1px solid var(--line);margin-top:44px;padding-top:20px;color:var(--muted);font-size:.88rem}.post-footer ul{padding-left:1.2rem}.post-footer a{overflow-wrap:anywhere}
+.cards{display:grid;gap:18px;margin-top:28px}.card{border:1px solid var(--line);border-radius:10px;padding:22px}.card h2{font-size:1.3rem;margin:0 0 10px}.card p{color:var(--muted);margin:0 0 14px}.card .read{font-size:.85rem}.blog-links{margin-top:30px}.blog-links li{margin-bottom:10px}
+@media(max-width:640px){.post{padding:32px 18px 56px}.post h1{font-size:2rem}.post h2{font-size:1.3rem}.post table{font-size:.84rem}.post th,.post td{padding:8px}.post pre{font-size:.8rem;padding:13px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to article</a>
+<main class="post" id="content">
+  <nav aria-label="Article navigation"><a class="post-back" href="./">← VEROVO TECHNICAL BLOG</a></nav>
+  <p class="post-k">Verovo · Engineering deep dive</p>
+  <h1>Verovo: deterministic replay for AI charges, with the unknowns intact</h1>
+  <p class="post-meta">24 November 2026 · 10 min read · 2,126 words · <a href="03-verovo-deterministic-replay-with-unknowns.md">Markdown source</a></p>
+  <article aria-label="Verovo: deterministic replay for AI charges, with the unknowns intact">
+<p><em>Decimal arithmetic, counting grain, content-addressed revisions, OCR integrity, and line-level buyer disposition.</em></p>
+<p>A public synthetic fixture for claude-hud contained two million one-hour cache-write tokens for a model priced at $3 per million input tokens. The implementation priced them at the five-minute multiplier:</p>
+<pre tabindex="0"><code class="language-text">2,000,000 / 1,000,000 × $3 × 1.25 = $7.50
+</code></pre>
+<p>The applicable one-hour multiplier was 2×:</p>
+<pre tabindex="0"><code class="language-text">2,000,000 / 1,000,000 × $3 × 2.00 = $12.00
+</code></pre>
+<p>The difference was $4.50, a 37.5% understatement on that component. The parser already exposed the cache-tier split; the cost path discarded it. The fix was merged as <a href="https://github.com/jarrodwatts/claude-hud/pull/758">claude-hud PR #758</a>.</p>
+<p>That fixture was not a customer invoice or recovered money. It demonstrates a more general engineering problem: an AI charge is the result of event identity, counting rules, price versions, time windows, and arithmetic. A total without those inputs is difficult to review. Verovo's implementation is an attempt to make each of them replayable while keeping delivery and buyer acceptance outside the billing verdict.</p>
+<h2>Start with a complete, small example</h2>
+<p>The public replay fixture contains two synthetic events:</p>
+<pre tabindex="0"><code class="language-json">{
+  &quot;transaction_id&quot;: &quot;synthetic-tx-001&quot;,
+  &quot;metric_code&quot;: &quot;api_call&quot;,
+  &quot;occurred_at&quot;: &quot;2026-10-05T10:00:00+00:00&quot;,
+  &quot;ingested_at&quot;: &quot;2026-11-02T00:00:00+00:00&quot;,
+  &quot;source_ref&quot;: &quot;synthetic-events.jsonl&quot;,
+  &quot;source_hash&quot;: &quot;sha256:1111…&quot;,
+  &quot;properties&quot;: {
+    &quot;task_id&quot;: &quot;synthetic-task-1&quot;,
+    &quot;attempt_id&quot;: &quot;synthetic-attempt-1&quot;,
+    &quot;vendor&quot;: &quot;example-vendor&quot;,
+    &quot;vendor_record_id&quot;: &quot;synthetic-vendor-row-1&quot;
+  }
+}
+</code></pre>
+<p>The second event has a different transaction and vendor-record ID, one minute later. Both name the same task and attempt. The approved rule map says:</p>
+<pre tabindex="0"><code class="language-json">{
+  &quot;metric_code&quot;: &quot;api_call&quot;,
+  &quot;aggregate&quot;: &quot;count&quot;,
+  &quot;unit&quot;: &quot;call&quot;,
+  &quot;currency&quot;: &quot;USD&quot;,
+  &quot;unit_price&quot;: &quot;0.01&quot;,
+  &quot;price_version&quot;: &quot;synthetic-price-1&quot;,
+  &quot;valid_from&quot;: &quot;2026-10-01&quot;
+}
+</code></pre>
+<p>I built and verified the bundle, then inspected its manifest. The actual result was:</p>
+<pre tabindex="0"><code class="language-json">{
+  &quot;counts&quot;: {
+    &quot;received&quot;: 2,
+    &quot;included&quot;: 2,
+    &quot;duplicates&quot;: 0,
+    &quot;conflicts&quot;: 0,
+    &quot;excluded&quot;: 0,
+    &quot;late&quot;: 0
+  },
+  &quot;metrics&quot;: [{
+    &quot;metric_code&quot;: &quot;api_call&quot;,
+    &quot;quantity&quot;: &quot;2.0000&quot;,
+    &quot;unit&quot;: &quot;call&quot;,
+    &quot;currency&quot;: &quot;USD&quot;,
+    &quot;amount&quot;: &quot;0.0200&quot;,
+    &quot;event_count&quot;: 2,
+    &quot;price_version&quot;: &quot;synthetic-price-1&quot;
+  }],
+  &quot;charge_verdict&quot;: &quot;PASS&quot;,
+  &quot;delivery_state&quot;: &quot;UNKNOWN&quot;
+}
+</code></pre>
+<p>The important detail is the same <code>attempt_id</code> on two transactions. The fixture can support attempt-level identity coverage, but it does not infer that the two transactions were two logical operations. Attempt, operation, and delegation are different grains. Operation-level grouping requires additional evidence.</p>
+<p>The identity report also showed:</p>
+<pre tabindex="0"><code class="language-text">records=2
+task_id=2
+attempt_id=2
+vendor=2
+vendor_record_id=2
+complete_for_attempt=2
+retry_of=0
+cache_hit_of=0
+</code></pre>
+<p>Zero retry links is a count of observed fields, not a claim that no retries occurred. <code>external_subject_id</code> is retained as a billing subject and is never used as a substitute for <code>task_id</code>.</p>
+<h2>Replay is a sequence of refusals and calculations</h2>
+<p>The replay engine normalizes every event, applies an identity and rule map, emits line-level exclusions, aggregates only included lines, and computes a content-addressed revision.</p>
+<h3>1. Event identity and deduplication</h3>
+<p><code>dedupe_key</code> defaults to <code>transaction_id</code>. If the same key appears again, the engine compares both <code>properties_hash</code> and <code>source_hash</code>:</p>
+<ul>
+<li>same key and same hashes: count once and record a duplicate;</li>
+<li>same key with different content: record a conflict and exclude the line with <code>DEDUPE_CONFLICT</code>;</li>
+<li>new key: continue through pricing and aggregation.</li>
+</ul>
+<p>Conflicting events are not merged into a prettier history. A metric absent from the rule map produces <code>METRIC_NOT_IN_RULE_MAP</code>, with null quantity, price, and amount.</p>
+<h3>2. Time and rule eligibility</h3>
+<p>A period is half-open: <code>[start, end)</code>. An event outside that window receives <code>PERIOD_OUT_OF_WINDOW</code>. Prices have their own validity interval and <code>price_version</code>; an expired or not-yet-valid price produces <code>PRICE_NOT_VALID_FOR_OCCURRED_AT</code>. A missing price produces <code>PRICE_MISSING</code>, not zero.</p>
+<p>Rule-map aggregation requires both <code>approved_by</code> and <code>approved_at</code>. Without them, the aggregation state is <code>RULE_MAP_NOT_APPROVED</code>. Late events are flagged and create a new replay revision; they do not rewrite an earlier signed close.</p>
+<h3>3. Aggregation</h3>
+<p>The engine supports <code>count</code>, <code>sum</code>, <code>max</code>, <code>unique_count</code>, <code>latest</code>, and <code>weighted_sum</code>. Each has different input requirements. A missing quantity blocks <code>sum</code> but not <code>count</code> or <code>unique_count</code>. A missing weight makes a weighted result null with <code>WEIGHT_MISSING</code>. Only <code>count</code>, <code>sum</code>, <code>weighted_sum</code>, and <code>unique_count</code> are priced by the current implementation; <code>max</code> and <code>latest</code> return <code>AGGREGATE_NOT_PRICED</code>.</p>
+<p>For the two-event example, <code>count</code> ignores the absence of a quantity property, calculates two calls, and multiplies by <code>Decimal("0.01")</code> to produce <code>Decimal("0.0200")</code>.</p>
+<h3>4. Revision identity</h3>
+<p>The input fingerprint hashes a canonical object containing:</p>
+<pre tabindex="0"><code class="language-text">period + closed_at + complete rule map + normalized events
+</code></pre>
+<p>Only the parser's positional <code>order</code> field is removed from normalized events. The revision ID is <code>ur-</code> plus the first twelve hex characters of the fingerprint's SHA-256 digest. This is not just a hash of the final amount: changing a rule, an identity property, a timestamp, or another input field changes the revision.</p>
+<h2>Verification checks more than the final number</h2>
+<p>A reproduction bundle copies source inputs into <code>inputs/</code> and records each file's SHA-256 and byte length. Verification then checks:</p>
+<pre tabindex="0"><code class="language-text">manifest schema and required fields
+→ exact file set
+→ every file hash and byte length
+→ generator/algorithm version
+→ replayed input_fingerprint and revision_id
+→ replayed counts and metrics
+→ complete semantic replay output
+→ independently recomputed identity mapping
+→ independently recomputed discrepancy classification
+</code></pre>
+<p>Incomplete manifests or missing evidence produce <code>UNPROVEN</code>; a complete but failing verification produces <code>FAIL</code>. The builder writes a staging directory and verifies it before replacing an existing output. A failed build leaves the previous bundle intact.</p>
+<p>Public projection is a separate operation with its own permission rules. Only synthetic or explicitly approved <code>public-redacted</code> bundles can be published. The public copy removes private paths and row-level subjects. If private inputs are absent, independent replay is <code>UNAVAILABLE</code>, not implicitly successful.</p>
+<p>The fixture's proof export produced exactly three checks:</p>
+<pre tabindex="0"><code class="language-text">artifact-integrity   P1  PASS
+replay-integrity     P1  PASS
+external-result      P4  UNCHECKED
+</code></pre>
+<p>Usage arithmetic passed. External acceptance was not observed. Delivery remained <code>UNKNOWN</code>.</p>
+<h2>Canonical proof uses a different replay contract</h2>
+<p>Usage replay and canonical finance are separate engines. The canonical <code>verovo proof export</code> command runs the finance model, records source hashes, and writes a semantic output fingerprint. <code>verovo proof replay</code> then applies this decision table:</p>
+<div class="table-scroll" role="region" aria-label="Scrollable table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Proof structure, projections, schema, or expected hash is invalid</td>
+<td><code>INDETERMINATE</code></td>
+</tr>
+<tr>
+<td>A required input is missing or its hash changed</td>
+<td><code>EXPIRED</code></td>
+</tr>
+<tr>
+<td>Inputs match but canonical output differs</td>
+<td><code>FAIL</code></td>
+</tr>
+<tr>
+<td>Inputs and canonical semantic output match</td>
+<td><code>PASS</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>The semantic fingerprint removes only <code>intake_report.generated_at</code>. Every other field in the canonical result participates in canonical JSON hashing. A changed allocation, verdict, coverage field, or buyer-related output therefore cannot hide behind an unchanged top-line amount.</p>
+<p>Canonical proof also preserves independent conclusion types: rule repricing, invoice reconciliation, vendor reconciliation, buyer verification, and delivery acceptance. They do not inherit one another's proof levels. Two vendor-controlled exports can support vendor reconciliation; they do not become buyer-controlled evidence merely because the buyer downloaded both files.</p>
+<h2>Money has more than one contract</h2>
+<p>Financial code tends to accumulate small rounding decisions until two displays disagree. Verovo's Money Contract centralizes task-economics display and allocation behavior:</p>
+<ul>
+<li>internal arithmetic uses <code>Decimal</code>, with non-finite or invalid strict input rejected;</li>
+<li>external display uses two-decimal strings and <code>ROUND_HALF_UP</code>;</li>
+<li>allocation uses the largest-remainder method so allocated cents sum exactly to the original total;</li>
+<li>zero-weight tasks receive no allocation.</li>
+</ul>
+<p>For example, running the current implementation gives:</p>
+<pre tabindex="0"><code class="language-text">display(0.005)                    → 0.01
+allocate(0.05, weights a=b=c=1)  → a=0.02, b=0.02, c=0.01
+</code></pre>
+<p>The last example first floors each exact allocation to <code>0.01</code>, then distributes the remaining two cents by remainder. The invariant is <code>sum(allocated) == total</code>; it does not distribute a rounding error into an imaginary fourth task.</p>
+<p>There is also a lenient parser for legacy display paths, which maps invalid input to zero. It is explicitly excluded from accounting calculations. That distinction matters as much as the rounding rule: a display fallback must not become a financial fact. Buyer Ledger's zero-decimal-currency tolerance and booking/allocation rules remain separate contracts rather than being mechanically replaced by the two-decimal display function.</p>
+<h2>OCR approval is bound to bytes and revisions</h2>
+<p>OCR introduces two different risks: extracting a field incorrectly, and approving one document before booking another.</p>
+<p>Each bill candidate records the source file's SHA-256. Review and booking reverify:</p>
+<pre tabindex="0"><code class="language-text">raw source hash
++ OCR raw_text_sha256
++ OCR payload schema
++ OCR lines
++ reconstructed OCR text
+</code></pre>
+<p>A mismatch returns <code>STALE_SOURCE</code>, and booking checks the source again immediately before copying it. On platforms without <code>fcntl</code>, candidate locking fails closed with <code>UNSUPPORTED_CAPABILITY</code> instead of pretending to hold a cross-process lock.</p>
+<p>Line arithmetic is recomputed at review and booking. Quantity × unit price must match the printed amount within:</p>
+<pre tabindex="0"><code class="language-text">max(one smallest printed unit, 1% of |line amount|)
+</code></pre>
+<p>Unparseable quantities, prices, or amounts cannot be waived into a booked invoice with a reviewer note. This avoids the older zero-decimal-currency failure in which a scale-based tolerance could accept an invalid JPY or KRW line.</p>
+<p>The period projection adds a byte-level consistency check. <code>CaseRepository</code> snapshots ten named state artifacts, including the job, scan, mapping, calculation, report, review, signoff, and revision. <code>PeriodCase.project()</code> checks recovery state, snapshots those bytes, builds the projection, then verifies that every byte is unchanged. Mid-projection writes return <code>STALE_SOURCE</code>.</p>
+<p>Signoff binding is equally explicit. The current report and signoff must agree on:</p>
+<ul>
+<li><code>revision_id</code>;</li>
+<li>report output fingerprint;</li>
+<li>calculation fingerprint;</li>
+<li>canonical snapshot fingerprint;</li>
+<li>revision metadata and signoff record contents.</li>
+</ul>
+<p>Adding evidence after signoff creates a new revision. It does not mutate the signed report or let an old signature endorse new calculations.</p>
+<h2>The spend-action projection has a conservative order</h2>
+<p>The recent <code>spend-actions</code> command turns an Audit Case into buyer work rather than another aggregate score. Its line-level decision order is:</p>
+<div class="table-scroll" role="region" aria-label="Scrollable table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Condition in priority order</th>
+<th>Action</th>
+<th>Default owner role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open finding is unprovable, or classified as missing evidence, currency mismatch, or unverified outcome</td>
+<td><code>evidence_required</code></td>
+<td>Buyer operations, or finance for currency mismatch</td>
+</tr>
+<tr>
+<td>Any other open finding</td>
+<td><code>review_required</code></td>
+<td>Procurement, or finance for shared-cost allocation</td>
+</tr>
+<tr>
+<td>Realized finding, with no open finding on the line</td>
+<td><code>settled</code></td>
+<td>Buyer finance</td>
+</tr>
+<tr>
+<td>Line explicitly listed in manifest <code>clean_charge_lines</code></td>
+<td><code>ready_for_payment</code></td>
+<td>Accounts payable</td>
+</tr>
+<tr>
+<td>No finding and no explicit clean confirmation</td>
+<td><code>unreviewed</code></td>
+<td>Buyer finance</td>
+</tr>
+</tbody>
+</table></div>
+<p>That last row is important: absence of a finding is not payment clearance.</p>
+<p>Amount summaries remain grouped by action and currency, with <code>known_count</code>, <code>unknown_count</code>, and <code>known_value</code>. Unknown amounts are counted, not zeroed. The command never executes or authorizes payment; the buyer still records the actual payment, hold, evidence request, or vendor review elsewhere.</p>
+<p>A companion Provider Manifest workflow returns local <code>admit</code>, <code>degrade</code>, or <code>refuse</code> from declared readiness checks, engine identity, resource limits, coverage, and cleanup state. It does not contact the engine. Admission says something about the declared engineering contract, not that production integration or purchasing is safe.</p>
+<h2>The next period tests reuse without inheriting old passes</h2>
+<p>Cross-period reuse has a precise eligibility rule in <code>PeriodCase</code>. A pricing rule can be proposed only if its <code>valid_from</code> is on or before the period start and its <code>valid_to</code> is on or after the period's inclusive last day. Every reusable rule is emitted with:</p>
+<pre tabindex="0"><code class="language-json">{
+  &quot;requires_re_review_next_period&quot;: true
+}
+</code></pre>
+<p>A previous month's <code>PASS</code> does not cover this month's price. The useful assets are valid field mappings, rule references, acceptance criteria, and comparison definitions—not immutable approval.</p>
+<p>A meaningful second period should therefore record which mappings were reused, which rules expired, how many new open items appeared, how many minutes humans spent on review and missing evidence, and what the buyer actually did. Replaying the same two events establishes determinism. Processing a new period under those constraints tests continued value.</p>
+<h2>What the current implementation establishes</h2>
+<p>Verovo's strongest mechanism is not a universal “bill is correct” badge. It is a collection of narrower, inspectable invariants:</p>
+<ul>
+<li>conflicting events are not silently merged;</li>
+<li>missing price, quantity, identity, and evidence remain null or unknown;</li>
+<li>input and output revisions are content-addressed;</li>
+<li>money uses explicit arithmetic and allocation contracts;</li>
+<li>OCR review and signoff are bound to specific bytes;</li>
+<li>clean lines, unreviewed lines, and lines needing evidence remain different;</li>
+<li>replay success never becomes buyer acceptance.</li>
+</ul>
+<p>Those invariants make the system useful before a universal benchmark exists. They also give a third party something concrete to attack: mutate one event, change a rule, edit an OCR artifact, alter a signed revision, or remove an identity field. The resulting <code>FAIL</code>, <code>EXPIRED</code>, <code>UNPROVEN</code>, or <code>INDETERMINATE</code> is part of the product, not an embarrassment to be hidden by a green dashboard.</p>
+<h3>Source and verification links</h3>
+<ul>
+<li><a href="https://roy-tong.github.io/Verovo/examples/replayable-period.html">Replayable-period fixture and commands</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/buyer_ledger/usage_replay.py"><code>usage_replay.py</code>: event normalization, pricing, aggregation, and revisions</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/buyer_ledger/reproduce.py"><code>reproduce.py</code>: bundle verification and public projection</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/proof_export.py"><code>proof_export.py</code>: canonical semantic fingerprint and replay verdicts</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/money.py"><code>money.py</code>: Decimal display and largest-remainder allocation</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/buyer-ledger/buyer_ledger/period_case.py"><code>period_case.py</code>: snapshot projection, signoff binding, and cross-period rules</a></li>
+<li><a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/spend_action.py"><code>spend_action.py</code>: line-level buyer worklist</a></li>
+<li><a href="https://github.com/jarrodwatts/claude-hud/pull/758">claude-hud PR #758</a></li>
+</ul>
+  </article>
+  <footer class="post-footer">
+    <p><strong>Also in this Verovo series</strong></p>
+    <ul><li><a href="06-verovo-a-vendor-export-is-not-buyer-evidence.html">Verovo: a vendor export is not buyer evidence</a> — Control domains, procedural provenance checks, outcome observer grades, canonical completion axes, and evidence-only handoffs.</li></ul>
+    <p><a href="./">Blog index</a> · <a href="03-verovo-deterministic-replay-with-unknowns.md">Download Markdown</a> · <a href="https://github.com/roy-tong/Verovo">Source repository</a></p>
+  </footer>
+</main>
+</body>
+</html>

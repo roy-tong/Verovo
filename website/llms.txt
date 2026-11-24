@@ -13,6 +13,9 @@
 - [Release notes](https://roy-tong.github.io/Verovo/releases.html): independent package versions and dated releases
 - [AI invoice reconciliation](https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html): three-step method, seven failure modes and a free browser recount; the reproducible sample lives in `buyer-ledger/examples/ai-invoice-reconciliation`
 - [Per-resolution bills](https://roy-tong.github.io/Verovo/blog/resolution-bill-check.html): who attested each resolution, and how to check that bill locally
+- [Verovo technical blog](https://roy-tong.github.io/Verovo/blog/): deterministic replay, control domains and buyer evidence
+- [Deterministic replay for AI charges, with the unknowns intact](https://roy-tong.github.io/Verovo/blog/03-verovo-deterministic-replay-with-unknowns.html): counting grain, content-addressed revisions, Decimal arithmetic and OCR integrity
+- [A vendor export is not buyer evidence](https://roy-tong.github.io/Verovo/blog/06-verovo-a-vendor-export-is-not-buyer-evidence.html): provenance, outcome observer grades, completion axes and evidence-only handoffs
 
 ## Measurement and evidence
 

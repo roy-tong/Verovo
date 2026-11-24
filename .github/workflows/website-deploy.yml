@@ -64,7 +64,7 @@ jobs:
           # website/; the excludes preserve files that gh-pages owns and the
           # site build does not produce (.nojekyll for Pages, status.json
           # written by conformance).
-          rsync -a --delete \
+          rsync -ac --delete \
             --exclude='.git' \
             --exclude='.nojekyll' \
             --exclude='status.json' \

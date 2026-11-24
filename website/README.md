@@ -1,6 +1,7 @@
 # Verovo website
 
 Live: https://roy-tong.github.io/Verovo/
+Current public release: v0.17.1.
 
 Static HTML, CSS and JavaScript. Verovo is presented as the independent measurement and audit layer for AI agents: period spend actions, delivery review, control-effectiveness validation and private procurement comparison. Buyer services and fee mechanisms are under validation. Local developer tools and the existing free measurement runs retain their separate scope. Standards, SDK, claims and research remain supporting resources.
 

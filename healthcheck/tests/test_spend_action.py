@@ -70,7 +70,10 @@ class SpendActionGoldenCaseTests(unittest.TestCase):
             amounts[("ready_for_payment", "USD")]["known_value"], "120.00"
         )
         self.assertEqual(
-            amounts[("evidence_required", "USD")]["unknown_count"], 1
+            amounts[("evidence_required", "USD")]["unknown_count"], 0
+        )
+        self.assertEqual(
+            self.result["summary"]["case_level_amounts"][0]["unknown_count"], 1
         )
         self.assertEqual(
             amounts[("evidence_required", "EUR")]["known_value"], "90.00"

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://verovo.dev/schemas/spend-action-list.schema.json",
   "title": "Verovo Spend Action List",
-  "description": "A read-only buyer worklist projected from an existing Audit Case. Recommendations do not execute or authorize payment.",
+  "description": "A read-only buyer worklist projected from an existing Audit Case. Recommendations do not execute or authorize payment. Clean reviews are bound to invoice bytes and contract versions; settlements are independently verified from credit/payment evidence.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -36,7 +36,7 @@
     "summary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["counts", "amounts"],
+      "required": ["counts", "amounts", "case_level_amounts"],
       "properties": {
         "counts": {
           "type": "object",
@@ -44,20 +44,11 @@
         },
         "amounts": {
           "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["action", "currency", "known_value", "unknown_count"],
-            "properties": {
-              "action": {"$ref": "#/$defs/action"},
-              "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
-              "known_value": {
-                "type": ["string", "null"],
-                "pattern": "^-?\\d+\\.\\d{2}$"
-              },
-              "unknown_count": {"type": "integer", "minimum": 0}
-            }
-          }
+          "items": {"$ref": "#/$defs/amountCoverage"}
+        },
+        "case_level_amounts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/amountCoverage"}
         }
       }
     },
@@ -72,6 +63,7 @@
         "review_required",
         "unreviewed",
         "ready_for_payment",
+        "partially_settled",
         "settled"
       ]
     },
@@ -81,7 +73,61 @@
       "required": ["currency", "value"],
       "properties": {
         "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
-        "value": {"type": "string", "pattern": "^-?\\d+\\.\\d{2}$"}
+        "value": {"type": "string", "pattern": "^-?\\d+\\.\\d{2,3}$"}
+      }
+    },
+    "amountCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "currency", "known_value", "unknown_count"],
+      "properties": {
+        "action": {"$ref": "#/$defs/action"},
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "known_value": {
+          "type": ["string", "null"],
+          "pattern": "^-?\\d+\\.\\d{2,3}$"
+        },
+        "unknown_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "settlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reference", "applied_amount", "detail"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "resolution_claimed",
+            "credit_issued",
+            "partially_settled",
+            "settlement_mismatch",
+            "settlement_verified"
+          ]
+        },
+        "reference": {"type": ["string", "null"]},
+        "applied_amount": {"$ref": "#/$defs/amount"},
+        "detail": {"type": "string", "minLength": 1}
+      }
+    },
+    "chargeReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invoice_source_id",
+        "line_id",
+        "source_digest",
+        "rule_version",
+        "reviewed_by",
+        "reviewed_at"
+      ],
+      "properties": {
+        "invoice_source_id": {"type": "string", "minLength": 1},
+        "line_id": {"type": "string", "minLength": 1},
+        "source_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the source bytes for binary files, or UTF-8 text normalized to LF line endings for JSON/CSV/text evidence."},
+        "rule_version": {"type": "string", "minLength": 1},
+        "reviewed_by": {"type": "string", "minLength": 1},
+        "reviewed_at": {"type": "string", "minLength": 1}
       }
     },
     "actionEntry": {
@@ -118,7 +164,9 @@
           "items": {"type": "string", "minLength": 1},
           "uniqueItems": true
         },
-        "amount": {"$ref": "#/$defs/amount"}
+        "amount": {"$ref": "#/$defs/amount"},
+        "settlement": {"$ref": "#/$defs/settlement"},
+        "charge_review": {"$ref": "#/$defs/chargeReview"}
       }
     }
   }
