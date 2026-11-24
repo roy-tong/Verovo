@@ -5,6 +5,7 @@ any step that would require one is a product defect.
 """
 
 import argparse
+import datetime
 import json
 import os
 import shutil
