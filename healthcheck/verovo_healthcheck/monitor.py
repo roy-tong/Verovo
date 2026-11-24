@@ -83,10 +83,12 @@ def _day(record) -> str:
     return str(record["observed_at"])[:10]
 
 
-def _daily(records, tool, model):
+def _daily(records, tool, model, currency):
     buckets: Dict[str, Decimal] = {}
     for record in records:
         if record["tool"] != tool or record["model"] != model:
+            continue
+        if (record["currency"] or "unknown") != currency:
             continue
         buckets[_day(record)] = buckets.get(_day(record), Decimal("0")) + Decimal(record["amount"])
     return buckets
@@ -98,20 +100,21 @@ def baseline(records: List[Dict[str, Any]], *, min_days: int = 7) -> Dict[str, A
     for record in records:
         if record["currency"]:
             currencies.add(record["currency"])
-        key = (record["tool"], record["model"])
+        key = (record["tool"], record["model"], record["currency"] or "unknown")
         groups.setdefault(key, []).append(Decimal(record["amount"]))
     result = []
-    for (tool, model), amounts in sorted(groups.items()):
-        daily = _daily(records, tool, model)
+    for (tool, model, currency), amounts in sorted(groups.items()):
+        daily = _daily(records, tool, model, currency)
         values = sorted(daily.values())
         if len(values) < min_days:
-            result.append({"tool": tool, "model": model, "status": "insufficient_baseline",
+            result.append({"tool": tool, "model": model, "currency": currency,
+                           "status": "insufficient_baseline",
                            "days": len(values), "required_days": min_days})
             continue
         center = median([float(value) for value in values])
         mad = median([abs(float(value) - center) for value in values])
         result.append({
-            "tool": tool, "model": model,
+            "tool": tool, "model": model, "currency": currency,
             "status": "ok" if mad > 0 else "zero_mad",
             "days": len(values),
             "daily_median": round(center, 6),
@@ -127,11 +130,12 @@ def baseline(records: List[Dict[str, Any]], *, min_days: int = 7) -> Dict[str, A
 def anomalies(records: List[Dict[str, Any]], baseline_payload: Dict[str, Any], *,
               z_threshold: float = 3.5, price_drift: float = 0.2,
               retry_threshold: int = 5) -> List[Dict[str, Any]]:
-    groups = {(row["tool"], row["model"]): row for row in baseline_payload.get("groups") or []
+    groups = {(row["tool"], row["model"], row.get("currency") or "unknown"): row
+              for row in baseline_payload.get("groups") or []
               if row.get("status") in ("ok", "zero_mad")}
     found = []
-    for (tool, model), base in groups.items():
-        daily = _daily(records, tool, model)
+    for (tool, model, currency), base in groups.items():
+        daily = _daily(records, tool, model, currency)
         center = float(base.get("daily_median") or 0)
         mad = float(base.get("daily_mad") or 0)
         for day, value in sorted(daily.items()):
@@ -142,7 +146,7 @@ def anomalies(records: List[Dict[str, Any]], baseline_payload: Dict[str, Any], *
             if spike:
                 found.append({
                     "schema": ANOMALY_SCHEMA, "kind": "spend_spike",
-                    "tool": tool, "model": model, "day": day,
+                    "tool": tool, "model": model, "currency": currency, "day": day,
                     "amount": str(value), "baseline_median": center,
                     "robust_z": (round(robust_z, 3) if robust_z is not None else None),
                     "severity": ("high" if (robust_z or 0) >= 6 or (robust_z is None and amount > center * 2)
@@ -150,7 +154,9 @@ def anomalies(records: List[Dict[str, Any]], baseline_payload: Dict[str, Any], *
                     "suggestion": "inspect task volume, retry rate and unit price before paying or blaming the vendor",
                 })
         prices = [Decimal(record["unit_price"]) for record in records
-                  if record["tool"] == tool and record["model"] == model and record["unit_price"]]
+                  if record["tool"] == tool and record["model"] == model
+                  and (record["currency"] or "unknown") == currency
+                  and record["unit_price"]]
         if prices:
             center_price = median([float(value) for value in prices])
             for price in sorted(set(prices)):

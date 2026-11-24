@@ -59,8 +59,10 @@ class MonitorTest(unittest.TestCase):
     def test_report_keeps_currencies_separate(self):
         rows = [row(1), row(2, currency="EUR", amount="7")]
         records = monitor.load_records(self.write(rows))
-        payload = monitor.report(records, monitor.baseline(records), [])
+        base = monitor.baseline(records)
+        payload = monitor.report(records, base, [])
         self.assertEqual({"EUR": "7", "USD": "5"}, payload["totals"])
+        self.assertEqual({"EUR", "USD"}, {row["currency"] for row in base["groups"]})
         self.assertEqual("advisory_only", payload["control"])
 
 
