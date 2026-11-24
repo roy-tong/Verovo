@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to optimize AI agent spend without confusing cost with value — Verovo</title>
+  <meta name="description" content="A practical AI spend optimization method: monitor cost, audit charges, compare cost per verified success, and use tool removal or replacement experiments before declaring a winner.">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="canonical" href="https://roy-tong.github.io/Verovo/blog/ai-spend-optimization.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Verovo">
+  <meta property="og:title" content="How to optimize AI agent spend without confusing cost with value">
+  <meta property="og:description" content="From cost monitoring and independent audit to tool replacement experiments and incremental value.">
+  <meta property="og:url" content="https://roy-tong.github.io/Verovo/blog/ai-spend-optimization.html">
+  <link rel="stylesheet" href="../styles.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to optimize AI agent spend without confusing cost with value","description":"A practical method for AI spend monitoring, audit, task economics and tool replacement experiments.","datePublished":"2026-11-24","dateModified":"2026-11-24","author":{"@type":"Person","name":"Roy Tong","url":"https://github.com/roy-tong"},"publisher":{"@type":"Organization","name":"Verovo"},"mainEntityOfPage":"https://roy-tong.github.io/Verovo/blog/ai-spend-optimization.html"}</script>
+  <style>
+    :root{--panel:#10151b;--text:#f2f5f7;--muted:#aab4bf;--line:#252d36;--accent:#76a5ff;--ok:#6ef2a3;--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+    *{box-sizing:border-box}body{background:#090c10;color:var(--text);font:16px/1.75 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;margin:0}.post{max-width:860px;margin:0 auto;padding:64px 24px 80px}a{color:var(--accent)}.post-back,.post-k,.post-meta{font-family:var(--mono)}.post-back{font-size:12px;letter-spacing:.08em}.post-k{color:var(--ok);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:28px 0 12px}.post h1{font-size:2.5rem;line-height:1.18;letter-spacing:-.03em;margin:0 0 16px}.post-meta{font-size:13px;color:var(--muted);margin-bottom:38px}.post h2{font-size:1.5rem;line-height:1.3;margin:42px 0 14px}.post p,.post li{color:var(--text)}.post ul,.post ol{padding-left:1.4rem}.post li{margin-bottom:8px}.post table{width:100%;border-collapse:collapse;margin:0 0 22px;font-size:.93rem}.post th,.post td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}.post th{background:var(--panel);color:var(--muted)}.note{border-left:3px solid var(--accent);background:rgba(118,165,255,.08);padding:12px 16px;margin:0 0 20px}.post pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;overflow:auto}.post code{font-family:var(--mono);color:var(--ok)}.post-footer{border-top:1px solid var(--line);margin-top:44px;padding-top:20px;color:var(--muted)}@media(max-width:640px){.post{padding:36px 18px 60px}.post h1{font-size:2rem}.post table{font-size:.84rem}.post th,.post td{padding:8px}}
+  </style>
+</head>
+<body>
+<main class="post" id="main">
+  <a class="post-back" href="../">← VEROVO</a>
+  <p class="post-k">Method · AI spend optimization · 24 November 2026</p>
+  <h1>How to optimize AI agent spend without confusing cost with value</h1>
+  <p class="post-meta">Roy Tong · Monitoring, audit, task economics and incrementality</p>
+
+  <p><strong>AI spend optimization means choosing the agent, tool or workflow that delivers an accepted outcome at a defensible full cost.</strong> A lower token bill is not enough. The comparison must include failed attempts, retries, tool charges, shared infrastructure, human review and the quality of the delivered result.</p>
+
+  <h2>Why are cost monitoring and bill audit not enough?</h2>
+  <p>Monitoring tells you where money is going. Audit tells you whether supplier charges follow the applicable rules. Both are necessary, but a perfectly correct bill can still pay for a failed task, and a cheap workflow can become expensive after retries and human rework.</p>
+  <div class="note"><strong>Four different questions:</strong> Where is money going? Should spending continue? Was the charge correct? Was the spend worth repeating? Keep Monitoring, Control, Audit and Optimization as separate conclusions.</div>
+
+  <h2>What should an AI value measurement system record?</h2>
+  <table>
+    <thead><tr><th>Level</th><th>Measurement</th><th>Decision it supports</th></tr></thead>
+    <tbody>
+      <tr><td>L1 · Behavior</td><td>Calls, attempts, retries, failures and delegation</td><td>See what the agent actually did</td></tr>
+      <tr><td>L2 · Cost</td><td>Direct, allocated, retry, failed-run and human-review cost</td><td>See the full amount required to run the work</td></tr>
+      <tr><td>L3 · Outcome</td><td>Task completion and buyer acceptance against explicit criteria</td><td>See whether the work was delivered</td></tr>
+      <tr><td>L4 · Contribution</td><td>Incremental effect of a tool or workflow on accepted outcomes</td><td>Decide whether the component is worth using</td></tr>
+      <tr><td>L5 · Benchmark</td><td>Comparable cross-tool, agent and task-family measures</td><td>Support procurement and resource allocation</td></tr>
+    </tbody>
+  </table>
+  <p>Verovo currently focuses on L1–L3 and task economics. L4 needs controlled comparisons. L5 needs enough independent, comparable observations; a participating network is not a market-share sample.</p>
+
+  <h2>How do you calculate cost per verified success?</h2>
+  <p>Start with one task family and one acceptance definition. Add every eligible cost for the attempts in the comparison window, then divide by the number of outcomes that actually passed the buyer’s criteria:</p>
+  <pre><code>Cost per Verified Success =
+  (model + tools + infrastructure + failed attempts + retries + allocated human review)
+  ÷ verified accepted outcomes</code></pre>
+  <p>Keep missing allocation and outcome coverage visible. Cost per Verified Success is an economic ratio, not proof of incremental business value or ROI. If verified monetary value is absent, ROI remains unknown.</p>
+
+  <h2>How can you test whether one tool is worth its cost?</h2>
+  <ol>
+    <li><strong>Preregister the comparison.</strong> Fix the task family, eligible inputs, acceptance tests, cost window and stop conditions before looking at the winner.</li>
+    <li><strong>Run a baseline.</strong> Record the existing agent and tool chain, including failed work and human intervention.</li>
+    <li><strong>Remove, replace or replay.</strong> Compare the baseline with a version without the tool, with another tool, or with a replay of the same eligible tasks. Avoid comparing unrelated tasks and calling the difference a tool effect.</li>
+    <li><strong>Compare full cost and accepted outcomes together.</strong> Report sample size, variance, coverage and practical differences. Do not rank from call volume, cost share or last-touch attribution.</li>
+    <li><strong>Keep inconclusive results.</strong> Small samples, crossing confidence intervals or changing task mixtures can prevent a defensible winner.</li>
+  </ol>
+  <p>A useful experiment can show that an expensive tool reduces enough retries to lower full task cost. It can also show that a cheap tool is adequate for one task family but not another. Neither conclusion should be generalized beyond the observed conditions.</p>
+
+  <h2>Where does Verovo fit today?</h2>
+  <p>Verovo independently recalculates supported charges, prepares line-level buyer actions, connects direct and allocated costs to verified outcomes, and supports scenario comparisons. It does not execute payments or replace an agent gateway. Real-time budget enforcement and hold actions require an authorized external execution system; incremental tool contribution needs the comparison method above.</p>
+  <pre><code>pipx install verovo
+verovo review --sample --html buyer-review.html --json buyer-review.json
+
+# From a source checkout:
+python3 healthcheck/verovo economics \
+  --case examples/task-economics.json \
+  --json economics.json --markdown economics.md</code></pre>
+  <p>The examples are synthetic and local. They demonstrate the records and calculations, not customer savings or causal tool value.</p>
+
+  <footer class="post-footer">
+    <p>Start with <a href="../examples/replayable-period.html">one replayable billing period</a>, then bring one supplier, one period and one procurement decision to the <a href="../first-look.html">buyer task page</a>.</p>
+    <p><a href="./">Technical blog</a> · <a href="https://github.com/roy-tong/Verovo">Source repository</a> · <a href="../llms.txt">llms.txt</a></p>
+  </footer>
+</main>
+</body>
+</html>
