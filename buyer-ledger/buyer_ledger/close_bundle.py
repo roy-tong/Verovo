@@ -1633,7 +1633,31 @@ def render_summary(payload: Dict[str, Any]) -> str:
     economics = payload.get("economics") or {}
     disputes = payload.get("disputes") or {}
     signoff = (payload.get("renewal") or {}).get("signoff") or {}
-    lines = [
+    identity = charges.get("identity") or {}
+    open_count = len(disputes.get("open_items") or [])
+    decision = ("当前不建议直接付款或续约：还有 %d 项未决事项" % open_count
+                if open_count else "当前没有未决事项；是否付款或续约仍由买方负责人决定")
+    accepted = len(delivery.get("rows") or []) if (delivery.get("verdict") or {}).get("status") == "PASS" else 0
+    invoice = identity.get("invoice_total") or "未登记"
+    difference = identity.get("open_difference") or "未登记"
+    cost = economics.get("cost_per_verified_success") or "暂时无法计算"
+    roi = economics.get("roi") if economics.get("roi") is not None else "暂时无法计算"
+    business_lines = [
+        "Verovo 业务结论 · %s · 版本 %s" % (
+            meta.get("case_id") or "—",
+            meta.get("revision_label") or meta.get("revision_id") or "—"),
+        "付款与续约：%s" % decision,
+        "费用：供应商账单 %s %s；未解释差额 %s %s" % (
+            invoice, scope.get("currency") or "币种未明",
+            difference, scope.get("currency") or "币种未明"),
+        "任务结果：%s" % ("已有 %d 条任务验收记录通过" % accepted
+                         if accepted else "任务交付尚不能确认"),
+        "投入产出：每个已验证成功任务成本 %s %s；投资回报 %s" % (
+            cost, scope.get("currency") or "", roi),
+        "--- 核验明细 ---",
+        "",
+    ]
+    lines = business_lines + [
         "Verovo Evidence Bundle · %s · revision %s" % (
             meta.get("case_id") or "—",
             meta.get("revision_label") or meta.get("revision_id") or "—"),

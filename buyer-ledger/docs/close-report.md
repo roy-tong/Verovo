@@ -34,7 +34,7 @@ calculate，否则报 `STALE_SOURCE`。`close review` 只接受已经生成的
 
 | 文件 | 用途 |
 | --- | --- |
-| `report.md` | 人读的月结报告：范围、五类金额、四轴与裁决、覆盖、逐行差异、处理清单、Task Economics、审核区、重放元数据 |
+| `report.md` | 人读的月结报告：主文先给付款/续约建议、账单与未解释差额、任务验收、成本与价值判断；附录保留范围、五类金额、四轴与裁决、覆盖、逐行差异、处理清单、Task Economics、审核区、重放元数据 |
 | `report.json` | `verovo.buyer-close-report/1`：机器可读的同一内容，含逐行 lineage、open items、review、limitations |
 | `line-reconciliation.csv` | 每个账单行的互斥分类、共同支持金额、规则复算金额、差额、rule id/version、finding ids |
 | `review-queue.csv` | 处理清单：谁补哪份证据、金额与 `unresolved/open` 状态；`confirmed_cause` 默认 null |

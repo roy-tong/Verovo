@@ -5,13 +5,14 @@
 - `verovo monitor` ingests local usage CSV/JSONL, builds a per-tool/model median/MAD baseline and surfaces spend spikes, unit-price drift, retry storms and orphan calls. It is advisory-only: no gateway, no auto-block, no invoice total, and no cross-currency summation.
 - `verovo tool-value` compares comparable task groups on success rate, cost per task and cost per success, with optional value-per-success. Single-arm or call-share inputs never produce a causal claim.
 
-### Fixed
+### Changed
 
+- Buyer-close reports and terminal summaries now lead with the payment/renewal recommendation, invoice and open difference, accepted tasks, cost per verified success and whether value can be judged. Root-cause groups replace raw item IDs in the main answer; axes, verdict codes, line-level reconciliation and replay metadata remain in the appendix. Open items never become payment authorization, and unknown economics never become zero or ROI.
 - Unresolved audit items are ordered by amount importance (same currency only), payment due date, evidence confidence, persistent loss and systemic-error signal. Findings on the same invoice line collapse to one exposure; the report shows both gross and de-duplicated exposure and keeps different/unknown currencies out of the sum instead of treating them as zero.
 
 ### Tests
 
-- 3 new priority regressions plus the existing 443 Buyer Ledger and 663 healthcheck tests pass; selftest remains PASS.
+- 3 priority regressions and 10 monitor/tool-value tests pass, together with 443 Buyer Ledger, 673 healthcheck and 69 root tests; selftest remains PASS. New coverage includes business-first report ordering and the combined risk-exposure line.
 
 ## v0.18.0 - 2026-11-24
 

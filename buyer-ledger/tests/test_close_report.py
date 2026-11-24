@@ -278,7 +278,7 @@ class AcceptanceAuthorityTests(CloseReportTestBase):
         self.assertEqual(["Buyer Owner"], authority["qualified_signers"])
         lines = close_report._report_markdown(report).splitlines()
         self.assertEqual(
-            "> 实际验收方：Buyer Owner（受控组织 buyer-1；来源：manifest.buyer.acceptance_signers）",
+            "> 实际验收方：Buyer Owner（买方 buyer-1）",
             lines[2])
 
     def test_vendor_self_acceptance_leaves_the_report_unidentified(self):
@@ -744,6 +744,34 @@ class OpenItemPriorityTests(unittest.TestCase):
     def test_no_open_items(self):
         self.assertEqual("> 优先处置：无未决项", close_report._priority_summary(
             self.report([])))
+
+
+class BusinessOutputTests(CloseReportTestBase):
+    def test_business_decision_precedes_verdict_codes_and_line_items(self):
+        report = self.report(
+            sources=[_source("bills", "bill-export.csv"),
+                     _source("usage", "usage-export.jsonl", "buyer"),
+                     _source("outcomes", "outcomes.csv", "buyer")],
+            bills=self.full_bills(amount="25.00"), usage=USAGE,
+            outcomes=OUTCOME_HEADER +
+            "t1,o1,success,true,buyer-1,2026-10-31T00:00:00Z,outcomes.csv#o1,100.00,USD\n")
+        text = close_report._report_markdown(report)
+
+        main = text.split("## 附录：", 1)[0]
+        self.assertIn("## 本期业务结论", main)
+        self.assertIn("当前不建议直接付款或续约", main)
+        self.assertIn("供应商账单 25.00 USD", main)
+        self.assertIn("按已批准规则重算 20.00 USD；未解释差额 5.00 USD", main)
+        self.assertIn("每个已验证成功任务成本", main)
+        self.assertIn("怎么判断这笔支出是否划算", main)
+        for token in (
+            "finance_status", "UNPROVABLE", "PASS", "Task Economics",
+            "This report", "D-1", "canonical_fingerprint", "逐行差异",
+            "manifest.buyer", "charge_amount_mismatch", "line-level", "usage：",
+        ):
+            self.assertNotIn(token, main)
+        self.assertIn("Rule Repriced（规则重算）", text)
+        self.assertIn("## 五、逐行差异", text)
 
 
 if __name__ == "__main__":
