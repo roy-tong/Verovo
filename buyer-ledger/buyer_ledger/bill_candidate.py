@@ -77,7 +77,7 @@ _CURRENCY_RE = re.compile(r"\b([A-Za-z]{3})\b")
 _SYMBOL_CURRENCIES = {"€": "EUR", "£": "GBP"}
 _PERIOD_RANGE_RE = re.compile(
     r"\b(?:billing\s+period|service\s+period|invoice\s+period|period)\s*[:：]?\s*"
-    r"(\d{4}-\d{2}-\d{2})\s*(?:-|–|—|~|\bto\b)\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
+    r"(\d{4}-\d{2}-\d{2})\s*(-|–|—|~|\bto\b)\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE)
 _PERIOD_MONTH_RE = re.compile(
     r"\b(?:billing\s+period|service\s+period|invoice\s+month|period|month)\s*[:：]?\s*"
     r"(\d{4}-\d{2})\b", re.IGNORECASE)
@@ -152,18 +152,17 @@ def _normalize_period(value: Any) -> Dict[str, Any]:
             "to_exclusive": True}
 
 
-def _period_from_text(start_raw: str, end_raw: str) -> Dict[str, Any]:
-    """Invoice text shows an inclusive display range; convert to half-open."""
+def _period_from_text(start_raw: str, end_raw: str, inclusive_display: bool = True) -> Dict[str, Any]:
     start = date.fromisoformat(start_raw)
     end = date.fromisoformat(end_raw)
     if start > end:
         raise ValueError("period start is after its end")
     return {"from": start.isoformat(),
-            "to": (end + timedelta(days=1)).isoformat(),
+            "to": (end + timedelta(days=1) if inclusive_display else end).isoformat(),
             "to_exclusive": True}
 
 
-def _annotate_period(field: Dict[str, Any], display_end: str) -> Dict[str, Any]:
+def _annotate_period(field: Dict[str, Any], display_end: str, converted: bool = True) -> Dict[str, Any]:
     """Spell out the inclusive->half-open conversion on the period field.
 
     ``+1 day`` is deliberate data-layer semantics (close.py enforces the
@@ -171,6 +170,15 @@ def _annotate_period(field: Dict[str, Any], display_end: str) -> Dict[str, Any]:
     """
     value = field.get("value") or {}
     field["period_end_exclusive"] = True
+    field["date_type"] = "calendar_date"
+    field["timezone_semantics"] = "date_only_no_timezone_conversion"
+    if not converted:
+        field["note"] = (
+            "原文使用 to，截止日未 +1：%s 直接作为半开区间的上界；数据层用 "
+            "[%s, %s) 表达。" % (display_end, value.get("from"), value.get("to")))
+        field["review_note"] = "原文 to 截止日按半开区间上界保留；请对照原账单确认起止日"
+        field["flags"] = sorted(set(field.get("flags") or []) | {"period_end_preserved_exclusive"})
+        return field
     field["note"] = (
         "账期截止日按不含当日处理：账单写的 %s 实际包含到 %s；数据层用半开区间 "
         "[%s, %s) 表达。" % (display_end, display_end,
@@ -300,11 +308,12 @@ def _extract_fields(lines: List[Dict[str, Any]],
         if "period" not in found:
             match = _PERIOD_RANGE_RE.search(text)
             if match:
-                period = _period_from_text(match.group(1), match.group(2))
+                converted = match.group(2).lower() != "to"
+                period = _period_from_text(match.group(1), match.group(3), inclusive_display=converted)
                 fields.append(_annotate_period(
                     _field("period", period, line_record, index,
-                           match.start(1), match.end(2), from_image, key=True),
-                    match.group(2)))
+                           match.start(1), match.end(3), from_image, key=True),
+                    match.group(3), converted=converted))
                 found.add("period")
                 continue
             match = _PERIOD_MONTH_RE.search(text)

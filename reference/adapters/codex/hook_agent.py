@@ -27,7 +27,7 @@ EVENTS_DIR = Path(
 ).expanduser()
 DO_NOT_TRACK = os.environ.get("DO_NOT_TRACK", "0") == "1"
 AGENT_HOST = os.environ.get("VEROVO_HOST", "codex")
-TARGET = os.environ.get("VEROVO_TARGET", "github.com/roy-tong/verovo")
+TARGET = os.environ.get("VEROVO_TARGET", "github.com/roy-tong/Verovo")
 OBSERVER_PRINCIPAL = os.environ.get("VEROVO_PRINCIPAL", "codex-hook@local")
 TRUST_DOMAIN = os.environ.get("VEROVO_TRUST_DOMAIN", "local")
 INSTANCE_ID = os.environ.get("VEROVO_INSTANCE_ID", f"hook-{os.getpid()}")

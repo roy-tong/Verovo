@@ -641,7 +641,9 @@ def _load_review(case_dir: Path) -> Optional[Dict[str, Any]]:
 
 
 def _review_projection(review: Optional[Dict[str, Any]],
-                       open_items: List[Dict[str, Any]]) -> Dict[str, Any]:
+                       open_items: List[Dict[str, Any]],
+                       signoff: Optional[Dict[str, Any]] = None,
+                       revision_id: str = "r1") -> Dict[str, Any]:
     unresolved = [item for item in open_items
                   if item.get("state") not in ("resolved", "closed",
                                                "not_applicable")]
@@ -656,6 +658,22 @@ def _review_projection(review: Optional[Dict[str, Any]],
             "signoff": {"state": "not_signed", "by": None, "at": None},
             "unresolved_items": [item["id"] for item in unresolved],
             "payment_authorization": False,
+        }
+    if signoff:
+        return {
+            "state": _text(signoff.get("state")),
+            "by": signoff.get("reviewer"),
+            "at": signoff.get("decided_at"),
+            "approved_scope": signoff.get("approved_scope"),
+            "reservations": list(signoff.get("reservations") or []),
+            "next_review": (review or {}).get("next_review"),
+            "signoff": {
+                "state": _text(signoff.get("state")), "by": signoff.get("reviewer"),
+                "at": signoff.get("decided_at"), "revision_id": signoff.get("revision_id") or revision_id,
+            },
+            "unresolved_items": [item["id"] for item in signoff.get("unresolved_items") or []],
+            "payment_authorization": False,
+            "attestation": signoff.get("attestation"),
         }
     return {
         "state": ("reviewed_not_signed"
@@ -985,6 +1003,8 @@ def _open_items(lines: List[Dict[str, Any]], findings: List[Dict[str, Any]],
     for document in manifest.get("documents") or []:
         if not isinstance(document, dict):
             continue
+        if document.get("review_status") == "reviewed" and document.get("booking_status") == "booked":
+            continue
         add("invoice_draft",
             "invoice/OCR document is unreviewed and unbooked: %s"
             % _text(document.get("path")),
@@ -1282,13 +1302,16 @@ def _build_report_body(case_dir: Path, calculation: Dict[str, Any],
     open_items, difference_actions = close_actions.project_open_items(
         case_dir, open_items)
     open_item_groups = _group_open_items(open_items)
-    review_projection = _review_projection(review, open_items)
+    signoff_path = case_dir / "signoff.json"
+    signoff = _read_json(signoff_path, "signoff.json") if signoff_path.is_file() else None
+    review_projection = _review_projection(review, open_items, signoff=signoff, revision_id=revision_id)
     economics = outcome.get("economics")
     if economics is None:
         task_economics = {
             "status": "not_applicable",
             "reason": "no outcomes source was ingested; Task Economics is not "
                       "applicable to this finance-only period",
+            "outcome_source_present": False,
             "fully_loaded_cost": None,
             "attributed_cost_subtotal": None,
             "cost_status": None,
@@ -1296,6 +1319,7 @@ def _build_report_body(case_dir: Path, calculation: Dict[str, Any],
             "roi": None,
             "unallocated": [],
             "findings": [],
+            "tasks": [],
         }
     else:
         totals = economics.get("totals") or {}
@@ -1309,8 +1333,11 @@ def _build_report_body(case_dir: Path, calculation: Dict[str, Any],
             "cost_per_verified_success": totals.get("cost_per_verified_success"),
             "roi": totals.get("roi"),
             "reason": totals.get("cost_per_verified_success_reason"),
+            "roi_reason": totals.get("roi_reason"),
+            "outcome_source_present": True,
             "unallocated": economics.get("unallocated") or [],
             "findings": economics.get("findings") or [],
+            "tasks": economics.get("tasks") or [],
         }
 
     authority_raw = outcome.get("acceptance_authority") or {}
@@ -1332,6 +1359,7 @@ def _build_report_body(case_dir: Path, calculation: Dict[str, Any],
         "org_name": _text(authority_raw.get("org_name")) or None,
         "source": authority_raw.get("source"),
         "qualified_signers": qualified_signers,
+        "authorized_signers": [_text(item) for item in authority_raw.get("signers") or [] if _text(item)],
         "display": "、".join(qualified_signers) if qualified_signers else "未识别",
         "headline": headline,
         "observed": authority_observed,
@@ -1355,9 +1383,11 @@ def _build_report_body(case_dir: Path, calculation: Dict[str, Any],
     if not any(domain == "buyer" for domain in domains.values()):
         limitations.append(
             "no buyer-controlled ledger source; Buyer Verified remains UNPROVABLE")
-    if manifest.get("documents"):
+    pending_documents = [item for item in manifest.get("documents") or []
+                         if item.get("review_status") != "reviewed" or item.get("booking_status") != "booked"]
+    if pending_documents:
         limitations.append("%d invoice/OCR document(s) remain unreviewed"
-                           % len(manifest["documents"]))
+                           % len(pending_documents))
 
     report = {
         "schema": REPORT_SCHEMA,
@@ -1538,8 +1568,9 @@ def _money_layers(report: Dict[str, Any]) -> Dict[str, Any]:
         if economics.get("status") == "not_applicable":
             reason = "缺 outcomes 来源与已验证成功数"
         else:
-            reason = (_text(economics.get("reason"))
-                      or "缺已验证结果或成本归因")
+            reason = "；".join(value for value in (
+                _text(economics.get("reason")), _text(economics.get("roi_reason"))) if value) \
+                or "缺已验证结果或成本归因"
         not_computable = "%s（%s）" % ("、".join(unknown_fields), reason)
     else:
         not_computable = "无：核心经济指标均已计算"
@@ -1547,13 +1578,14 @@ def _money_layers(report: Dict[str, Any]) -> Dict[str, Any]:
     inputs = []
     if amounts.get("invoice_total") in (None, ""):
         inputs.append("财务补齐账单行（charge_id、金额、币种）")
-    if economics.get("status") == "not_applicable" or \
-            economics.get("cost_per_verified_success") in (None, ""):
+    if economics.get("status") == "not_applicable":
         inputs.append("运营提供 outcomes 导出（task_id、status、verified、value）")
+    elif economics.get("cost_per_verified_success") in (None, ""):
+        inputs.append("运营补齐 outcomes 的验收人、验收时间、verified 或来源字段")
     if economics.get("fully_loaded_cost") in (None, ""):
         inputs.append("财务与运营确认完全加载成本口径")
-    if economics.get("roi") in (None, ""):
-        inputs.append("运营确认已验证成功的业务价值口径后计算 ROI")
+    if economics.get("roi") in (None, "") and economics.get("outcome_source_present"):
+        inputs.append("运营补充 outcomes.value 与对应币种；缺失不是 0，也不等于文件未提供")
     needed_inputs = "；".join(inputs) or "无：指标已完整，无需补充"
 
     return {
@@ -1575,6 +1607,32 @@ def _needs_money_layers(report: Dict[str, Any]) -> bool:
             or economics.get("roi") in (None, ""))
 
 
+def _priority_summary(report: Dict[str, Any]) -> str:
+    unresolved = [item for item in report.get("open_items") or []
+                  if item.get("state") not in ("resolved", "closed", "not_applicable")]
+    if not unresolved:
+        return "> 优先处置：无未决项"
+    amounts = []
+    for item in unresolved:
+        if item.get("amount") in (None, ""):
+            continue
+        kind = _text(item.get("kind"))
+        cause = _OPEN_ITEM_ROOT_CAUSES.get(kind, kind or "待处理差异")
+        amounts.append("%s：%s %s（%s）" % (
+            item.get("id"), item["amount"], item.get("currency") or "币种未明", cause))
+    detail = "；".join(amounts[:3]) if amounts else "相关金额未登记，不能按 0 处理"
+    return "> 优先处置：%d 项未决；%s" % (len(unresolved), detail)
+
+
+def _signoff_summary(report: Dict[str, Any]) -> str:
+    signoff = report.get("signoff") or {}
+    if _text(signoff.get("state")) in ("", "not_signed"):
+        return ""
+    return "- 签核状态：%s；签核版本：%s；签核人：%s" % (
+        signoff.get("state"), signoff.get("revision_id") or report.get("revision_id") or "r1",
+        signoff.get("reviewer") or "—")
+
+
 def _report_markdown(report: Dict[str, Any]) -> str:
     amounts = report["amounts"]
     authority = report.get("acceptance_authority") or {}
@@ -1583,6 +1641,7 @@ def _report_markdown(report: Dict[str, Any]) -> str:
         "",
         "> 实际验收方：%s" % (authority.get("headline") or "未识别"),
         "> %s" % report["disclaimer"],
+        _priority_summary(report),
         "",
         "## 一、核验范围",
         "",
@@ -1698,11 +1757,27 @@ def _report_markdown(report: Dict[str, Any]) -> str:
             "- cost per verified success：%s" % _display(report["task_economics"]["cost_per_verified_success"]),
             "- ROI：%s" % _display(report["task_economics"]["roi"]),
         ])
+    tasks = report["task_economics"].get("tasks") or []
+    if tasks:
+        lines.extend([
+            "",
+            "**按任务归集（成本与结果分别列示，不等于付款授权）**",
+            "",
+            "| Task | 直接成本 | 分摊成本 | 完全成本 | 已验证成功 | 已验证价值 |",
+            "|---|---:|---:|---:|---|---:|",
+        ])
+        for task in tasks:
+            success = task.get("verified_success")
+            lines.append("| %s | %s | %s | %s | %s | %s |" % (
+                task.get("task_id"), _display(task.get("direct_cost")),
+                _display(task.get("allocated_cost")), _display(task.get("fully_loaded_cost")),
+                "未知" if success is None else success, _display(task.get("verified_value"))))
     lines.extend([
         "",
         "## 八、审核区",
         "",
         "- 审阅状态：%s" % report["review"]["state"],
+        _signoff_summary(report),
         "- 说明：审阅状态只表示复核进度，不等于签核；已签核也不等于所有差异已解决。",
         "- 复核人：%s（%s）" % (report["review"]["by"] or "—",
                                report["review"]["at"] or "—"),
@@ -1867,7 +1942,24 @@ def build_report(case_dir: Path, *, revision_id: str = None) -> Dict[str, Any]:
 
 
 def record_review(case_dir: Path, *, reviewer: str, approved_scope: str = "",
-                  reservations: List[str] = None, next_review: str = "") -> Dict[str, Any]:
+                  reservations: List[str] = None, next_review: str = "",
+                  revision_id: str = "") -> Dict[str, Any]:
+    case_dir = Path(case_dir)
+    if (case_dir / "revision.json").is_file():
+        from . import close_revision
+        root_case = case_dir.parent.parent
+        with close_revision._case_lock(root_case):
+            return _record_review_unlocked(
+                case_dir, reviewer=reviewer, approved_scope=approved_scope,
+                reservations=reservations, next_review=next_review, revision_id=revision_id)
+    return _record_review_unlocked(
+        case_dir, reviewer=reviewer, approved_scope=approved_scope,
+        reservations=reservations, next_review=next_review, revision_id=revision_id)
+
+
+def _record_review_unlocked(case_dir: Path, *, reviewer: str, approved_scope: str = "",
+                            reservations: List[str] = None, next_review: str = "",
+                            revision_id: str = "") -> Dict[str, Any]:
     """Record a named human review; never promote unresolved items to closed."""
     case_dir = Path(case_dir)
     _ensure_unsigned(case_dir)
@@ -1877,6 +1969,9 @@ def record_review(case_dir: Path, *, reviewer: str, approved_scope: str = "",
                          "a review needs a named reviewer; no signature is inferred")
     report_path = case_dir / "report" / "report.json"
     report = _read_json(report_path, "report.json")
+    revision_path = case_dir / "revision.json"
+    stored_revision = _read_json(revision_path, "revision.json") if revision_path.is_file() else {}
+    resolved_revision_id = _text(revision_id) or _text(stored_revision.get("revision_id")) or "r1"
     if _text(next_review):
         try:
             date.fromisoformat(next_review)
@@ -1889,13 +1984,15 @@ def record_review(case_dir: Path, *, reviewer: str, approved_scope: str = "",
     review = {
         "schema": REVIEW_SCHEMA,
         "state": "reviewed",
+        "revision_id": resolved_revision_id,
         "reviewer": reviewer,
         "reviewed_at": _now_iso(),
         "attestation": "attested_by_declaration",
         "approved_scope": _text(approved_scope),
         "reservations": [item for item in (reservations or []) if _text(item)],
         "next_review": _text(next_review) or None,
-        "signoff": {"state": "not_signed", "by": None, "at": None},
+        "signoff": {"state": "not_signed", "by": None, "at": None,
+                    "revision_id": resolved_revision_id},
         "payment_authorization": False,
         "unresolved_items": [{
             "id": item["id"], "kind": item["kind"],
@@ -1910,10 +2007,16 @@ def record_review(case_dir: Path, *, reviewer: str, approved_scope: str = "",
     }
     _write_json(case_dir / "review.json", review)
     try:
-        build_report(case_dir)
+        refreshed = build_report(case_dir, revision_id=resolved_revision_id)
     except Exception:
         # A review must not survive as a signature over a report that could
         # not be rebuilt; keep the retry path open.
         (case_dir / "review.json").unlink()
         raise
+    if revision_path.is_file():
+        from . import close_revision
+        revision = close_revision._read_json(revision_path, "revision.json")
+        revision["report_fingerprint"] = (refreshed.get("replay") or {}).get(
+            "output_snapshot_fingerprint")
+        close_revision._write_json(revision_path, revision)
     return review

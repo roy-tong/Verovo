@@ -25,7 +25,7 @@ const inject = [];
 /** Runtime schema. */
 const Config = z.object({
 	eventsDir: z.string().default(join(homedir(), ".verovo", "events")),
-	projectId: z.string().default("github.com/roy-tong/verovo"),
+	projectId: z.string().default("github.com/roy-tong/Verovo"),
 	doNotTrack: z.boolean().default(false),
 	agentHost: z.string().default("deepseek-harness"),
 	observerPrincipal: z.string().default("dsh-plugin@local"),

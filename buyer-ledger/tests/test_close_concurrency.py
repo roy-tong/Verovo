@@ -59,6 +59,7 @@ class ConcurrencyTests(unittest.TestCase):
         (bundle / "rules.json").write_text(json.dumps(RULES), encoding="utf-8")
         job = {"schema": "verovo.period-job/1", "job_id": "close-2026-10-a",
                "buyer": "buyer-1", "vendor": "vendor-1", "account": "acct-1",
+               "buyer_signers": ["roy"],
                "period": {"from": "2026-10-01", "to": "2026-11-01",
                           "to_exclusive": True, "timezone": "UTC"},
                "currency": "USD",
@@ -109,6 +110,26 @@ class ConcurrencyTests(unittest.TestCase):
                         "另一个进程必须得到显式的并发/已签核冲突，实际：%r"
                         % message)
 
+    def test_signoff_rejects_signer_outside_acceptance_signers(self):
+        from buyer_ledger import close_revision
+
+        path = self.case / "canonical/manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest["buyer"]["acceptance_signers"] = ["roy"]
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        from buyer_ledger import close_report
+        close_report.calculate(self.case)
+        close_report.build_report(self.case)
+        with self.assertRaises(Exception) as caught:
+            close_revision.signoff(self.case, reviewer="unauthorized-signer")
+        self.assertIn("acceptance_signers", str(caught.exception))
+        self.assertEqual("AUTH_REQUIRED", caught.exception.code)
+        self.assertFalse((self.case / "signoff.json").exists())
+        with self.assertRaises(Exception) as caught:
+            close_revision.signoff(self.case, reviewer="unauthorized roy")
+        self.assertEqual("AUTH_REQUIRED", caught.exception.code)
+        self.assertFalse((self.case / "signoff.json").exists())
+
     def test_signoff_while_lock_held_reports_concurrency(self):
         """锁被占有时必须立刻报并发冲突，而不是排队、等待或静默重试。"""
         try:
@@ -130,6 +151,32 @@ class ConcurrencyTests(unittest.TestCase):
         self.assertIn("并发", proc.stderr + proc.stdout)
         self.assertFalse((self.case / ".close.journal").exists(),
                          "被拒的签核不能留下 journal")
+
+    def test_revision_review_uses_the_root_case_lock(self):
+        import shutil
+        from buyer_ledger import close_revision
+        revised = Path(self.tmp.name) / "revised"
+        shutil.copytree(self.bundle, revised)
+        (revised / "bills.csv").write_text(BILLS.replace("20.00", "21.00"),
+                                           encoding="utf-8")
+        close_revision.revise(self.case, bundle=revised, reviewer="roy")
+        target = self.case / "revisions" / "r2"
+        try:
+            import fcntl
+        except ImportError:
+            self.skipTest("fcntl 不可用")
+        with open(self.case / ".close.lock", "a+") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            try:
+                code = ("import sys; sys.path.insert(0, %r);"
+                        "from buyer_ledger import close_report as r;"
+                        "r.record_review(%r, reviewer='roy')" % (str(BUYER), str(target)))
+                proc = subprocess.run([sys.executable, "-c", code], cwd=str(BUYER),
+                                      capture_output=True, text=True)
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        self.assertNotEqual(0, proc.returncode, proc.stdout + proc.stderr)
+        self.assertIn("并发", proc.stderr + proc.stdout)
 
     def test_concurrent_revise_keeps_versions_consistent(self):
         code = ("import sys; sys.path.insert(0, %r);"

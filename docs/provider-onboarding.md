@@ -71,5 +71,5 @@ A run is **successful** when all four hold:
   (`conformance/README.md`) — receipt format, counting integrity, outcome
   audit families.
 
-Questions go in [issue #6](https://github.com/roy-tong/verovo/issues/6)
+Questions go in [issue #6](https://github.com/roy-tong/Verovo/issues/6)
 — public, so the next provider reads the answer.

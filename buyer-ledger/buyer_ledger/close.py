@@ -614,6 +614,41 @@ def _blocked_code(violations: List[Dict[str, Any]]) -> Optional[str]:
 # ingest
 # ---------------------------------------------------------------------------
 
+def _booking_provenance(bundle_root: Path, relative: str, document_sha: str,
+                        job: Dict[str, Any]) -> Dict[str, Any]:
+    marker = bundle_root / "booking.json"
+    if not marker.is_file():
+        return {}
+    try:
+        payload = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CloseError("INPUT_REQUIRED", "booking.json 无法读取：%s" % exc) from exc
+    if payload.get("schema") != "verovo.bill-booking/1":
+        raise CloseError("INPUT_REQUIRED", "booking.json schema 不受支持")
+    booking = payload.get("booking") or {}
+    if Path(_text(booking.get("document_path"))).name != relative:
+        return {}
+    if not _text(booking.get("booked_by")) or not _text(booking.get("booked_at")):
+        raise CloseError("INPUT_REQUIRED", "booking.json 缺 booked_by/booked_at，不能证明已复核入账")
+    if _text(booking.get("document_sha256")).lower() != document_sha.lower():
+        raise CloseError("STALE_SOURCE", "booking.json 的原文哈希与账期包不一致")
+    export_path = bundle_root / Path(_text(booking.get("export_path"))).name
+    if not any(entry.get("role") == "bills" and Path(entry.get("path")).name == export_path.name
+               for entry in job.get("sources") or []):
+        raise CloseError("STALE_SOURCE", "booking.json 的导出文件不是本账期声明的 bills 来源")
+    if not export_path.is_file() or _sha256_bytes(export_path.read_bytes()) != _text(booking.get("export_sha256")).lower():
+        raise CloseError("STALE_SOURCE", "booking.json 的账单导出哈希与账期包不一致")
+    return {
+        "review_status": "reviewed", "booking_status": "booked",
+        "booked_by": _text(booking.get("booked_by")),
+        "booked_at": _text(booking.get("booked_at")),
+        "attestation": _text(booking.get("attestation")),
+        "candidate_id": _text(payload.get("candidate_id")),
+        "booking_sha256": _sha256_bytes(marker.read_bytes()),
+        "detail": "OCR 候选已逐字段复核并显式入账；原始文件仍只是供应商证据，不是独立买方账本",
+    }
+
+
 def ingest(case_dir: Path, bundle: Path = None) -> Dict[str, Any]:
     """Scan, parse, propose the mapping and validate; writes only on full success."""
     case_dir = Path(case_dir)
@@ -676,7 +711,7 @@ def ingest(case_dir: Path, bundle: Path = None) -> Dict[str, Any]:
         registry.setdefault(role, []).append(record)
         if spec["document"]:
             record["format"] = "document"
-            documents.append({
+            document = {
                 "document_ref": "invoice:%s" % sha[:12],
                 "path": relative, "sha256": sha,
                 "review_status": "unreviewed",
@@ -684,7 +719,9 @@ def ingest(case_dir: Path, bundle: Path = None) -> Dict[str, Any]:
                 "extraction": "not_attempted_in_v02",
                 "detail": ("OCR/invoice2data may only produce an unreviewed draft; the "
                            "document is registered for human review and never booked"),
-            })
+            }
+            document.update(_booking_provenance(bundle_root, relative, sha, job))
+            documents.append(document)
             continue
         if path.suffix.lower() not in TABLE_SUFFIXES:
             raise CloseError("UNSUPPORTED_SCOPE",
@@ -1233,8 +1270,14 @@ def generate_canonical(case_dir: Path,
         invoice_entries.append({
             "path": source.name, "sha256": document.get("sha256"),
             "document_ref": document.get("document_ref"),
-            "review_status": "unreviewed", "booking_status": "unbooked",
-            "detail": ("OCR/invoice2data draft only; not a ledger source and not "
+            "review_status": document.get("review_status", "unreviewed"),
+            "booking_status": document.get("booking_status", "unbooked"),
+            "booked_by": document.get("booked_by"),
+            "booked_at": document.get("booked_at"),
+            "attestation": document.get("attestation"),
+            "candidate_id": document.get("candidate_id"),
+            "booking_sha256": document.get("booking_sha256"),
+            "detail": document.get("detail") or ("OCR/invoice2data draft only; not a ledger source and not "
                        "booked as cost"),
         })
     # Invoice documents are review artifacts, not ledger sources: they stay

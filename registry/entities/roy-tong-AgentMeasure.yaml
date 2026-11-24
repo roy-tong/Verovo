@@ -1,19 +1,19 @@
 schema_version: "verovo-0.4"
 entity:
-  entity_id: github.com/roy-tong/verovo
+  entity_id: github.com/roy-tong/Verovo
   entity_type: tool
   name: Verovo
-  declared_by: github.com/roy-tong/verovo
+  declared_by: github.com/roy-tong/Verovo
   verified: false
   aliases:
     cli: verovo
     skill: verovo
   capabilities:
-    - capability_id: github.com/roy-tong/verovo:wrap
+    - capability_id: github.com/roy-tong/Verovo:wrap
       interaction_class: action
-    - capability_id: github.com/roy-tong/verovo:hook
+    - capability_id: github.com/roy-tong/Verovo:hook
       interaction_class: action
-    - capability_id: github.com/roy-tong/verovo:collect
+    - capability_id: github.com/roy-tong/Verovo:collect
       interaction_class: computation
   surfaces:
     - surface_id: cli_command:verovo-wrap

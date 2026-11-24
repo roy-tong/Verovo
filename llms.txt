@@ -1,6 +1,6 @@
 # Verovo
 
-> Verovo is the independent measurement and audit layer for AI agents. Review one supplier period, prepare line-level spend actions, check delivery and measure task economics. Financial correctness, authorization, delivery, economic value and the buyer's actual decision remain separate.
+> Verovo is the independent measurement and audit layer for AI agents. Review one supplier period, prepare line-level spend actions, check delivery and measure task economics. Financial correctness, control (authorization), delivery and economic value remain separate conclusions; the buyer's actual decision is recorded separately and is never inferred from them.
 
 OVO family boundary: Prove Anything is the family-level result-proof protocol candidate; an agent saying “done” remains a claim to verify. Verified Capability Factory is a gated research candidate, not a Verovo dependency. Verovo stays buyer-first and is not becoming a generalized verification platform; charges, delivery, coverage and buyer decisions remain separate.
 
@@ -11,31 +11,33 @@ OVO family boundary: Prove Anything is the family-level result-proof protocol ca
 - [Services](https://roy-tong.github.io/Verovo/services.html): free measurement-run scope, inputs and turnaround
 - [FAQ（中文）](https://roy-tong.github.io/Verovo/faq.html): Chinese answers to common queries (AI bill checking, API cost recount, open-source reconciliation tools, AI-support billing disputes) with sourced numbers; FAQPage structured data
 - [Tool bill coverage](https://roy-tong.github.io/Verovo/tools.html): cataloged tool billing models for buyer tasks; provider work is a conditional extension. Cataloged is not live-validated.
-- [Healthcheck](https://github.com/roy-tong/verovo/blob/main/healthcheck/README.md): local session checks, sharing and supported commands; install from PyPI `pipx install verovo`
-- [SDK](https://github.com/roy-tong/verovo/blob/main/sdk/README.md): Provider SDK `@verovo/mcp` on npm, independently versioned
+- [Healthcheck](https://github.com/roy-tong/Verovo/blob/main/healthcheck/README.md): local session checks, sharing and supported commands; install from PyPI `pipx install verovo`
+- Two CLI lines: `verovo` (installed wheel) is the buyer-facing entry for healthcheck, canonical finance and canonical Proof. `python3 -m buyer_ledger` (close/reproduce) is a pre-M1 source-checkout tool line and is not shipped in the wheel.
+- Version lines are independent: the product release in `CHANGELOG.md` and the `healthcheck` package `__version__` do not have to match; check both before citing a capability.
+- [SDK](https://github.com/roy-tong/Verovo/blob/main/sdk/README.md): Provider SDK `@verovo/mcp` on npm, independently versioned
 - [Release notes](https://roy-tong.github.io/Verovo/releases.html): independent package versions and dated releases
 - [AI invoice reconciliation](https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html): three-step method, seven failure modes and a free browser recount; the reproducible sample lives in `buyer-ledger/examples/ai-invoice-reconciliation`
 - [Per-resolution bills](https://roy-tong.github.io/Verovo/blog/resolution-bill-check.html): who attested each resolution, and how to check that bill locally
 
 ## Measurement and evidence
 
-- [Core](https://github.com/roy-tong/verovo/blob/main/standard/CORE.md): objects, grains and invariants
-- [Metrics](https://github.com/roy-tong/verovo/blob/main/standard/METRICS.md): metric contracts
-- [VSS-1](https://github.com/roy-tong/verovo/blob/main/standard/SETTLEMENT.md): settlement statement semantics
-- [Quality](https://github.com/roy-tong/verovo/blob/main/standard/QUALITY.md): evidence and claim discipline
-- [Conformance pack](https://github.com/roy-tong/verovo/blob/main/conformance/pack/README.md): supported checks and fixture requirements
+- [Core](https://github.com/roy-tong/Verovo/blob/main/standard/CORE.md): objects, grains and invariants
+- [Metrics](https://github.com/roy-tong/Verovo/blob/main/standard/METRICS.md): metric contracts
+- [VSS-1](https://github.com/roy-tong/Verovo/blob/main/standard/SETTLEMENT.md): settlement statement semantics
+- [Quality](https://github.com/roy-tong/Verovo/blob/main/standard/QUALITY.md): evidence and claim discipline
+- [Conformance pack](https://github.com/roy-tong/Verovo/blob/main/conformance/pack/README.md): supported checks and fixture requirements
 - [Claims index](https://roy-tong.github.io/Verovo/claims.html): dated reproductions, corrections and upstream responses
-- [Vocabularies](https://github.com/roy-tong/verovo/blob/main/registry/vocabularies.yaml): canonical enums
-- [Metric registry](https://github.com/roy-tong/verovo/blob/main/registry/metrics.yaml): machine-readable contracts
+- [Vocabularies](https://github.com/roy-tong/Verovo/blob/main/registry/vocabularies.yaml): canonical enums
+- [Metric registry](https://github.com/roy-tong/Verovo/blob/main/registry/metrics.yaml): machine-readable contracts
 
-- [Commercial scope](https://github.com/roy-tong/verovo/blob/main/docs/commercial-narrative.md): buyer tasks, provider incentives, partners and open-source boundaries
+- [Commercial scope](https://github.com/roy-tong/Verovo/blob/main/docs/commercial-narrative.md): buyer tasks, provider incentives, partners and open-source boundaries
 
 ## Product definition and buyer review
 
-- [Product definition](https://github.com/roy-tong/verovo/blob/main/docs/product-definition.md): independent agent spend audit and value measurement, with separate financial, control, delivery and economic conclusions.
-- [Spend action list](https://github.com/roy-tong/verovo/blob/main/schemas/spend-action-list.schema.json): ready/evidence/review/unreviewed/settled work items from an existing Audit Case; no payment execution or authorization.
-- [Provider contract](https://github.com/roy-tong/verovo/blob/main/docs/provider-contract.md): local adapter admission, version, limits, coverage and cleanup; no live-connectivity claim.
-- [Buyer review guide](https://github.com/roy-tong/verovo/blob/main/docs/buyer-review.md): local criteria and JSON evidence; separate verdicts, hashes and offline reports.
+- [Product definition](https://github.com/roy-tong/Verovo/blob/main/docs/product-definition.md): independent agent spend audit and value measurement, with separate financial, control, delivery and economic conclusions.
+- [Spend action list](https://github.com/roy-tong/Verovo/blob/main/schemas/spend-action-list.schema.json): ready/evidence/review/unreviewed/settled work items from an existing Audit Case; no payment execution or authorization.
+- [Provider contract](https://github.com/roy-tong/Verovo/blob/main/docs/provider-contract.md): local adapter admission, version, limits, coverage and cleanup; no live-connectivity claim.
+- [Buyer review guide](https://github.com/roy-tong/Verovo/blob/main/docs/buyer-review.md): local criteria and JSON evidence; separate verdicts, hashes and offline reports.
 - [Synthetic buyer report](https://roy-tong.github.io/Verovo/examples/buyer-review.html): charge match, unmet delivery requirement and missing evidence, kept separate.
 - [Replayable synthetic period](https://roy-tong.github.io/Verovo/examples/replayable-period.html): Intake → Recompute → Review → Decide, with delivery UNKNOWN and the buyer decision UNPROVEN.
 - Local quickstart: `pipx install verovo && verovo review --sample --html buyer-review.html`.
@@ -48,8 +50,8 @@ Summary counts support interpretation, not guaranteed root-cause diagnosis. Core
 
 ## Further reference
 
-- [Roadmap](https://github.com/roy-tong/verovo/blob/main/ROADMAP.md): current focus and deferred work
+- [Roadmap](https://github.com/roy-tong/Verovo/blob/main/ROADMAP.md): current focus and deferred work
 - [Buyer reconciliation](https://roy-tong.github.io/Verovo/first-look.html): buyer task-fit discussion and supported scope; no standard package or guaranteed recovery
-- [Lab](https://github.com/roy-tong/verovo/blob/main/lab/README.md): existing experimental toolkit
-- [Contributing](https://github.com/roy-tong/verovo/blob/main/CONTRIBUTING.md): contribution and AI-use rules
-- [Agent instructions](https://github.com/roy-tong/verovo/blob/main/AGENTS.md): invariants and required checks
+- [Lab](https://github.com/roy-tong/Verovo/blob/main/lab/README.md): existing experimental toolkit
+- [Contributing](https://github.com/roy-tong/Verovo/blob/main/CONTRIBUTING.md): contribution and AI-use rules
+- [Agent instructions](https://github.com/roy-tong/Verovo/blob/main/AGENTS.md): invariants and required checks

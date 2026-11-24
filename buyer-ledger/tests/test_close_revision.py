@@ -305,6 +305,54 @@ class SignoffAndRevisionTests(RevisionTestBase):
 
 
 class RevisionCliTests(RevisionTestBase):
+    def test_revise_can_add_a_named_outcomes_source(self):
+        self.base_case()
+        outcomes = self.root / "outcomes.csv"
+        outcomes.write_text(
+            "task_id,outcome_id,status,verified,accepted_by,accepted_at,source_ref,value,currency\n"
+            "t1,o1,success,true,Buyer Owner,2026-10-31T00:00:00Z,outcomes.csv#o1,100.00,USD\n",
+            encoding="utf-8")
+        result = close_revision.revise(
+            self.case, source=outcomes, role="outcomes", reviewer="finance",
+            reason="add buyer outcomes", control_domains={"outcomes": "buyer"})
+        self.assertEqual("r2", result["revision"]["revision_id"])
+        self.assertIn("outcomes.csv", result["revision"]["source_added"])
+        job = json.loads((self.case / "revisions/r2/period-job.json").read_text(encoding="utf-8"))
+        self.assertIn({"role": "outcomes", "path": "outcomes.csv"},
+                      [{key: entry.get(key) for key in ("role", "path")} for entry in job["sources"]])
+        report = self.revision_report("r2")
+        self.assertNotEqual("not_applicable", report["task_economics"]["status"])
+        self.assertTrue(report["task_economics"]["fully_loaded_cost"])
+
+    def test_revise_bundle_rejects_unregistered_files_instead_of_ignoring_them(self):
+        self.base_case()
+        revised = self.revised_bundle(self.full_bills(), name="with-undeclared-outcomes")
+        (revised / "outcomes.csv").write_text("task_id\n", encoding="utf-8")
+        with self.assertRaises(CloseError) as caught:
+            close_revision.revise(self.case, bundle=revised, reviewer="finance")
+        self.assertIn("outcomes.csv", str(caught.exception))
+        self.assertIn("未声明", str(caught.exception))
+
+    def test_review_targets_the_named_revision(self):
+        self.base_case()
+        revised = self.revised_bundle(self.full_bills(amount="25.00"), name="v2-review")
+        close_revision.revise(self.case, bundle=revised, reviewer="finance")
+        code, out = self.run_cli([
+            "close", "review", str(self.case), "--revision", "r2",
+            "--by", "controller", "--scope", "review only r2 before signoff"])
+        self.assertEqual(0, code, out)
+        review = json.loads((self.case / "revisions/r2/review.json").read_text(encoding="utf-8"))
+        self.assertEqual("r2", review["revision_id"])
+        report = self.revision_report("r2")
+        self.assertEqual("reviewed_not_signed", report["review"]["state"])
+        self.assertEqual("r2", report["signoff"]["revision_id"])
+        self.assertFalse((self.case / "review.json").exists())
+        code, out = self.run_cli([
+            "close", "signoff", str(self.case), "--revision", "r2",
+            "--by", "controller", "--scope", "sign the reviewed r2"])
+        self.assertEqual(0, code, out)
+        self.assertEqual("r2", close_revision.load_revision(self.case, "r2")["signoff"]["revision_id"])
+
     def test_revise_and_signoff_cli_flow(self):
         self.base_case()
         revised = self.revised_bundle(self.full_bills(amount="25.00"),

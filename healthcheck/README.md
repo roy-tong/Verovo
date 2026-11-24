@@ -1,6 +1,6 @@
 # Verovo local CLI
 
-Verovo is the independent measurement and audit layer for AI agents. Review charges, prepare line-level spend actions, check delivery and measure task economics with explicit evidence gaps. Financial correctness, authorization, delivery and economic value remain separate conclusions.
+Verovo is the independent measurement and audit layer for AI agents. Review charges, prepare line-level spend actions, check delivery and measure task economics with explicit evidence gaps. Financial correctness, control (authorization), delivery and economic value remain separate conclusions.
 
 Python 3.9+ standard library only. Local workflows; no runtime dependencies and no automatic upload.
 

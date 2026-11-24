@@ -5,7 +5,7 @@
 > Observation JSONL → 校验 → Collector → Metrics`，以及 0.4.3 的 fail-closed
 > 语义如何在真实管道中生效。
 >
-> **Measurement Report #001 的编号预留给第一个外部 Provider**（[Issue #2](https://github.com/roy-tong/verovo/issues/2)）。
+> **Measurement Report #001 的编号预留给第一个外部 Provider**（[Issue #2](https://github.com/roy-tong/Verovo/issues/2)）。
 > 本报告只验证管道，不产生任何"使用量"结论——合成流量不证明任何真实使用。
 
 ## 设置

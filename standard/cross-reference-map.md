@@ -1,5 +1,7 @@
 # Verovo 标准全文交叉引用地图 — 2026-09-18
 
+> **状态：历史分析（2026-09-18），非规范。** 现行语义以 `standard/CORE.md` 为准（四态 TRUE/FALSE/UNKNOWN/UNOBSERVABLE，§4）；本文件 Gap 1 提出的「UNPROVABLE 作为第五状态」未被采纳——UNPROVABLE 是 claim 判定词（review、conformance pack、`docs/review-method/`），不是观测状态；结算判决词见 VSS-1 §0。
+
 > 完整阅读了 standard/ 全部 11 个文件、extensions/COMMERCIAL.md、known-limits、
 > registry/vocabularies.yaml、registry/metrics.yaml 后的结构审计。
 > 供提案写作者和实现者使用——知道有什么可用，避免重复发明 wheel。

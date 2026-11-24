@@ -16,7 +16,7 @@ We're building an open measurement standard (Verovo) where every
 observation surface declares its capability boundary instead of guessing.
 Your runtime's boundary is the one we understand least.
 
-If you have 10 minutes: https://github.com/roy-tong/verovo/issues
+If you have 10 minutes: https://github.com/roy-tong/Verovo/issues
 — specifically issue "Runtime Observation Gap" template. We'd rather learn
 where our model breaks than collect stars.
 ```
@@ -40,11 +40,11 @@ without evidence). 10-minute install, local-only, no cloud.
 
 > **Install note (until npm publish lands):** not on the public registry yet;
 > install from the release tarball attached to
-> [v0.2.2](https://github.com/roy-tong/verovo/releases/tag/v0.2.2)
+> [v0.2.2](https://github.com/roy-tong/Verovo/releases/tag/v0.2.2)
 > (`verovo-mcp-0.1.1.tgz`), or `npm pack` inside `sdk/`.
 
 If the numbers come out wrong or the definitions feel broken, that's the
-most useful feedback we can get: https://github.com/roy-tong/verovo/issues
+most useful feedback we can get: https://github.com/roy-tong/Verovo/issues
 ```
 
 ## 3. Observability / measurement 背景的人
@@ -60,7 +60,7 @@ denominators are legal. Current draft: Verovo Draft 0.4.3
 may only claim "observed", never market share).
 
 You'd be the person most likely to find the hole in it. If you're willing:
-https://github.com/roy-tong/verovo/issues — Measurement Semantics
+https://github.com/roy-tong/Verovo/issues — Measurement Semantics
 or Discrepancy templates. A counterexample beats a star.
 ```
 

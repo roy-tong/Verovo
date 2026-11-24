@@ -25,6 +25,7 @@ from .lab.analysis import aggregate  # noqa: E402
 from .lab.schemas import SchemaError, validate  # noqa: E402
 
 PACK = Path(__file__).resolve().parent
+ROOT = PACK.parents[1]
 REGISTRY = json.loads((PACK / "pack_invariants.json").read_text(encoding="utf-8"))
 SCHEMA_FILE = PACK / "lab" / "schemas" / "funnel-event.schema.json"
 

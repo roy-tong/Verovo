@@ -136,9 +136,9 @@ h2.sect{margin-top:36px}
       <a href="claims.html">证据索引</a>
       <a href="tools.html">工具账单</a>
       <a href="index.html">English home</a>
-      <a class="ext" href="https://github.com/roy-tong/verovo" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
+      <a class="ext" href="https://github.com/roy-tong/Verovo" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
     </nav>
-    <a class="snav-cta" href="https://github.com/roy-tong/verovo/issues/6">提交免费任务&nbsp;→</a>
+    <a class="snav-cta" href="https://github.com/roy-tong/Verovo/issues/6">提交免费任务&nbsp;→</a>
   </div>
 </header>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -155,14 +155,14 @@ h2.sect{margin-top:36px}
 <h2>1. AI 账单怎么核对？</h2>
 <p class="aq">Q: AI 账单怎么核对 / AI 账单核对工具</p>
 <p>路径分三步：<strong>① 拿到计费规则原文</strong>（按什么计费、什么算「一次」）——供应商改规则等于改价格，Zendesk 2026-08-25 修订解决量分层文档就是最近的例子；<strong>② 拿到可对账的记录</strong>（账单或用量导出）；<strong>③ 按供应商自己的规则复算</strong>，并把「能结算的行」与「算不了的行」分开列。</p>
-<p>Verovo 的 <code>recount</code> 命令内置 6 家 AI 客服供应商的规则集（Intercom Fin、Zendesk、HubSpot 等），<code>verovo recount --list-vendors</code> 直接打印；每条规则带来源、日期和置信度等级，登记在 <a href="https://github.com/roy-tong/verovo/blob/main/healthcheck/verovo_healthcheck/vendor-rules.json">vendor-rules.json</a>，网页表格与本工具永不互相矛盾（见 <a href="claims.html">证据索引的供应商计费规则记分卡</a>）。<a href="recount.html">浏览器版复算</a>不上传数据即可试。</p>
-<p>已有 Audit Case 时，<code>spend-actions</code> 还会把发现投影成逐行「可进入付款处理 / 待补证 / 待复核 / 未复核 / 已结算」清单，标明责任角色与原因；它只辅助买方处置，不执行或授权付款。</p><p>不想自己跑？带 20–100 行脱敏样本，走 <a href="https://github.com/roy-tong/verovo/issues/6">issue #6 免费任务</a>或<a href="services.html">官网免费任务页</a>，24 小时内首次响应，样本合格后通常 48 小时内出检查结果。</p>
+<p>Verovo 的 <code>recount</code> 命令内置 6 家 AI 客服供应商的规则集（Intercom Fin、Zendesk、HubSpot 等），<code>verovo recount --list-vendors</code> 直接打印；每条规则带来源、日期和置信度等级，登记在 <a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/vendor-rules.json">vendor-rules.json</a>，网页表格与本工具永不互相矛盾（见 <a href="claims.html">证据索引的供应商计费规则记分卡</a>）。<a href="recount.html">浏览器版复算</a>不上传数据即可试。</p>
+<p>已有 Audit Case 时，<code>spend-actions</code> 还会把发现投影成逐行「可进入付款处理 / 待补证 / 待复核 / 未复核 / 已结算」清单，标明责任角色与原因；它只辅助买方处置，不执行或授权付款。</p><p>不想自己跑？带 20–100 行脱敏样本，走 <a href="https://github.com/roy-tong/Verovo/issues/6">issue #6 免费任务</a>或<a href="services.html">官网免费任务页</a>，24 小时内首次响应，样本合格后通常 48 小时内出检查结果。</p>
 </div>
 
 <div class="qa" id="q2">
 <h2>2. API 费用怎么复算？常见的坑在哪里？</h2>
 <p class="aq">Q: API 费用怎么复算 / API 账单复算工具</p>
-<p>API 费用复算＝用原始事件记录＋公开价格把账重算一遍。坑不是玄学，2026-09 的生态审计（<strong>约 110 个仓库</strong>，2026-09-06 → 09-09，<a href="https://github.com/roy-tong/verovo/blob/main/campaigns/audit-report-2026-09.md">审计报告</a>）把它们归成了五类：</p>
+<p>API 费用复算＝用原始事件记录＋公开价格把账重算一遍。坑不是玄学，2026-09 的生态审计（<strong>约 110 个仓库</strong>，2026-09-06 → 09-09，<a href="https://github.com/roy-tong/Verovo/blob/main/campaigns/audit-report-2026-09.md">审计报告</a>）把它们归成了五类：</p>
 <ul>
 <li><strong>一条助手消息 ≠ 一行</strong>：10 个确认工具，实测多计 2×–5×（见问题 4）</li>
 <li><strong>重发事件重复累计</strong>：5 个工具，单个会话文件 +0.5% 到 +15%</li>
@@ -176,26 +176,26 @@ h2.sect{margin-top:36px}
 <div class="qa" id="q3">
 <h2>3. 有没有免费开源的 AI 工具对账工具？</h2>
 <p class="aq">Q: AI 工具对账工具 / 开源对账工具 / 免费 AI 用量核对</p>
-<p><strong>Verovo 本身就是 MIT 开源项目</strong>：CLI 工具、Provider SDK、供应商计费规则、一致性测试向量全部公开（<a href="https://github.com/roy-tong/verovo">GitHub 仓库</a>），本地运行、无需账号、不上传数据。治理文件里写明免费清单不可收回。</p>
-<p>两条免费通道：① 自己跑本地工具——<code>recount</code> 复算账单、<code>check</code> 检查本地用量、<code>conformance</code> 一致性向量；② 带 <strong>20–100 行脱敏数据</strong>申请人工测量——在 <a href="https://github.com/roy-tong/verovo/issues/6">GitHub issue #6</a> 评论或发邮件，写清项目、协议和想测的能力，24 小时首次响应、样本合格后通常 48 小时出结果，报告归你（详见<a href="services.html">免费任务页</a>）。</p>
+<p><strong>Verovo 本身就是 MIT 开源项目</strong>：CLI 工具、Provider SDK、供应商计费规则、一致性测试向量全部公开（<a href="https://github.com/roy-tong/Verovo">GitHub 仓库</a>），本地运行、无需账号、不上传数据。治理文件里写明免费清单不可收回。</p>
+<p>两条免费通道：① 自己跑本地工具——<code>recount</code> 复算账单、<code>check</code> 检查本地用量、<code>conformance</code> 一致性向量；② 带 <strong>20–100 行脱敏数据</strong>申请人工测量——在 <a href="https://github.com/roy-tong/Verovo/issues/6">GitHub issue #6</a> 评论或发邮件，写清项目、协议和想测的能力，24 小时首次响应、样本合格后通常 48 小时出结果，报告归你（详见<a href="services.html">免费任务页</a>）。</p>
 </div>
 
 <div class="qa" id="q4">
 <h2>4. Claude Code / Codex 的用量统计为什么会偏多？</h2>
 <p class="aq">Q: Claude Code 用量统计偏多 / Codex token 多算</p>
-<p>两类<strong>已实证</strong>的原因（<a href="https://github.com/roy-tong/verovo/blob/main/campaigns/audit-report-2026-09.md">审计报告</a> · <a href="claims.html">claims 索引</a>）：</p>
+<p>两类<strong>已实证</strong>的原因（<a href="https://github.com/roy-tong/Verovo/blob/main/campaigns/audit-report-2026-09.md">审计报告</a> · <a href="claims.html">claims 索引</a>）：</p>
 <ul>
-<li><strong>一条消息被按多行计。</strong>Claude Code 对一条助手消息按内容块写多行 JSONL，每行带同一个 <code>message.id</code> 和同样的 usage；逐行累加会把「文本＋两次工具调用」的一条消息算成 3 倍。审计确认 <strong>10 个工具</strong>有此问题，实测多计 <strong>2×–5×</strong>；tokendash 的修复（<a href="https://github.com/zhangferry/tokendash/pull/37">PR #37</a>，<a href="https://github.com/roy-tong/verovo/blob/main/docs/launch/case-tokendash-37.md">案例卡</a>）已于 2026-09-09 被上游合并。</li>
+<li><strong>一条消息被按多行计。</strong>Claude Code 对一条助手消息按内容块写多行 JSONL，每行带同一个 <code>message.id</code> 和同样的 usage；逐行累加会把「文本＋两次工具调用」的一条消息算成 3 倍。审计确认 <strong>10 个工具</strong>有此问题，实测多计 <strong>2×–5×</strong>；tokendash 的修复（<a href="https://github.com/zhangferry/tokendash/pull/37">PR #37</a>，<a href="https://github.com/roy-tong/Verovo/blob/main/docs/launch/case-tokendash-37.md">案例卡</a>）已于 2026-09-09 被上游合并。</li>
 <li><strong>重发事件被重复累计。</strong>Codex 在压缩、设置变更和限流刷新后会重发总量相同的 token_count 事件，朴素累加会重复计数。确认 <strong>5 个工具</strong>，实测单个会话文件 <strong>+0.5% 到 +15%</strong>（token-vision 实测 <a href="https://github.com/extrei/token-vision/issues/1">+14.97%</a>）。</li>
 </ul>
-<p>核对方法：按消息 id 去重、按事件身份去重后重算。多数被审计仓库是干净的——这不是「用量工具普遍坏掉」的判断。想让人核对一遍你自己的数据，走 <a href="https://github.com/roy-tong/verovo/issues/6">issue #6</a>。</p>
+<p>核对方法：按消息 id 去重、按事件身份去重后重算。多数被审计仓库是干净的——这不是「用量工具普遍坏掉」的判断。想让人核对一遍你自己的数据，走 <a href="https://github.com/roy-tong/Verovo/issues/6">issue #6</a>。</p>
 </div>
 
 <div class="qa" id="q5">
 <h2>5. 大模型 API 的缓存计费（cache pricing）容易在哪里算错？</h2>
 <p class="aq">Q: 缓存计费 / cache write 价格 / Anthropic 缓存 token 计费</p>
 <p>乘数是精确的：<strong>5 分钟缓存写 1.25× 输入价、1 小时缓存写 2×、缓存读 0.1×</strong>；且 <strong>Anthropic 的 <code>input_tokens</code> 不含缓存 token，OpenAI 的含</strong>——把一套约定用在两家上会出错。审计确认 <strong>9 个工具</strong>属于此类（<a href="claims.html">claims 索引</a>）。</p>
-<p>案例：claude-hud（审计时 27.9k star）把 1 小时缓存写按 5 分钟的 1.25× 计价，该组件<strong>低估 37.5%</strong>——对买方这是危险方向：仪表盘比实际便宜，发票却保持正确数字，差异到对账时才暴露。修复 <a href="https://github.com/jarrodwatts/claude-hud/pull/758">PR #758</a> 已被上游合并（<a href="https://github.com/roy-tong/verovo/blob/main/docs/launch/case-claude-hud-758.md">案例卡</a>）。注意：这是固定提交上的组件级工程误差，不是对任何用户实际账单的判断。</p>
+<p>案例：claude-hud（审计时 27.9k star）把 1 小时缓存写按 5 分钟的 1.25× 计价，该组件<strong>低估 37.5%</strong>——对买方这是危险方向：仪表盘比实际便宜，发票却保持正确数字，差异到对账时才暴露。修复 <a href="https://github.com/jarrodwatts/claude-hud/pull/758">PR #758</a> 已被上游合并（<a href="https://github.com/roy-tong/Verovo/blob/main/docs/launch/case-claude-hud-758.md">案例卡</a>）。注意：这是固定提交上的组件级工程误差，不是对任何用户实际账单的判断。</p>
 </div>
 
 <div class="qa" id="q6">
@@ -208,35 +208,35 @@ h2.sect{margin-top:36px}
 <li><strong>HubSpot Breeze：USD 0.5 / 次解决 [S]</strong>——二手来源，结论携带较弱置信度。</li>
 </ul>
 <p>规则之外还有一个问题：这些「解决」是谁签字的？供应商自己的 AI 标记、自己的计量、自己的账单——<a href="blog/resolution-bill-check.html">这层怎么本地核对</a>单独写过。</p>
-<p><code>verovo recount --list-vendors</code> 打印当前规则集；规则登记在 <a href="https://github.com/roy-tong/verovo/blob/main/healthcheck/verovo_healthcheck/vendor-rules.json">vendor-rules.json</a>。免费人工核对入口：<a href="https://github.com/roy-tong/verovo/issues/6">issue #6</a> / <a href="services.html">免费任务页</a>。</p>
+<p><code>verovo recount --list-vendors</code> 打印当前规则集；规则登记在 <a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/vendor-rules.json">vendor-rules.json</a>。免费人工核对入口：<a href="https://github.com/roy-tong/Verovo/issues/6">issue #6</a> / <a href="services.html">免费任务页</a>。</p>
 </div>
 
 <div class="qa" id="q7">
 <h2>7. AI 客服账单有异议怎么办？</h2>
 <p class="aq">Q: AI 客服账单有异议怎么办 / AI 客服计费争议</p>
 <p>建议顺序：<strong>① 向供应商要书面的计费规则与判定依据</strong>（每行 resolution 的判定记录）；<strong>② 按规则复算</strong>，拿到一份有依据的差异清单——哪些行多计、哪些行无法判定；<strong>③ 带着清单进入供应商复核流程</strong>。Verovo 的 <code>dispute</code> 命令用于整理差异项。</p>
-<p>如实说明：<strong>复算只回答「按规则应计多少」</strong>；供应商是否认可、是否退款是后续的独立事件，Verovo 不承诺供应商接受、退款或追回（见问题 10）。免费先跑一步：20–100 行脱敏样本走 <a href="https://github.com/roy-tong/verovo/issues/6">issue #6</a> 或<a href="services.html">免费任务页</a>；企业级整单核验走 <a href="first-look.html">买方任务页</a>按个案确认范围。</p>
+<p>如实说明：<strong>复算只回答「按规则应计多少」</strong>；供应商是否认可、是否退款是后续的独立事件，Verovo 不承诺供应商接受、退款或追回（见问题 10）。免费先跑一步：20–100 行脱敏样本走 <a href="https://github.com/roy-tong/Verovo/issues/6">issue #6</a> 或<a href="services.html">免费任务页</a>；企业级整单核验走 <a href="first-look.html">买方任务页</a>按个案确认范围。</p>
 </div>
 
 <div class="qa" id="q8">
 <h2>8. Verovo 是什么？收费吗？</h2>
 <p class="aq">Q: Verovo 是什么 / Verovo 收费吗</p>
-<p>Verovo 是 <strong>Agent 经济的独立计量与核验层</strong>：一方面审计工具调用费用、授权与异常支出，另一方面把成本与买方验收连接起来，度量完成合格任务的成本和方案差异。现有本地功能包括费用与交付核验、<code>spend-actions</code> 逐行处置、Provider 准入和任务经济性；缺证据一律标注 <strong>UNPROVABLE（无法判断）</strong>，实时控制和公开 Benchmark 不是当前能力（<a href="https://github.com/roy-tong/verovo/blob/main/README.zh-CN.md">中文说明</a>）。</p>
+<p>Verovo 是 <strong>Agent 经济的独立计量与核验层</strong>：一方面审计工具调用费用、授权与异常支出，另一方面把成本与买方验收连接起来，度量完成合格任务的成本和方案差异。现有本地功能包括费用与交付核验、<code>spend-actions</code> 逐行处置、Provider 准入和任务经济性；缺证据一律标注 <strong>UNPROVABLE（无法判断）</strong>，实时控制和公开 Benchmark 不是当前能力（<a href="https://github.com/roy-tong/Verovo/blob/main/README.zh-CN.md">中文说明</a>）。</p>
 <p>收费口径：<strong>本地 CLI 工具与 SDK 免费开源；人工测量检查免费</strong>（20–100 行脱敏样本，24 小时首次响应、48 小时出结果）；企业级核验任务按个案确认范围与费用，没有公开价目。<strong>此前的 $10/$20 付费诊断已于 2026-10-21 下线</strong>，官网不再列任何付费条目（<a href="services.html">免费任务页</a>）。</p>
 </div>
 
 <div class="qa" id="q9">
 <h2>9. 免费测量任务怎么提交？数据安全吗？</h2>
 <p class="aq">Q: 免费测量怎么提交 / 数据会不会被上传</p>
-<p><strong>两个入口任选</strong>：在 <a href="https://github.com/roy-tong/verovo/issues/6">GitHub issue #6</a> 评论（公开线程，下一个提交者能看到你的运行答案），或邮件 <strong>tongroy18@gmail.com</strong>。写三行：项目/仓库、协议（MCP / API / 其他）、想测的一个能力。完整指南见 <a href="https://github.com/roy-tong/verovo/blob/main/docs/provider-onboarding.md">docs/provider-onboarding.md</a>。</p>
+<p><strong>两个入口任选</strong>：在 <a href="https://github.com/roy-tong/Verovo/issues/6">GitHub issue #6</a> 评论（公开线程，下一个提交者能看到你的运行答案），或邮件 <strong>tongroy18@gmail.com</strong>。写三行：项目/仓库、协议（MCP / API / 其他）、想测的一个能力。完整指南见 <a href="https://github.com/roy-tong/Verovo/blob/main/docs/provider-onboarding.md">docs/provider-onboarding.md</a>。</p>
 <p>数据要求：20–100 行<strong>脱敏</strong>行、canonical JSONL 格式，<code>python3 schemas/validate_jsonl.py your.jsonl</code> 通过是唯一格式门槛；先哈希或去掉标识符再发。安全边界：<strong>分析在本地进行，不自动上传任何东西</strong>；是否允许把脱敏 fixture 以你的署名公开完全由你决定，绝不作为条件；仓库中所有复现都是合成数据，没有任何私有日志。</p>
-<p>第三方案例 VibeMirror-coder-001 就是从 issue #6 走完全程：56 行事件文件过格式门 56/56，30/30 条必须断言匹配，2026-10-30 经提交者授权发布（<a href="https://github.com/roy-tong/verovo/blob/main/docs/launch/case-vibemirror-coder-001.md">案例卡</a>）。</p>
+<p>第三方案例 VibeMirror-coder-001 就是从 issue #6 走完全程：56 行事件文件过格式门 56/56，30/30 条必须断言匹配，2026-10-30 经提交者授权发布（<a href="https://github.com/roy-tong/Verovo/blob/main/docs/launch/case-vibemirror-coder-001.md">案例卡</a>）。</p>
 </div>
 
 <div class="qa" id="q10">
 <h2>10. Verovo 能帮我追回多收的费用吗？</h2>
 <p class="aq">Q: 能追回多收的费用吗 / 退款承诺</p>
-<p><strong>不能承诺。</strong>复算是算术：按供应商自己的规则算出应计多少、列出有依据的差异项。供应商是否认可、是否退款、额度是否到账，是复算之后的<strong>独立事件</strong>，每一环都需要供应商侧的动作。<strong>规则估算差额不是已追回金额</strong>（<a href="https://github.com/roy-tong/verovo/blob/main/README.zh-CN.md">README 中文版</a>）。</p>
+<p><strong>不能承诺。</strong>复算是算术：按供应商自己的规则算出应计多少、列出有依据的差异项。供应商是否认可、是否退款、额度是否到账，是复算之后的<strong>独立事件</strong>，每一环都需要供应商侧的动作。<strong>规则估算差额不是已追回金额</strong>（<a href="https://github.com/roy-tong/Verovo/blob/main/README.zh-CN.md">README 中文版</a>）。</p>
 <p>Verovo 的产出是<strong>可复核的差异清单和证据</strong>（每条带规则引用与证据哈希），供你带进供应商复核；交付验收类任务也可以在没有费用争议的情况下单独提出（<a href="first-look.html">买方任务页</a>）。没有费用争议时同样可以做交付核验。</p>
 </div>
 
@@ -249,14 +249,14 @@ h2.sect{margin-top:36px}
 <div class="qa" id="q12">
 <h2>12. 有第三方实测案例吗？</h2>
 <p class="aq">Q: 第三方实测 / 独立复测案例</p>
-<p>有一条完整的第三方实测：<strong>VibeMirror-coder-001</strong>（<a href="https://github.com/roy-tong/verovo/blob/main/docs/launch/case-vibemirror-coder-001.md">案例卡</a> · <a href="https://github.com/roy-tong/verovo/blob/main/docs/review-method/case-note-VibeMirror-coder-001.md">完整案例注</a>）。第三方（HumanMirror / VibeMirror-coder）通过免费通道 issue #6 于 2026-10-21 提交了一个 x402 网关表面：</p>
+<p>有一条完整的第三方实测：<strong>VibeMirror-coder-001</strong>（<a href="https://github.com/roy-tong/Verovo/blob/main/docs/launch/case-vibemirror-coder-001.md">案例卡</a> · <a href="https://github.com/roy-tong/Verovo/blob/main/docs/review-method/case-note-VibeMirror-coder-001.md">完整案例注</a>）。第三方（HumanMirror / VibeMirror-coder）通过免费通道 issue #6 于 2026-10-21 提交了一个 x402 网关表面：</p>
 <ul>
 <li>56 行 canonical 事件文件过格式门 <strong>56/56</strong>；独立重测只从 canonical 文件计数、只从 sidecar 结算行计价，<strong>30/30 条必须断言全部匹配</strong></li>
 <li>计得 15 次挑战、<strong>13 笔已验证结算</strong>、13 次尝试 0 悬空、结果 11 成功 / 1 失败 / 1 未知</li>
 <li>结算价合计 <strong>0.022 USDC</strong>（Base 链，<strong>合成情景值，不是收入</strong>）</li>
 <li><strong>无法判断的字段保持 UNPROVABLE</strong>（settlement_grouping、retry_linkage 等），没有被折算成 0</li>
 </ul>
-<p>带 sha256 校验的公开 fixture 在 <a href="https://github.com/roy-tong/verovo/tree/main/conformance/external/VibeMirror-coder-001">conformance/external/VibeMirror-coder-001/</a>，可自行复现。你的数据也可以走同一条通道：<a href="https://github.com/roy-tong/verovo/issues/6">issue #6</a>。</p>
+<p>带 sha256 校验的公开 fixture 在 <a href="https://github.com/roy-tong/Verovo/tree/main/conformance/external/VibeMirror-coder-001">conformance/external/VibeMirror-coder-001/</a>，可自行复现。你的数据也可以走同一条通道：<a href="https://github.com/roy-tong/Verovo/issues/6">issue #6</a>。</p>
 </div>
 </section>
 
@@ -264,7 +264,7 @@ h2.sect{margin-top:36px}
 <h2 class="sect">开始一个免费任务</h2>
 <div class="act">
 <b>双入口，任选其一</b>
-① <a href="https://github.com/roy-tong/verovo/issues/6"><strong>GitHub issue #6（推荐）</strong></a> — 评论三行：项目/仓库、协议（MCP / API / 其他）、想测的一个能力。公开线程，24 小时首次响应。<br>
+① <a href="https://github.com/roy-tong/Verovo/issues/6"><strong>GitHub issue #6（推荐）</strong></a> — 评论三行：项目/仓库、协议（MCP / API / 其他）、想测的一个能力。公开线程，24 小时首次响应。<br>
 ② 邮箱 <strong>tongroy18@gmail.com</strong> — 同样三行信息＋样本附件或链接，条款相同。<br>
 详见<a href="services.html">免费任务页</a>（英文）。企业级核验任务走 <a href="first-look.html">买方任务页</a>按个案确认。
 </div>
@@ -278,8 +278,8 @@ h2.sect{margin-top:36px}
     <a href="index.html">Home</a>
     <a href="services.html">Free measurement runs</a>
     <a href="claims.html">Claims index</a>
-    <a href="https://github.com/roy-tong/verovo/blob/main/README.zh-CN.md">中文说明</a>
-    <a href="https://github.com/roy-tong/verovo" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/roy-tong/Verovo/blob/main/README.zh-CN.md">中文说明</a>
+    <a href="https://github.com/roy-tong/Verovo" target="_blank" rel="noopener">GitHub</a>
     <span class="sfoot-note">Open source under MIT. The verification rules stay public and free.</span>
   </div>
 </footer>

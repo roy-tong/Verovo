@@ -41,7 +41,7 @@ code{background:#f0f2f5;padding:1px 5px;border-radius:4px;font-size:12.5px}
       <a href="index.html#pricing">Free runs</a>
       <a href="services.html">Free runs</a>
       <a href="faq.html" lang="zh-CN">FAQ（中文）</a>
-      <a class="ext" href="https://github.com/roy-tong/verovo" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
+      <a class="ext" href="https://github.com/roy-tong/Verovo" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
     </nav>
     <a class="snav-cta" href="services.html">Get a free run&nbsp;→</a>
   </div>
@@ -99,7 +99,7 @@ billable resolution changes your bill without changing the price — Zendesk's
 example. When a rule changes, the registry entry changes with a new date, and
 recounts before and after stay comparable because both pin their rule version.
 Read the current registry:
-<a href="https://github.com/roy-tong/verovo/blob/main/healthcheck/verovo_healthcheck/vendor-rules.json">vendor-rules.json</a>.</p>
+<a href="https://github.com/roy-tong/Verovo/blob/main/healthcheck/verovo_healthcheck/vendor-rules.json">vendor-rules.json</a>.</p>
 </section>
 
 <section>
@@ -112,8 +112,8 @@ Read the current registry:
 </div>
 <p class="lead">Method: read the code, build a synthetic fixture, run the
 tool's own parser against it. Full method and case list:
-<a href="https://github.com/roy-tong/verovo/blob/main/campaigns/audit-report-2026-09.md">the audit report</a>
-and <a href="https://github.com/roy-tong/verovo/blob/main/campaigns/measurement-casebook.md">measurement casebook</a>.
+<a href="https://github.com/roy-tong/Verovo/blob/main/campaigns/audit-report-2026-09.md">the audit report</a>
+and <a href="https://github.com/roy-tong/Verovo/blob/main/campaigns/measurement-casebook.md">measurement casebook</a>.
 Below are the named entries; the casebook carries the rest.</p>
 
 <h3 id="distribution">Where the bugs sit — the recount distribution</h3>
@@ -208,7 +208,7 @@ vendor's rules in writing.</p>
 <p class="how">Most audited repos passed. We name the clean ones because that matters. And one filing we got wrong the first time — an emission shape with no unguarded consumer is an intended contract, not a bug; the maintainer was right to close it not-actionable, and it is now a methodology rule.</p>
 <div class="claims-scroll" role="region" aria-label="Metering findings table; scroll horizontally on small screens" tabindex="0"><table class="claims">
 <tr><th>Tool</th><th class="s">Status</th><th>Evidence</th></tr>
-<tr><td>promptfoo · Portkey model data · TokenTracker</td><td class="s"><span class="chip cp">Conformance Pass</span></td><td>named clean in the <a href="https://github.com/roy-tong/verovo/blob/main/campaigns/audit-report-2026-09.md">audit report</a>, 2026-09</td></tr>
+<tr><td>promptfoo · Portkey model data · TokenTracker</td><td class="s"><span class="chip cp">Conformance Pass</span></td><td>named clean in the <a href="https://github.com/roy-tong/Verovo/blob/main/campaigns/audit-report-2026-09.md">audit report</a>, 2026-09</td></tr>
 <tr><td>pydantic-ai</td><td class="s"><span class="chip na">Not a bug · semantics</span></td><td><a href="https://github.com/pydantic-ai/pydantic-ai/issues/7975">issue #7975</a> closed not-actionable — correctly</td></tr>
 </table></div>
 </div>
@@ -217,7 +217,7 @@ vendor's rules in writing.</p>
 <h2>Audit your own tool in 10 minutes</h2>
 <p class="lead">The fixture corpus is open data — plain JSONL plus expected
 totals, no runtime. Point your parser at it like at real logs:</p>
-<div class="snippet">git clone --depth 1 https://github.com/roy-tong/verovo
+<div class="snippet">git clone --depth 1 https://github.com/roy-tong/Verovo
 python3 conformance/pack/verovo selftest   # the expected-totals style
 verovo conformance --new-vector my-check   # pin your own shape as a vector</div>
 <p class="lead" style="margin-top:10px">A synthetic run through that pack is
@@ -225,7 +225,7 @@ verovo conformance --new-vector my-check   # pin your own shape as a vector</div
 UNPROVABLE (cost preservation), token/cache checks NOT-SUPPORTED. A PASS is
 limited to the supplied evidence.</p>
 <p class="lead" style="margin-top:10px">Found a metering claim this index
-should carry? <a href="https://github.com/roy-tong/verovo/issues">File it</a> —
+should carry? <a href="https://github.com/roy-tong/Verovo/issues">File it</a> —
 a finding needs a reproduction and a date, that is the whole bar.</p>
 <p class="lead" style="margin-top:10px">Want a human check on your own numbers?
 The <a href="services.html">free metering QA run</a> takes one sample and one
@@ -249,7 +249,7 @@ audited project endorses Verovo. The report's live merge counter:
     <a href="index.html">Home</a>
     <a href="rules/index.html">Vendor rule cards</a>
     <a href="releases.html">Release notes</a>
-    <a href="https://github.com/roy-tong/verovo" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/roy-tong/Verovo" target="_blank" rel="noopener">GitHub</a>
     <span class="sfoot-note">Open source under MIT. The verification rules stay public and free.</span>
   </div>
 </footer>

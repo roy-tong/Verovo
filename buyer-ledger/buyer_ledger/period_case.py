@@ -253,6 +253,8 @@ def _project_case(repository: CaseRepository) -> Dict[str, Any]:
                                   item.get("kind", "open")),
                 "kind": item.get("kind"), "detail": item.get("detail")})
     for document in (scan or {}).get("documents", []):
+        if document.get("review_status") == "reviewed" and document.get("booking_status") == "booked":
+            continue
         review_queue.append({"ref": document["document_ref"],
                              "kind": "invoice_document",
                              "detail": document.get("detail")})
@@ -412,8 +414,10 @@ def _project_case(repository: CaseRepository) -> Dict[str, Any]:
                                or (review or {}).get("approved_scope")
                                or (confirmation or {}).get("sources")),
             "outstanding_requests": missing_inputs,
-            "signoff_revision": ((signoff or {}).get("state")
-                                 or ((review or {}).get("signoff") or {}).get("state")),
+            "signoff_revision": ((signoff or {}).get("revision_id")
+                                 or ((review or {}).get("signoff") or {}).get("revision_id")),
+            "signoff_state": ((signoff or {}).get("state")
+                              or ((review or {}).get("signoff") or {}).get("state")),
         },
         "history": {
             "previous_period_ref": None,

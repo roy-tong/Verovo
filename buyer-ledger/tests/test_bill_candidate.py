@@ -460,7 +460,9 @@ class GoldenChainEndToEndTests(BillCandidateTestBase):
         manifest = json.loads((case / "canonical" / "manifest.json")
                               .read_text(encoding="utf-8"))
         self.assertIn("documents", manifest)
-        self.assertEqual("unreviewed", manifest["documents"][0]["review_status"])
+        self.assertEqual("reviewed", manifest["documents"][0]["review_status"])
+        self.assertEqual("booked", manifest["documents"][0]["booking_status"])
+        self.assertEqual("finance", manifest["documents"][0]["booked_by"])
         self.assertNotIn("invoices", manifest["sources"])
         # field evidence still points into the screenshot regions
         booked = bc.load_candidate(self.store, candidate["candidate_id"])

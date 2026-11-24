@@ -5,8 +5,8 @@
 > Both fixes in this release were **found by the first external conformance
 > pass** (Urusilla / @jaden3824, [langfuse#16383](https://github.com/langfuse/langfuse/discussions/16383))
 > and were committed "before the next tag" per
-> [#8](https://github.com/roy-tong/verovo/issues/8) and
-> [#9](https://github.com/roy-tong/verovo/issues/9). This release is
+> [#8](https://github.com/roy-tong/Verovo/issues/8) and
+> [#9](https://github.com/roy-tong/Verovo/issues/9). This release is
 > that commitment, delivered.
 
 ---

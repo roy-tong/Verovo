@@ -1,6 +1,20 @@
 # Verovo: implementation status
 
-**Current install release, 2026-11-23 · [v0.17.2](../CHANGELOG.md).** This patch binds clean payment recommendations to exact invoice bytes and contract versions, independently verifies settlement from credit evidence, and adds explicit three-minor-unit currency support while preserving the v0.16.2 `PeriodCase/CaseRepository`, linear task-coverage accounting, atomic reproduce creation and HALF_UP display contracts. Canonical verdicts, signed revisions and proof boundaries remain unchanged.
+## Native real-task case gate (2026-11-24)
+
+- `verovo case list|show|incidents|index|validate|replay|verify` delegates to the shared `ovo-acceptance` runtime. The default registry supplies the family workspace root, so commands also work from this repository. `OVO_ACCEPTANCE_HOME` overrides the shared runtime location and `OVO_CASE_REGISTRY` overrides the registry for isolated tests; `OVO_CASE_ROOT` explicitly overrides the evidence root.
+- `task_rerun` and `evidence_only` remain separate. External-write cases are evidence-only and never resend, pay or sign. The runtime and 24-case registry passed validation; all 24 cases passed, with no blocked cases. V2/V4/V5 scoped journeys are registered. See `../../ai输出/ovo-真实任务资产库/README.md` and `../../ai输出/ovo-真实任务资产库/GOLDEN_JOURNEYS.md`.
+
+## Buyer-close original-scenario fixes (2026-11-24)
+
+- English `to` in an OCR period preserves its stated exclusive boundary instead of adding a day. Inclusive display ranges can still convert explicitly; date-only values record `calendar_date` and `date_only_no_timezone_conversion`.
+- `close revise --source FILE --role outcomes` adds a named source. Bundle revisions reject undeclared tables/documents instead of silently ignoring them. `close review --revision rN` reviews the selected revision under the same root-case lock used by signoff, then synchronizes the report fingerprint used by signoff.
+- Signoff requires an exact reviewer match in `canonical manifest.buyer.acceptance_signers`, with `AUTH_REQUIRED` otherwise. `signoff_revision` and `signoff_state` are separate. Reviewed reports render the actual signoff record instead of a conflicting status.
+- Booking provenance verifies the reviewer/time, original document hash, bill-export hash and declared bills source. A reviewed booked OCR document no longer creates a false `invoice_draft`; it still is not independent buyer evidence.
+- Final reports project task-level costs and root-cause groups. V2 has 20 task rows and 3 groups over 2001 open items. Missing `outcomes.value` is named explicitly instead of asking for an already supplied file; unresolved amounts appear in the conclusion area.
+- Current verification: **440 buyer-ledger tests plus healthcheck, root, Lab and protocol suites pass**. V2/V4/V5 use frozen task fixtures; synthetic signoff is not payment authorization or a real buyer outcome.
+
+**Current install release, 2026-11-24 · [v0.18.0](../CHANGELOG.md).** Buyer-close revisions now support named source addition and selected-revision review under one root-case lock. Signoff requires exact signer authority, OCR booking binds source/export hashes, and reports expose task economics and unresolved priority amounts while preserving the v0.17.2 evidence-bound spend actions and Money Contract. Canonical verdicts, signed revisions and proof boundaries remain unchanged.
 
 Earlier baseline reviewed 2026-11-04 against the **v0.13.0 release**. Available means local implementation, not production validation on every platform.
 
@@ -70,7 +84,7 @@ Reliability behavior: largest-remainder allocation preserves cents and zero weig
 
 ## Verification in this working tree and remaining boundaries
 
-- PASS: 659 healthcheck unit tests via healthcheck discovery, 69 root tests, 430 Buyer Ledger tests, 91 Lab tests, and `python3 healthcheck/verovo selftest`.
+- PASS: 663 healthcheck unit tests via healthcheck discovery, 69 root tests, 440 Buyer Ledger tests, 91 Lab tests, and `python3 healthcheck/verovo selftest`.
 - PASS: metric vectors 22/22, outcome-audit vectors 15/15, delegation vectors 23/23, SSE vectors 2/2; external fixture runners, receipt/correlation vectors, aggregate-join, replay-digest, commerce-retry and conformance-pack selftest. Metric registry and generated vocabulary checks also pass.
 - The canonical fixture and new adversarial cases are synthetic. No real customer close, supplier dataset, production identity flow, external signature, cryptographic attestation or OCR accuracy was validated.
 - Supported canonical scope remains known CSV/JSONL, one vendor/account/currency, approved per-unit pricing and approved allocation drivers. Unsupported formats and cross-scope input fail closed. General contract parsing, arbitrary invoice layouts, tax/credit/refund/FX handling, external business-system confirmation and real-world independence remain outside the verified boundary.

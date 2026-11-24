@@ -2,7 +2,7 @@
 
 > 本文件是 Issue #2 的正文源（`docs/ISSUE-2.md`）。push 时由
 > `.github/workflows/issue-sync.yml` 自动同步到
-> https://github.com/roy-tong/verovo/issues/2 —— 不要手改 Issue。
+> https://github.com/roy-tong/Verovo/issues/2 —— 不要手改 Issue。
 
 ## Goal
 
@@ -23,17 +23,17 @@ synthetic — separate intakes). Email `tongroy18@gmail.com` with subject
 "measurement check" — three short fields (data, source + time window, the
 decision it should inform).
 
-**→ Full 7-day audit — [Provider Trial form](https://github.com/roy-tong/verovo/issues/new?template=5-provider-trial.yml)**
+**→ Full 7-day audit — [Provider Trial form](https://github.com/roy-tong/Verovo/issues/new?template=5-provider-trial.yml)**
 (five fields, ~2 minutes). Prefer email or this issue thread? Either works.
 Full methodology:
-[`product/AUDIT.md`](https://github.com/roy-tong/verovo/blob/main/product/AUDIT.md) ·
+[`product/AUDIT.md`](https://github.com/roy-tong/Verovo/blob/main/product/AUDIT.md) ·
 [Website](https://roy-tong.github.io/Verovo/).
 
 ## Why this matters
 
 Today every agent-facing tool keeps its own logs in its own shape, so nothing
 is comparable. Verovo's own baseline is
-[Pipeline Validation #001](https://github.com/roy-tong/verovo/blob/main/reports/pipeline-validation-001.md)
+[Pipeline Validation #001](https://github.com/roy-tong/Verovo/blob/main/reports/pipeline-validation-001.md)
 (42 synthetic calls → 84 canonical observations, deterministic fixture,
 deliberately 0 qualified usage). **Measurement Report #001 is reserved for the
 first external provider** — your real traffic, your numbers, your story.
@@ -48,7 +48,7 @@ implementers, but they don't see the call boundary.)
 1. Pick a capability you expose (MCP server, API endpoint, CLI).
 2. Wrap it with `@verovo/mcp` (SDK **v0.1.1**, MIT) — install from the
    release tarball:
-   `npm install https://github.com/roy-tong/verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
+   `npm install https://github.com/roy-tong/Verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
    (npm registry publish pending scope/token), or clone and `cd sdk && npm install`.
    See `sdk/examples/mcp-integration-v2.js` (MCP SDK v2, primary) and
    `mcp-integration.js` (v1).

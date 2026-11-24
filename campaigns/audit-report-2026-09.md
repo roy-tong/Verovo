@@ -80,7 +80,7 @@ these shapes (single-line messages, monotonically growing counters).
 The fixture corpus is open data — plain JSONL + expected totals, no runtime:
 
 ```bash
-git clone --depth 1 https://github.com/roy-tong/verovo
+git clone --depth 1 https://github.com/roy-tong/Verovo
 # point your parser at conformance/pack fixtures like at real logs
 python3 conformance/pack/verovo selftest   # see the expected-totals style
 ```

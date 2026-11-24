@@ -1,3 +1,21 @@
+## v0.18.0 - 2026-11-24
+
+### Added
+
+- Buyer-close revisions accept named additional sources, reject undeclared bundle materials, and support `close review --revision rN` with report-fingerprint synchronization.
+- Final reports include task-level economics, unresolved priority amounts, root-cause groups and actual signoff state. OCR booking provenance binds reviewer, original document, bill export and declared source hashes.
+- `verovo case` delegates to the shared real-task runtime; the standalone conformance entry and packaged command share one implementation.
+
+### Fixed
+
+- English `to` in OCR periods preserves the stated exclusive boundary; date-only values retain explicit calendar-date semantics.
+- Revision review and signoff now use the same root-case lock, and signoff requires an exact reviewer match in `manifest.buyer.acceptance_signers`; a name embedded in a longer string is not authority.
+- `signoff_revision` and `signoff_state` remain separate, and reviewed booked OCR documents no longer create false invoice-draft gaps.
+
+### Tests
+
+- 440 Buyer Ledger, 663 healthcheck, 69 root and 91 Lab tests pass, together with selftest, protocol vectors, registry/vocabulary/rule-card checks and package build checks. New regressions cover revision/root locking, signer exact matching, named source addition, OCR period boundaries and task-economics report projections. Synthetic signoff remains neither payment authorization nor a real buyer outcome.
+
 ## v0.17.2 - 2026-11-23
 
 ### Changed

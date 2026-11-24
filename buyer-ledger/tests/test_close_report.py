@@ -81,6 +81,7 @@ def _job(sources, *, rule_map="contract-rules.json", extra=None):
         "schema": "verovo.period-job/1",
         "job_id": "close-2026-10-a",
         "buyer": "buyer-1", "vendor": "vendor-1", "account": "acct-1",
+        "buyer_signers": ["buyer-1", "controller", "finance-reviewer", "finance", "test-role"],
         "period": {"from": "2026-10-01", "to": "2026-11-01",
                    "to_exclusive": True, "timezone": "UTC"},
         "currency": "USD",
@@ -562,8 +563,8 @@ class ReviewGateTests(CloseReportTestBase):
         self.assertIsNone(status["c01_status"]["blocked_reason_code"])
         self.assertEqual("V-04",
                          status["c01_status"]["next_required_action"]["ticket"])
-        self.assertEqual("not_signed",
-                         status["review_flow"]["signoff_revision"])
+        self.assertEqual("r1", status["review_flow"]["signoff_revision"])
+        self.assertEqual("not_signed", status["review_flow"]["signoff_state"])
 
     def test_report_requires_calculation_first(self):
         self.make_case(
@@ -598,6 +599,51 @@ class ReviewSignoffSemanticsTests(CloseReportTestBase):
 
 
 class MoneyLayersTests(CloseReportTestBase):
+    def test_task_economics_includes_task_level_costs_in_the_final_report(self):
+        report = self.report(
+            sources=[_source("bills", "bill-export.csv"),
+                     _source("usage", "usage-export.jsonl", "buyer"),
+                     _source("outcomes", "outcomes.csv", "buyer")],
+            bills=self.full_bills(), usage=USAGE,
+            outcomes=OUTCOME_HEADER +
+            "t1,o1,success,true,buyer-1,2026-10-31T00:00:00Z,outcomes.csv#o1,100.00,USD\n")
+        tasks = report["task_economics"]["tasks"]
+        self.assertEqual(1, len(tasks))
+        self.assertEqual("t1", tasks[0]["task_id"])
+        self.assertEqual("20.00", tasks[0]["fully_loaded_cost"])
+        self.assertTrue(tasks[0]["verified_success"])
+        text = close_report._report_markdown(report)
+        self.assertIn("按任务归集", text)
+        self.assertIn("| t1 |", text)
+        self.assertIn("| Task |", text)
+
+    def test_missing_outcome_value_is_not_reported_as_missing_outcomes_file(self):
+        report = self.report(
+            sources=[_source("bills", "bill-export.csv"),
+                     _source("usage", "usage-export.jsonl", "buyer"),
+                     _source("outcomes", "outcomes.csv", "buyer")],
+            bills=self.full_bills(), usage=USAGE,
+            outcomes=OUTCOME_HEADER +
+            "t1,o1,success,true,buyer-1,2026-10-31T00:00:00Z,outcomes.csv#o1,,USD\n")
+        self.assertTrue(report["task_economics"]["outcome_source_present"])
+        text = close_report._report_markdown(report)
+        self.assertNotIn("运营提供 outcomes 导出", text)
+        self.assertIn("outcomes.value", text)
+
+    def test_unresolved_amounts_are_visible_in_the_report_conclusion_area(self):
+        report = self.report(
+            sources=[_source("bills", "bill-export.csv"),
+                     _source("usage", "usage-export.jsonl", "buyer"),
+                     _source("outcomes", "outcomes.csv", "buyer")],
+            bills=self.full_bills(amount="25.00"), usage=USAGE,
+            outcomes=OUTCOME_HEADER +
+            "t1,o1,success,true,buyer-1,2026-10-31T00:00:00Z,outcomes.csv#o1,,USD\n")
+        text = close_report._report_markdown(report)
+        conclusion = text.split("## 一、核验范围", 1)[0]
+        self.assertIn("优先处置", conclusion)
+        self.assertIn("5.00", conclusion)
+        self.assertIn("与合同规则重算不一致", conclusion)
+
     def test_missing_economics_renders_five_layers_without_bare_dashes(self):
         report = self.report(
             sources=[_source("bills", "bill-export.csv")],

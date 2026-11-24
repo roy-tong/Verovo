@@ -38,6 +38,10 @@ python3 conformance/pack/verovo conformance --fixture my-fixture.jsonl
 python3 conformance/pack/verovo selftest   # repository fixtures, no caller input
 ```
 
+`conformance/pack/run_pack.py` and `conformance/pack/verovo` are only entry shims.
+The single implementation is `healthcheck/verovo_healthcheck/pack.py`, shared with
+`verovo conformance`; do not maintain a second copy of the pack logic.
+
 - Without `--claims`: data-consistency checks and reference computation only.
   No statement is made about any implementation's reported metrics.
 - With `--claims`: claimed values are compared against computation; a
