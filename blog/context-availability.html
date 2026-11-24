@@ -39,7 +39,7 @@
     <a class="post-back" href="../index.html">← Verovo</a>
     <p class="post-k">Research note · Semantics</p>
     <h1>A tool result in the next LLM context does not mean the agent&nbsp;used&nbsp;it</h1>
-    <p class="post-meta">2026-08-25 · cross-posted from <a href="https://github.com/roy-tong/verovo/issues/11" target="_blank" rel="noopener">issue #11</a> and <a href="https://github.com/roy-tong/verovo/blob/main/design-rationale/DR-005-evidence-calibrated-consumption-claims.md" target="_blank" rel="noopener">DR-005</a></p>
+    <p class="post-meta">2026-08-25 · cross-posted from <a href="https://github.com/roy-tong/Verovo/issues/11" target="_blank" rel="noopener">issue #11</a> and <a href="https://github.com/roy-tong/Verovo/blob/main/design-rationale/DR-005-evidence-calibrated-consumption-claims.md" target="_blank" rel="noopener">DR-005</a></p>
 
     <p>You shipped MCP observability. Your dashboard shows a green checkmark: <strong>consumed</strong>. The tool returned a result, and <code>mcp_tool.name</code> shows up in the next model request. Chain closed, right?</p>
     <p>Here is what that checkmark actually proves — and what it doesn't.</p>
@@ -86,11 +86,11 @@ Evidence for influence, ranked:
     <p>A measurement system that knows which layer it's in can say exactly what it knows — and that turns out to be the harder, more valuable feature than another dashboard.</p>
 
     <h2>What we did with this</h2>
-    <p>This boundary exposed an overclaim in our own spec: our Claude Code profile called <code>mcp_tool.name</code> in the next request a "consumption signal" — the first platform where consumption was "empirically proven." By the two states above, that signal certifies <strong>context availability</strong>, and we've corrected the claim and renamed the signal (<a href="https://github.com/roy-tong/verovo/issues/11" target="_blank" rel="noopener">issue #11</a>, <a href="https://github.com/roy-tong/verovo/blob/main/design-rationale/DR-005-evidence-calibrated-consumption-claims.md" target="_blank" rel="noopener">DR-005</a>).</p>
+    <p>This boundary exposed an overclaim in our own spec: our Claude Code profile called <code>mcp_tool.name</code> in the next request a "consumption signal" — the first platform where consumption was "empirically proven." By the two states above, that signal certifies <strong>context availability</strong>, and we've corrected the claim and renamed the signal (<a href="https://github.com/roy-tong/Verovo/issues/11" target="_blank" rel="noopener">issue #11</a>, <a href="https://github.com/roy-tong/Verovo/blob/main/design-rationale/DR-005-evidence-calibrated-consumption-claims.md" target="_blank" rel="noopener">DR-005</a>).</p>
     <p>Claude Code is still genuinely notable — it's the first client runtime where availability is certifiable at all. That's a real capability. It's one state short of what we claimed, and the state is the whole point.</p>
     <p>This is why agent usage needs evidence-aware measurement semantics: metrics that name what they observe, dashboards that mark what they don't.</p>
 
-    <p class="post-meta" style="margin-top:44px">Verovo is an open measurement standard for software used by AI agents — <a href="https://github.com/roy-tong/verovo" target="_blank" rel="noopener">GitHub</a> · <a href="../index.html">what it measures</a></p>
+    <p class="post-meta" style="margin-top:44px">Verovo is an open measurement standard for software used by AI agents — <a href="https://github.com/roy-tong/Verovo" target="_blank" rel="noopener">GitHub</a> · <a href="../index.html">what it measures</a></p>
   </main>
 </body>
 </html>
