@@ -1607,21 +1607,103 @@ def _needs_money_layers(report: Dict[str, Any]) -> bool:
             or economics.get("roi") in (None, ""))
 
 
-def _priority_summary(report: Dict[str, Any]) -> str:
+def _priority_amount(item: Dict[str, Any], report_currency: str):
+    value = item.get("amount")
+    if value in (None, ""):
+        return None, False
+    amount = _dec(value, "open item amount")
+    currency = _text(item.get("currency")).upper()
+    known = not currency or not report_currency or currency == report_currency
+    return amount, known
+
+
+def _is_persistent(item: Dict[str, Any]) -> bool:
+    text = " ".join([_text(item.get("detail")), " ".join(item.get("candidate_causes") or [])]).lower()
+    return bool(item.get("recurring") or item.get("persistent")
+                or any(word in text for word in ("recurring", "persistent", "持续", "反复")))
+
+
+def _confidence_rank(item: Dict[str, Any]) -> int:
+    value = _text(item.get("confidence") or item.get("qualification") or "unresolved").lower()
+    return {"low": 0, "unresolved": 0, "inferred": 1, "medium": 1,
+            "confirmed": 2, "high": 2}.get(value, 0)
+
+
+def _open_item_priority(report: Dict[str, Any]) -> Dict[str, Any]:
     unresolved = [item for item in report.get("open_items") or []
                   if item.get("state") not in ("resolved", "closed", "not_applicable")]
     if not unresolved:
+        return {"items": [], "gross": None, "deduped": None, "currency": None,
+                "unknown_currency": 0, "lines": 0}
+    currency = _text((report.get("scope") or {}).get("currency")).upper() or None
+    counts: Dict[str, int] = {}
+    for item in unresolved:
+        kind = _text(item.get("kind")) or "open_item"
+        counts[kind] = counts.get(kind, 0) + 1
+
+    def key(item):
+        amount, known = _priority_amount(item, currency)
+        due = _text(item.get("due_at") or item.get("due_date")
+                    or item.get("payment_due") or item.get("deadline"))
+        return (
+            0 if known else 1,
+            -abs(amount) if amount is not None and known else 0,
+            due or "9999",
+            _confidence_rank(item),
+            0 if _is_persistent(item) else 1,
+            0 if (item.get("systemic") or counts.get(_text(item.get("kind")), 0) >= 3) else 1,
+            _text(item.get("id")),
+        )
+
+    ordered = sorted(unresolved, key=key)
+    groups: Dict[str, Dict[str, Any]] = {}
+    gross = Decimal("0")
+    unknown = 0
+    for item in unresolved:
+        amount, known = _priority_amount(item, currency)
+        if amount is None:
+            continue
+        if not known:
+            unknown += 1
+            continue
+        gross += abs(amount)
+        line = _text(item.get("line_ref")) or _text(item.get("id"))
+        group = groups.setdefault(line, {"amount": Decimal("0"), "items": []})
+        group["amount"] = max(group["amount"], abs(amount))
+        group["items"].append(item.get("id"))
+    deduped = sum(group["amount"] for group in groups.values()) if groups else Decimal("0")
+    return {
+        "items": ordered,
+        "gross": _money(gross) if groups else None,
+        "deduped": _money(deduped) if groups else None,
+        "currency": currency,
+        "unknown_currency": unknown,
+        "lines": len(groups),
+    }
+
+
+def _priority_summary(report: Dict[str, Any]) -> str:
+    priority = _open_item_priority(report)
+    unresolved = priority["items"]
+    if not unresolved:
         return "> 优先处置：无未决项"
     amounts = []
-    for item in unresolved:
+    for item in unresolved[:3]:
         if item.get("amount") in (None, ""):
             continue
         kind = _text(item.get("kind"))
         cause = _OPEN_ITEM_ROOT_CAUSES.get(kind, kind or "待处理差异")
         amounts.append("%s：%s %s（%s）" % (
             item.get("id"), item["amount"], item.get("currency") or "币种未明", cause))
-    detail = "；".join(amounts[:3]) if amounts else "相关金额未登记，不能按 0 处理"
-    return "> 优先处置：%d 项未决；%s" % (len(unresolved), detail)
+    detail = "；".join(amounts) if amounts else "相关金额未登记，不能按 0 处理"
+    exposure = ""
+    if priority["deduped"] is not None:
+        exposure = "；去重后敞口 %s %s（毛额 %s，%d 行）" % (
+            priority["deduped"], priority["currency"] or "币种未明",
+            priority["gross"], priority["lines"])
+        if priority["unknown_currency"]:
+            exposure += "；另有 %d 项币种不同/未知，未计入" % priority["unknown_currency"]
+    return "> 优先处置：%d 项未决；%s%s" % (len(unresolved), detail, exposure)
 
 
 def _signoff_summary(report: Dict[str, Any]) -> str:

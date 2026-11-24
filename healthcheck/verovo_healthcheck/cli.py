@@ -46,6 +46,8 @@ from . import crm as crm_mod
 from . import periods as periods_mod
 from . import certify as certify_mod
 from . import incrementality as inc_mod
+from . import monitor as monitor_mod
+from . import tool_value as tool_value_mod
 from . import templates as templates_mod
 from . import commerce as commerce_mod
 from . import pnl as pnl_mod
@@ -1443,6 +1445,49 @@ def cmd_incrementality(args) -> int:
     return 0
 
 
+def cmd_monitor(args) -> int:
+    """Continuous spend observation: local baseline and anomalies, never a block."""
+    try:
+        records = monitor_mod.load_records(args.file)
+        base = monitor_mod.baseline(records, min_days=args.min_days)
+        if args.monitor_action == "ingest":
+            print(json.dumps({"records": len(records), "currencies": base["currencies"],
+                              "single_currency": base["single_currency"]}, indent=2))
+            return 0
+        if args.monitor_action == "baseline":
+            print(json.dumps(base, ensure_ascii=False, indent=2))
+            return 0
+        found = monitor_mod.anomalies(
+            records, base, z_threshold=args.z, price_drift=args.price_drift,
+            retry_threshold=args.retry_threshold)
+        payload = monitor_mod.report(records, base, found)
+        if args.monitor_action == "anomalies":
+            print(json.dumps(found, ensure_ascii=False, indent=2))
+        elif args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(monitor_mod.render(payload))
+        return 0
+    except (ValueError, OSError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
+def cmd_tool_value(args) -> int:
+    """Comparable task groups: success rate and cost per success, never call-share."""
+    try:
+        tasks = tool_value_mod.load_tasks(
+            args.file, group_col=args.group_col, success_col=args.success_col,
+            cost_col=args.cost_col, retry_col=args.retry_col)
+        payload = tool_value_mod.analyze(tasks, value_per_success=args.value_per_success)
+        print(json.dumps(payload, ensure_ascii=False, indent=2)
+              if args.json else tool_value_mod.render(payload))
+        return 0
+    except (ValueError, OSError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
 def cmd_template(args) -> int:
     """Export/import/list engagement templates (method, never client data)."""
     if args.template_export:
@@ -2380,6 +2425,32 @@ def build_parser() -> argparse.ArgumentParser:
     p_inc.add_argument("--outcome-col", default="converted", dest="outcome_col")
     p_inc.add_argument("--json", dest="json_out", metavar="PATH", default=None)
     p_inc.set_defaults(func=cmd_incrementality)
+
+    p_mon = sub.add_parser(
+        "monitor",
+        help="continuous spend observation: ingest usage, build a local baseline, surface anomalies")
+    msub = p_mon.add_subparsers(dest="monitor_action", required=True)
+    for action in ("ingest", "baseline", "anomalies", "report"):
+        item = msub.add_parser(action)
+        item.add_argument("--file", required=True, help="usage CSV or JSONL")
+        item.add_argument("--min-days", type=int, default=7, dest="min_days")
+        item.add_argument("--z", type=float, default=3.5)
+        item.add_argument("--price-drift", type=float, default=0.2, dest="price_drift")
+        item.add_argument("--retry-threshold", type=int, default=5, dest="retry_threshold")
+        item.add_argument("--json", action="store_true")
+        item.set_defaults(func=cmd_monitor)
+
+    p_tv = sub.add_parser(
+        "tool-value",
+        help="compare comparable task groups on success rate and cost per success; no call-share attribution")
+    p_tv.add_argument("--file", required=True, help="task CSV or JSONL")
+    p_tv.add_argument("--group-col", default="group", dest="group_col")
+    p_tv.add_argument("--success-col", default="success", dest="success_col")
+    p_tv.add_argument("--cost-col", default="cost", dest="cost_col")
+    p_tv.add_argument("--retry-col", default="retry_cost", dest="retry_col")
+    p_tv.add_argument("--value-per-success", default=None, dest="value_per_success")
+    p_tv.add_argument("--json", action="store_true")
+    p_tv.set_defaults(func=cmd_tool_value)
 
     p_tpl = sub.add_parser(
         "template",
