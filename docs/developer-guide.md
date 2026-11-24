@@ -82,7 +82,7 @@ A trial can stay fully local, requires no agent-side install, and can start with
 
 **Best feedback:** a concrete trace, counterexample, or field that cannot be measured safely.
 
-→ The formal offer, schedule, and FAQ live in **[product/AUDIT.md](../product/AUDIT.md)** · apply in **[Issue #2 — Looking for 3 MCP/API providers for external measurement runs](https://github.com/roy-tong/verovo/issues/2)**.
+→ The formal offer, schedule, and FAQ live in **[product/AUDIT.md](../product/AUDIT.md)** · apply in **[Issue #2 — Looking for 3 MCP/API providers for external measurement runs](https://github.com/roy-tong/Verovo/issues/2)**.
 
 ---
 
@@ -272,7 +272,7 @@ defines the agent-to-agent boundary the object model was missing.
 ## Try the standard
 
 ```bash
-git clone https://github.com/roy-tong/verovo && cd Verovo
+git clone https://github.com/roy-tong/Verovo && cd Verovo
 python3 conformance/runners/run_metrics.py   # metric vectors (M2.2 / M2.5 / M4.1)
 python3 verify_vectors.py                     # verification / correlation / operation vectors
 python3 registry/validate_entities.py         # validate the machine-readable registry
@@ -345,8 +345,8 @@ The roadmap runs on two tracks — the standard (0.4 objects & quality → 0.5 u
 
 ## Contribute
 
-- **Join the community**: [Discussions](https://github.com/roy-tong/verovo/discussions) — categories: Metric Semantics · Runtime Observation · Experiments · Capability Economy · Implementers; ground rules in [docs/DISCUSSIONS.md](../docs/DISCUSSIONS.md)
-- **Where to start**: the open debate on [Strict Qualified Usage as the default](https://github.com/roy-tong/verovo/discussions/1), or [onboard the first external Provider](https://github.com/roy-tong/verovo/issues/2)
+- **Join the community**: [Discussions](https://github.com/roy-tong/Verovo/discussions) — categories: Metric Semantics · Runtime Observation · Experiments · Capability Economy · Implementers; ground rules in [docs/DISCUSSIONS.md](../docs/DISCUSSIONS.md)
+- **Where to start**: the open debate on [Strict Qualified Usage as the default](https://github.com/roy-tong/Verovo/discussions/1), or [onboard the first external Provider](https://github.com/roy-tong/Verovo/issues/2)
 - **Propose standard changes**: `proposals/` (AUP: Draft → Discussion → Accepted → Experimental → Stable)
 - **Report measurement discrepancies**: `reports/` (Discrepancy Report template)
 - **Fix the reference implementation**: PRs must pass all `conformance/` vectors

@@ -11,7 +11,7 @@ You know how many MCP / API calls you receive. You probably don't know:
 
 The Verovo Audit answers these with an evidence-graded measurement, not another dashboard.
 
-**Start here: [Issue #2 — First external Provider onboarding](https://github.com/roy-tong/verovo/issues/2)** · [How the standard works](../README.md)
+**Start here: [Issue #2 — First external Provider onboarding](https://github.com/roy-tong/Verovo/issues/2)** · [How the standard works](../README.md)
 
 ---
 
@@ -47,9 +47,9 @@ Every number carries a **Measurement Label** (coverage / sampling / policy / met
 
 ## How integration works (≤30 minutes)
 
-1. Install the SDK from the [v0.1.1 release](https://github.com/roy-tong/verovo/releases/tag/v0.1.1):
+1. Install the SDK from the [v0.1.1 release](https://github.com/roy-tong/Verovo/releases/tag/v0.1.1):
    ```bash
-   npm install https://github.com/roy-tong/verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz
+   npm install https://github.com/roy-tong/Verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz
    ```
 2. Wrap your tool handlers — [v2 example](../sdk/examples/mcp-integration-v2.js) (MCP SDK v2) or [v1 example](../sdk/examples/mcp-integration.js):
    ```js
@@ -99,4 +99,4 @@ Day 8+    you pick an action; optional re-measure proves the before/after
 
 ---
 
-**→ Apply: [Provider Trial form](https://github.com/roy-tong/verovo/issues/new?template=5-provider-trial.yml)** (five fields, ~2 minutes) · [Program details → Issue #2](https://github.com/roy-tong/verovo/issues/2) · [Website](https://roy-tong.github.io/Verovo/)
+**→ Apply: [Provider Trial form](https://github.com/roy-tong/Verovo/issues/new?template=5-provider-trial.yml)** (five fields, ~2 minutes) · [Program details → Issue #2](https://github.com/roy-tong/Verovo/issues/2) · [Website](https://roy-tong.github.io/Verovo/)

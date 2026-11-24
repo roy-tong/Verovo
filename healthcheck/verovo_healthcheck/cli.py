@@ -2577,6 +2577,14 @@ def main(argv=None) -> int:
         except (AttributeError, ValueError):
             pass
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "case":
+        acceptance_home = Path(os.environ.get("OVO_ACCEPTANCE_HOME") or Path(__file__).resolve().parents[4] / "ovo-acceptance")
+        if not acceptance_home.is_dir():
+            print("OVO 案例运行时未找到，请设置 OVO_ACCEPTANCE_HOME", file=sys.stderr)
+            return 2
+        sys.path.insert(0, str(acceptance_home))
+        from ovo_acceptance.casebook import main as case_main
+        return int(case_main(argv[1:]))
     parser = build_parser()
     if not argv:
         argv = ["check"]

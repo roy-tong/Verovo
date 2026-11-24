@@ -8,7 +8,7 @@
 
 [Website](https://roy-tong.github.io/Verovo/) · [中文](README.zh-CN.md) · [Buyer guide](docs/buyer-review.md) · [Replay example](https://roy-tong.github.io/Verovo/examples/replayable-period.html) · [Discord](https://discord.gg/UqrM8MCXb)
 
-[![CI](https://github.com/roy-tong/verovo/actions/workflows/conformance.yml/badge.svg)](https://github.com/roy-tong/verovo/actions/workflows/conformance.yml)
+[![CI](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml/badge.svg)](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml)
 [![PyPI](https://img.shields.io/pypi/v/verovo)](https://pypi.org/project/verovo/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
@@ -20,7 +20,7 @@ A total invoice cannot tell you which line needs evidence, whether a retry was w
 - **Was the work delivered?** Check observed delivery against the buyer’s own acceptance criteria without treating a failed outcome as automatic proof of a billing error.
 - **Which option is worth choosing?** Connect direct and allocated task costs with verified outcomes, cost per verified success and explicit scenario comparisons.
 
-Financial correctness, authorization, delivery and economic value remain separate conclusions. Missing evidence stays visible instead of becoming a zero or a pass.
+Financial correctness, control (authorization), delivery and economic value remain separate conclusions. Missing evidence stays visible instead of becoming a zero or a pass.
 
 ## From one billing period to a clear next move
 

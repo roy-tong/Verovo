@@ -14,7 +14,7 @@ transaction; provider upstream spend is a buyer task.
 ## Buyer review (main preview, after v0.9.0)
 
 ```bash
-git clone https://github.com/roy-tong/verovo && cd verovo
+git clone https://github.com/roy-tong/Verovo && cd verovo
 python3 healthcheck/verovo review --sample --html buyer-review.html
 ```
 
@@ -49,7 +49,7 @@ not the buyer acceptance command.
 ## Technical measurement checks (offline, deterministic)
 
 ```bash
-git clone https://github.com/roy-tong/verovo && cd verovo
+git clone https://github.com/roy-tong/Verovo && cd verovo
 python3 conformance/pack/verovo selftest          # Pack fixtures, PASS / FAIL / UNPROVABLE
 python3 conformance/pack/verovo conformance \
   --fixture conformance/vectors/external/urusilla-001/agentmeasure_urusilla_fixture_001.events.jsonl

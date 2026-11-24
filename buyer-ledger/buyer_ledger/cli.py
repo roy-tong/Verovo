@@ -1145,12 +1145,12 @@ def cmd_close_report(args):
 def cmd_close_review(args):
     from . import close_report, close_revision
     _recover_before_write(args)
-    if close_revision.list_revisions(args.case):
+    if not args.revision and close_revision.list_revisions(args.case):
         raise close_mod.CloseError(
             "REVIEW_REQUIRED",
             "the root is revision r1 and must stay immutable; record a "
-            "reference review before revisions or sign off a revision")
-    target = args.case
+            "reference review before revisions or use --revision to review a named revision")
+    target = close_revision.resolve_case_dir(args.case, args.revision)
     review = close_report.record_review(
         target, reviewer=args.by, approved_scope=args.scope,
         reservations=args.reservation, next_review=args.next_review)
@@ -1496,6 +1496,7 @@ def build_parser():
 
     sp = close_sub.add_parser("review", help="记录署名复核；不关闭未决项（V-03/V-04 门禁）")
     sp.add_argument("case")
+    sp.add_argument("--revision", default="", help="复核指定 revision；默认当前根版本")
     sp.add_argument("--by", default="",
                     help="复核人（自报声明，非强身份；缺失即 INPUT_REQUIRED）")
     sp.add_argument("--scope", default="", help="批准/复核范围")
@@ -1521,8 +1522,8 @@ def build_parser():
     sp = close_sub.add_parser("revise", help="从新来源生成独立 revision（V-04）")
     sp.add_argument("case")
     sp.add_argument("--bundle", default="", help="完整的新账期包目录")
-    sp.add_argument("--source", default="", help="替换单个来源文件")
-    sp.add_argument("--role", default="", help="--source 对应的 role")
+    sp.add_argument("--source", default="", help="替换或具名新增单个来源文件")
+    sp.add_argument("--role", default="", help="--source 对应的 role；新来源必须同时指定 --control-domain")
     sp.add_argument("--reason", default="", help="修订原因")
     sp.add_argument("--review-by", default="", help="确认新映射的人；缺失即拒绝")
     sp.add_argument("--control-domain", action="append", default=[],

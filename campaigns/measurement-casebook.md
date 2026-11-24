@@ -88,12 +88,12 @@ every previous OpenLIT path double-counted output.
 
 Urusilla's project-authored synthetic fixtures uncovered our validator's
 `oneOf` sibling-constraint gap and declared-operation reconciliation gap:
-[issue #8](https://github.com/roy-tong/verovo/issues/8) and
-[issue #9](https://github.com/roy-tong/verovo/issues/9).
+[issue #8](https://github.com/roy-tong/Verovo/issues/8) and
+[issue #9](https://github.com/roy-tong/Verovo/issues/9).
 The [first vector](../conformance/vectors/external/urusilla-001/) became a
 regression fixture. A [second vector](../conformance/vectors/external/urusilla-002/)
 exercised a different operation-grain boundary, tracked in
-[issue #12](https://github.com/roy-tong/verovo/issues/12).
+[issue #12](https://github.com/roy-tong/Verovo/issues/12).
 
 The lesson is useful even if you never install Verovo: preserve attempt
 costs while checking declared operation summaries against their underlying

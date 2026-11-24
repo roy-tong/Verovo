@@ -172,7 +172,8 @@ class PeriodCaseProjectionTests(CloseCaseTestBase):
             close_revision.signoff(fixture.case, reviewer="roy")
             projected = close_mod.build_case(fixture.case)
             self.assertEqual("delivered", projected["c01_status"]["task_state"])
-            self.assertEqual("signed_with_open_items", projected["review_flow"]["signoff_revision"])
+            self.assertEqual("r1", projected["review_flow"]["signoff_revision"])
+            self.assertEqual("signed_with_open_items", projected["review_flow"]["signoff_state"])
         finally:
             fixture.doCleanups()
 

@@ -29,10 +29,13 @@ TRUE          confirmed to have happened
 FALSE         able to judge, and confirmed not to have happened
 UNKNOWN       should be judgeable, but data is missing or conflicting
 UNOBSERVABLE  the current observation surface cannot see it at all
-UNPROVABLE    seen, but cannot be decided — mandatory verdict, never guessed
 ```
 
-**Never** collapse UNOBSERVABLE or UNPROVABLE into FALSE. This is invariant 17.
+These four come from CORE §4. **Never** collapse UNOBSERVABLE or UNPROVABLE into FALSE. This is invariant 17. Adjacent vocabularies are separate, not extra states:
+
+- **Verdicts** — PASS / FAIL / UNPROVABLE (`review`, the conformance pack, `docs/review-method/`): the decision about a claim. UNPROVABLE means evidence was seen but cannot be decided; never guess it into FAIL.
+- **Settlement verdicts** — settled / assumed / escalated / cannot settle / out of scope (VSS-1 §0): billing-settlement outcomes, never observability states.
+- **UNPROVABLE-by-surface** — a known-limit class (the measurement topology cannot observe it; a design output, not a missing implementation) defined in `standard/known-limits-unprovable-by-surface.md`; UNOBSERVABLE ≠ UNPROVABLE.
 
 ## 3. Canonical namespaces
 
@@ -43,17 +46,19 @@ verovo.dev/delegation.*   delegation scope, depth, lineage, cost attribution
 verovo.dev/quality.*      coverage, observability, qualification
 ```
 
-Do not invent parallel names. The registry is the single source of truth.
+Do not invent parallel names. The registry is the single source of truth for managed enums: `registry/vocabularies.yaml` holds 21 vocabularies (revision 0.4.3-2). Nine of them are wired into the observation schema (`usage_context`, `validity`, `context_source`, `validity_source`, `caller_type`, `caller_identity_strength`, `observer_side`, `provenance`, `observation_type`); five also have TS unions and eight Python tuples that CI checks against the YAML. The remaining entries (e.g. `outcome_class`, `choice_mode`, `delegation_scope`) are canonical names with no generated consumer yet.
 
 ## 4. Where the enums live (do not redefine them)
 
-`registry/vocabularies.yaml` generates:
-- `schemas/observation.schema.json` enums
-- `sdk/src/index.ts` TypeScript unions
-- `reference/collector/usage.py` Python tuples
+`registry/vocabularies.yaml` does not generate every consumer:
+- `python3 scripts/gen_vocab.py --build` rewrites the nine managed enums in `schemas/observation.schema.json` and regenerates `registry/VOCABULARIES.md`;
+- `python3 scripts/gen_vocab.py --check` verifies those schema enums plus five TS unions in `sdk/src/index.ts` and eight Python tuples in `reference/collector/usage.py` against the YAML;
+- other YAML entries are registry-only for now: canonical, but with no generated consumer.
 
-CI runs `python3 scripts/gen_vocab.py --check` and fails on any drift.
+CI runs `--check` and fails on any drift.
 **Change the YAML, run `--build`, never hand-edit a consumer.**
+
+The four observability states are normative in CORE §4; PASS / FAIL / UNPROVABLE verdicts come from the review/conformance vocabulary, and VSS-1 §0 owns settlement verdicts. None of these is a YAML enum — do not add or redefine them in the registry.
 
 ## 5. Core object chain
 

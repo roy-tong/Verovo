@@ -135,6 +135,21 @@ class PeriodDisplayEndTests(BillCandidateTestBase):
         self.assertEqual(period["note"], candidate["period_end_note"])
         self.assertIn(period["note"], candidate["review_notes"])
 
+    def test_english_to_preserves_the_explicit_exclusive_boundary(self):
+        candidate = self.add_pasted(
+            "Vendor: Acme Cloud Services\n"
+            "Invoice No: INV-2026-1023\n"
+            "Billing period: 2026-10-01 to 2026-11-01\n"
+            "Total: 25.00 USD\n"
+            "api-request   1000   0.020   25.00\n")
+        period = {f["name"]: f for f in candidate["fields"]}["period"]
+        self.assertEqual({"from": "2026-10-01", "to": "2026-11-01", "to_exclusive": True}, period["value"])
+        self.assertNotIn("period_end_converted_to_exclusive", period["flags"])
+        self.assertIn("period_end_preserved_exclusive", period["flags"])
+        self.assertEqual("calendar_date", period["date_type"])
+        self.assertEqual("date_only_no_timezone_conversion", period["timezone_semantics"])
+        self.assertIn("未 +1", period["note"])
+
     def test_month_period_uses_last_day_as_display_end(self):
         text = INVOICE_TEXT.replace(
             "Billing Period: 2026-10-01 - 2026-10-31", "Billing Period: 2026-10")

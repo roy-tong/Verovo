@@ -40,7 +40,7 @@ cannot afford to get wrong.
 ## Install
 
 ```bash
-pipx install "git+https://github.com/roy-tong/verovo@v0.11.0#subdirectory=healthcheck"
+pipx install "git+https://github.com/roy-tong/Verovo@v0.11.0#subdirectory=healthcheck"
 verovo demo
 ```
 

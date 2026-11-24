@@ -13,7 +13,7 @@ from Codex Desktop; standalone Codex CLI remains unverified and Claude Code is
 not supported.
 
 ```bash
-pipx install "git+https://github.com/roy-tong/verovo#subdirectory=healthcheck"
+pipx install "git+https://github.com/roy-tong/Verovo#subdirectory=healthcheck"
 verovo demo
 verovo check --json report.json
 ```
@@ -43,7 +43,7 @@ Open `summary.md` yourself before sharing. It contains aggregate counts, without
 prompts, commands, paths, project names, or session IDs. You can also omit the
 summary and describe only the installation problem or confusing result.
 
-[**Open a first-run feedback issue**](https://github.com/roy-tong/verovo/issues/new?template=6-healthcheck-first-run.yml)
+[**Open a first-run feedback issue**](https://github.com/roy-tong/Verovo/issues/new?template=6-healthcheck-first-run.yml)
 
 Please include OS, Python and tool version, whether the data is your own or the
 demo, and what was useful or blocked you. How you first found us and what made

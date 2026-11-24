@@ -5,7 +5,7 @@
 > QA) are retired — **their method is now open**. This directory is that
 > method: the same intake checks, the same commands, the same report
 > discipline the maintainers use when someone brings a sample to
-> [issue #6](https://github.com/roy-tong/verovo/issues/6). Run it on
+> [issue #6](https://github.com/roy-tong/Verovo/issues/6). Run it on
 > your own data, or bring the sample and we run it with you — both are free.
 
 ## What is here

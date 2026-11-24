@@ -6,6 +6,7 @@ canonical bundle the existing Period Intake consumes. Original files are
 never modified; nothing is booked from OCR drafts; no number is invented.
 """
 import contextlib
+import hashlib
 import io
 import json
 import sys
@@ -61,6 +62,7 @@ def _job(**overrides):
         "schema": PERIOD_JOB_SCHEMA,
         "job_id": "close-2026-10-a",
         "buyer": "buyer-1", "vendor": "vendor-1", "account": "acct-1",
+        "buyer_signers": ["buyer-1", "roy", "controller", "finance-reviewer", "finance", "test-role"],
         "period": {"from": "2026-10-01", "to": "2026-11-01",
                    "to_exclusive": True, "timezone": "UTC"},
         "currency": "USD",
@@ -343,6 +345,35 @@ class MappingAndCanonicalTests(CloseCaseTestBase):
             for path in (self.case / "canonical").iterdir() if path.suffix in (".csv", ".jsonl"))
         self.assertNotIn("INVOICE vendor-1", canonical_ledger,
                          "an OCR/invoice2data draft never reaches the ledger rows")
+
+    def test_v11_booked_invoice_keeps_review_provenance_not_a_false_draft(self):
+        self.full_flow(invoice="Vendor: Example\nInvoice No: INV-1\n",
+                       job=_job(sources={
+                           "bills": {"role": "bills", "path": "bill-export.csv",
+                                     "control_domain": "vendor"},
+                           "invoice": {"role": "invoice", "path": "invoice-oct.txt",
+                                       "control_domain": "vendor"}}))
+        booking = {"schema": "verovo.bill-booking/1", "candidate_id": "cand-0001",
+                   "booking": {"booked_by": "li.na", "booked_at": "2026-11-20T04:47:46+00:00",
+                               "attestation": "attested_by_declaration",
+                               "export_path": "bill-export.csv",
+                               "export_sha256": hashlib.sha256((self.bundle / "bill-export.csv").read_bytes()).hexdigest(),
+                               "document_path": "invoice-oct.txt",
+                               "document_sha256": hashlib.sha256((self.bundle / "invoice-oct.txt").read_bytes()).hexdigest()}}
+        (self.bundle / "booking.json").write_text(json.dumps(booking), encoding="utf-8")
+        ingest(self.case, bundle=self.bundle)
+        case = build_case(self.case)
+        document = case["sources"]["documents"][0]
+        self.assertEqual("reviewed", document["review_status"])
+        self.assertEqual("booked", document["booking_status"])
+        self.assertEqual("li.na", document["booked_by"])
+        self.assertNotIn("invoice_draft", {item["kind"] for item in case["review_flow"]["review_queue"]})
+        booking["booking"]["export_sha256"] = "0" * 64
+        (self.bundle / "booking.json").write_text(json.dumps(booking), encoding="utf-8")
+        other = self.root / "tampered"
+        init_case(other, job_path=self.bundle / "period-job.json")
+        with self.assertRaises(CloseError):
+            ingest(other, bundle=self.bundle)
 
     def test_v12_rule_validity_mismatch_refuses_repricing(self):
         stale_rules = json.loads(json.dumps(RULE_MAP))

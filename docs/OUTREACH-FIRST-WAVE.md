@@ -35,7 +35,7 @@ Verovo 的卖点不是"我们什么都知道"，而是
 
 **另外**：`@verovo/mcp` 尚未发布到 npm（registry 404），但 **v0.1.1 GitHub
 Release 已附带 `verovo-mcp-0.1.1.tgz` 资产**——外部 Provider 现在就能装：
-`npm install https://github.com/roy-tong/verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
+`npm install https://github.com/roy-tong/Verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
 或 clone 后 `cd sdk && npm install`。npm 正式发布由 release workflow 自动执行
 （仓库添加 `NPM_TOKEN` secret 后即生效），发布后把邮件里的安装行换成
 一行 npm install。
@@ -104,11 +104,11 @@ GitHub MCP Server / MCP 官方 servers / Vercel skills。大 logo 的接入需�
 >    today's lineage. If the numbers come out wrong or the definitions feel broken,
 >    that's the most useful feedback we can get.
 >
-> Everything is open: [github.com/roy-tong/verovo](https://github.com/roy-tong/verovo)
+> Everything is open: [github.com/roy-tong/Verovo](https://github.com/roy-tong/Verovo)
 > (standard draft 0.4.3, reference implementation, deterministic pipeline validation,
 > evidence-profile benchmark of ecosystem claims). The SDK installs straight from the
 > v0.1.1 release tarball — no npm wait:
-> `npm install https://github.com/roy-tong/verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
+> `npm install https://github.com/roy-tong/Verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
 > or clone and `cd sdk && npm install`.
 >
 > Want to try it? Happy to walk you through the 10 minutes.

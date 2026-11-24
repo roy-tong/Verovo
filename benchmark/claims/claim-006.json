@@ -3,11 +3,11 @@
   "metric_unit": "attempt (defined) / observation (defined)",
   "grain": "count",
   "source": {
-    "url": "https://github.com/roy-tong/verovo/blob/main/reports/pipeline-validation-001.md",
+    "url": "https://github.com/roy-tong/Verovo/blob/main/reports/pipeline-validation-001.md",
     "type": "report"
   },
   "primary_source": {
-    "url": "https://github.com/roy-tong/verovo",
+    "url": "https://github.com/roy-tong/Verovo",
     "name": "Verovo",
     "resolved": true
   },

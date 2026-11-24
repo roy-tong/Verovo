@@ -75,7 +75,7 @@ _PAGE = """<!doctype html>
       <a href="../index.html#evidence">Evidence</a>
       <a href="../index.html#pricing">Pricing</a>
       <a href="../recount.html">Free recount</a>
-      <a class="ext" href="https://github.com/roy-tong/verovo" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
+      <a class="ext" href="https://github.com/roy-tong/Verovo" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
     </nav>
     <a class="snav-cta" href="../services.html">Get a diagnosis&nbsp;→</a>
   </div>
@@ -89,7 +89,7 @@ _PAGE = """<!doctype html>
     <a href="../index.html">Home</a>
     <a href="../claims.html">Claims index</a>
     <a href="../releases.html">Release notes</a>
-    <a href="https://github.com/roy-tong/verovo" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/roy-tong/Verovo" target="_blank" rel="noopener">GitHub</a>
     <span class="sfoot-note">Open source under MIT. The verification rules stay public and free.</span>
   </div>
 </footer>
@@ -145,7 +145,7 @@ def render() -> dict:
     body = f"""<h1>Vendor billing rules, in public</h1>
 <p class="muted">One card per vendor: what the vendor charges per, what its own published
 rules say, and where every fact came from. This is the same
-<a href="https://github.com/roy-tong/verovo/blob/main/registry/vendor-rules.json">registry
+<a href="https://github.com/roy-tong/Verovo/blob/main/registry/vendor-rules.json">registry
 file</a> the CLI and the browser recount read — a parity test in CI keeps the three from
 drifting. Registry version <strong>v{version}</strong>.</p>
 <p class="muted">Confidence: <span class="badge P">P</span> primary/official source ·
@@ -156,7 +156,7 @@ drifting. Registry version <strong>v{version}</strong>.</p>
 {chr(10).join(cards)}
 </div>
 <p class="muted" style="margin-top:28px">Find a rule that changed, or one we read wrong?
-<a href="https://github.com/roy-tong/verovo/edit/main/registry/vendor-rules.json">Edit the registry</a> —
+<a href="https://github.com/roy-tong/Verovo/edit/main/registry/vendor-rules.json">Edit the registry</a> —
 pull requests welcome, every field carries its source.</p>"""
     return {"index.html": _PAGE.format(
         title="Vendor billing rules — Verovo",

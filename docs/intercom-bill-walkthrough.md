@@ -12,7 +12,7 @@ same invoice, and their dollar figures must not be added together.
 Python 3.9+ and Git are required. Run these commands in a terminal:
 
 ```bash
-git clone https://github.com/roy-tong/verovo.git
+git clone https://github.com/roy-tong/Verovo.git
 cd Verovo
 python3 healthcheck/verovo --version
 mkdir -p walkthrough-output

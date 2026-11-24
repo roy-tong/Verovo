@@ -44,7 +44,7 @@ verovo demo
 For a pinned source install:
 
 ```bash
-pipx install "git+https://github.com/roy-tong/verovo@v0.12.0#subdirectory=healthcheck"
+pipx install "git+https://github.com/roy-tong/Verovo@v0.12.0#subdirectory=healthcheck"
 ```
 
 ## Verification

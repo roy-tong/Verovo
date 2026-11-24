@@ -1,5 +1,19 @@
 # Verovo: implementation status
 
+## Native real-task case gate (2026-11-24)
+
+- `verovo case list|show|incidents|index|validate|replay|verify` delegates to the shared `ovo-acceptance` runtime. The default registry supplies the family workspace root, so commands also work from this repository. `OVO_ACCEPTANCE_HOME` overrides the shared runtime location and `OVO_CASE_REGISTRY` overrides the registry for isolated tests; `OVO_CASE_ROOT` explicitly overrides the evidence root.
+- `task_rerun` and `evidence_only` remain separate. External-write cases are evidence-only and never resend, pay or sign. The runtime and 24-case registry passed validation; all 24 cases passed, with no blocked cases. V2/V4/V5 scoped journeys are registered. See `../../ai输出/ovo-真实任务资产库/README.md` and `../../ai输出/ovo-真实任务资产库/GOLDEN_JOURNEYS.md`.
+
+## Buyer-close original-scenario fixes (2026-11-24)
+
+- English `to` in an OCR period preserves its stated exclusive boundary instead of adding a day. Inclusive display ranges can still convert explicitly; date-only values record `calendar_date` and `date_only_no_timezone_conversion`.
+- `close revise --source FILE --role outcomes` adds a named source. Bundle revisions reject undeclared tables/documents instead of silently ignoring them. `close review --revision rN` reviews the selected revision, then synchronizes the report fingerprint used by signoff.
+- Signoff requires a reviewer in `canonical manifest.buyer.acceptance_signers`, with `AUTH_REQUIRED` otherwise. `signoff_revision` and `signoff_state` are separate. Reviewed reports render the actual signoff record instead of a conflicting status.
+- Booking provenance verifies the reviewer/time, original document hash, bill-export hash and declared bills source. A reviewed booked OCR document no longer creates a false `invoice_draft`; it still is not independent buyer evidence.
+- Final reports project task-level costs and root-cause groups. V2 has 20 task rows and 3 groups over 2001 open items. Missing `outcomes.value` is named explicitly instead of asking for an already supplied file; unresolved amounts appear in the conclusion area.
+- Current verification: **439 buyer-ledger tests, 651 healthcheck tests and official selftest pass**. V2/V4/V5 use frozen task fixtures; synthetic signoff is not payment authorization or a real buyer outcome.
+
 **Current development release, 2026-11-23 · [v0.17.1](../CHANGELOG.md).** This documentation patch refreshes the package introduction for the v0.17.0 line-level spend-action worklist and local Provider Manifest admission, while preserving the v0.16.2 `PeriodCase/CaseRepository`, linear task-coverage accounting, atomic reproduce creation and HALF_UP display contracts. Canonical verdicts, signed revisions and proof boundaries remain unchanged.
 
 Earlier baseline reviewed 2026-11-04 against the **v0.13.0 release**. Available means local implementation, not production validation on every platform.

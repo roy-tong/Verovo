@@ -234,7 +234,7 @@ Verovo 正在**渐进标准化**从发现与选择、经执行到效用与价值
 ## 试用标准
 
 ```bash
-git clone https://github.com/roy-tong/verovo && cd Verovo
+git clone https://github.com/roy-tong/Verovo && cd Verovo
 python3 conformance/runners/run_metrics.py   # 指标 vectors（M2.2 / M2.5 / M4.1）
 python3 verify_vectors.py                     # verification / correlation / operation vectors
 python3 registry/validate_entities.py         # 校验机器可读 registry
@@ -308,7 +308,7 @@ metrics.yaml 单一事实源；四维正交（Evidence/Caller/Use Profile/Billin
 
 ## 参与
 
-- **加入社区**：[Discussions](https://github.com/roy-tong/verovo/discussions) —— 分类：Metric Semantics · Runtime Observation · Experiments · Capability Economy · Implementers；讨论守则见 [docs/DISCUSSIONS.md](../docs/DISCUSSIONS.md)
+- **加入社区**：[Discussions](https://github.com/roy-tong/Verovo/discussions) —— 分类：Metric Semantics · Runtime Observation · Experiments · Capability Economy · Implementers；讨论守则见 [docs/DISCUSSIONS.md](../docs/DISCUSSIONS.md)
 - **提标准变更**：`proposals/`（AUP：Draft → Discussion → Accepted → Experimental → Stable）
 - **报告测量偏差**：`reports/`（Discrepancy Report 模板）
 - **修参考实现**：PR 必须通过 `conformance/` 全部 vectors

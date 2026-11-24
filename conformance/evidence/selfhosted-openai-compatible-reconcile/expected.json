@@ -59,7 +59,7 @@
         "url": "https://github.com/qaisermehdi3-coder/qvunex/blob/1094fd5/benchmarks/data/selfhosted-t4-2026-10-14/server.log"
       }
     },
-    "discussion": "https://github.com/roy-tong/verovo/discussions/26"
+    "discussion": "https://github.com/roy-tong/Verovo/discussions/26"
   },
   "claim_boundary": "One live run of three identical requests on one small model and one card. It pins what each surface reported; it says nothing about speed, cost or any other server's defaults."
 }

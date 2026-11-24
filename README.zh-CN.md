@@ -8,7 +8,7 @@
 
 [官网](https://roy-tong.github.io/Verovo/) · [English](README.md) · [核验指南](docs/buyer-review.md) · [账期重放](https://roy-tong.github.io/Verovo/examples/replayable-period.html) · [Discord](https://discord.gg/UqrM8MCXb)
 
-[![CI](https://github.com/roy-tong/verovo/actions/workflows/conformance.yml/badge.svg)](https://github.com/roy-tong/verovo/actions/workflows/conformance.yml)
+[![CI](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml/badge.svg)](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml)
 [![PyPI](https://img.shields.io/pypi/v/verovo)](https://pypi.org/project/verovo/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
@@ -20,7 +20,7 @@
 - **工作交付到位了吗？** 用买方自己的验收判据检查实际交付，不把交付失败自动等同于计费错误。
 - **下一单该选哪个方案？** 连接直接与分摊任务成本、已验证结果、每次验收成功成本和明确的情景比较。
 
-财务正确性、授权、交付和经济价值始终是独立结论。缺失证据保持可见，不会变成零或通过。
+财务正确性、控制（授权）、交付和经济价值始终是独立结论。缺失证据保持可见，不会变成零或通过。
 
 ## 从一个账期，到清楚的下一步
 

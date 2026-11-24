@@ -29,8 +29,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import close_report
-from .close import (CloseError, confirm_mapping, init_case, ingest,
-                    load_period_job)
+from .close import (CloseError, INVOICE_SUFFIXES, ROLES, TABLE_SUFFIXES,
+                    confirm_mapping, init_case, ingest, load_period_job)
 
 REVISION_SCHEMA = "verovo.period-revision/1"
 DELTA_SCHEMA = "verovo.period-revision-delta/1"
@@ -1231,6 +1231,13 @@ def _revise_locked(case_dir: Path, *, bundle: Path = None, source: Path = None,
     if bool(bundle) == bool(source):
         raise CloseError("INPUT_REQUIRED",
                          "provide exactly one of --bundle or --source")
+    if bundle and role:
+        raise CloseError("INPUT_REQUIRED",
+                         "--role 只能和 --source 一起用于具名新增或替换单个来源；"
+                         "--bundle 的每个材料必须在 period-job.sources 声明")
+    if role and role not in ROLES:
+        raise CloseError("INPUT_REQUIRED",
+                         "unknown source role %s; available roles: %s" % (role, ", ".join(sorted(ROLES))))
     ensure_recovered(case_dir, strict=True)
     index = _ensure_root_snapshot(case_dir)
     parent_id = index["latest"]
@@ -1253,11 +1260,23 @@ def _revise_locked(case_dir: Path, *, bundle: Path = None, source: Path = None,
         if not new_bundle.is_dir():
             raise CloseError("INPUT_REQUIRED", "revision bundle not found: %s"
                              % new_bundle)
-        shutil.copytree(new_bundle, staging / "bundle", symlinks=True)
-        new_job_path = staging / "bundle" / "period-job.json"
+        new_job_path = new_bundle / "period-job.json"
         if new_job_path.is_file():
             job = load_period_job(new_job_path)
             _validate_same_identity(parent_job, job)
+        declared = {_text(entry.get("path")) for entry in job["sources"]}
+        undeclared = sorted(
+            path.relative_to(new_bundle).as_posix()
+            for path in new_bundle.rglob("*")
+            if path.is_file() and path.suffix.lower() in TABLE_SUFFIXES | INVOICE_SUFFIXES
+            and path.relative_to(new_bundle).as_posix() not in declared)
+        if undeclared:
+            shutil.rmtree(staging)
+            raise CloseError(
+                "INPUT_REQUIRED",
+                "bundle 含 period-job.sources 未声明的材料：%s；"
+                "请用 --source --role 具名新增，或在 period-job.sources 明确登记" % ", ".join(undeclared))
+        shutil.copytree(new_bundle, staging / "bundle", symlinks=True)
     else:
         source_path = Path(source)
         if not source_path.is_file():
@@ -1270,11 +1289,16 @@ def _revise_locked(case_dir: Path, *, bundle: Path = None, source: Path = None,
         else:
             matches = [entry for entry in entries
                        if Path(entry["path"]).name == source_path.name]
-        if len(matches) != 1:
+        if len(matches) > 1 or (not matches and not role):
             raise CloseError("INPUT_REQUIRED",
                              "cannot identify the source role; pass --role "
                              "(matches: %d)" % len(matches))
-        entry = matches[0]
+        if not matches:
+            entry = {"role": role, "path": source_path.name,
+                     "control_domain": "buyer_or_vendor_pending_review"}
+            entries.append(entry)
+        else:
+            entry = matches[0]
         old_rel = entry["path"]
         new_rel = (old_rel if Path(old_rel).name == source_path.name else
                    (Path(old_rel).parent / source_path.name).as_posix())
@@ -1754,6 +1778,21 @@ def signoff(case_dir: Path, *, reviewer: str, approved_scope: str = "",
                                revision_id=revision_id)
 
 
+def _require_signoff_authority(report: Dict[str, Any], reviewer: str) -> Dict[str, Any]:
+    authority = report.get("acceptance_authority") or {}
+    signers = [_text(item) for item in authority.get("authorized_signers") or [] if _text(item)]
+    normalized_reviewer = _text(reviewer).casefold()
+    matched = next((signer for signer in signers
+                    if signer.casefold() == normalized_reviewer), None)
+    if matched is None:
+        raise CloseError(
+            "AUTH_REQUIRED",
+            "signoff reviewer must be one of canonical manifest.buyer.acceptance_signers; "
+            "a name in --by alone does not grant signing authority")
+    return {"org_id": authority.get("org_id"), "source": authority.get("source"),
+            "matched_signer": matched}
+
+
 def _signoff_locked(case_dir: Path, *, reviewer: str, approved_scope: str = "",
                     reservations: List[str] = None, note: str = "",
                     revision_id: str = "") -> Dict[str, Any]:
@@ -1794,6 +1833,7 @@ def _signoff_locked(case_dir: Path, *, reviewer: str, approved_scope: str = "",
                 "revision.json and index.json disagree about revision %s; run "
                 "close recover --apply before signing"
                 % revision.get("revision_id"))
+    signer_authority = _require_signoff_authority(report, reviewer)
     unresolved = [item for item in report.get("open_items") or []
                   if item.get("state") not in ("resolved", "closed",
                                                "not_applicable")]
@@ -1817,6 +1857,7 @@ def _signoff_locked(case_dir: Path, *, reviewer: str, approved_scope: str = "",
         "reviewer": reviewer,
         "decided_at": decided_at,
         "attestation": "attested_by_declaration",
+        "signer_authority": signer_authority,
         "approved_scope": _text(approved_scope),
         "reservations": [item for item in (reservations or []) if _text(item)],
         "note": _text(note),

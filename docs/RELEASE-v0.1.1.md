@@ -69,7 +69,7 @@ boundary." That overstated the guarantee. The accurate statement:
 
 ```bash
 npm install @verovo/mcp   # publish pending npm scope + token — see CHANGELOG
-# or: git clone https://github.com/roy-tong/verovo && cd sdk && npm install
+# or: git clone https://github.com/roy-tong/Verovo && cd sdk && npm install
 # or: download the attached verovo-mcp-0.1.1.tgz and:
 #     npm install ./verovo-mcp-0.1.1.tgz
 ```

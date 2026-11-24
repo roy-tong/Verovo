@@ -7,7 +7,7 @@
 
 环境变量:
   VEROVO_EVENTS_DIR  事件目录（默认 ~/.verovo/events）
-  VEROVO_TARGET      被包装项目的标识（默认 github.com/roy-tong/verovo）
+  VEROVO_TARGET      被包装项目的标识（默认 github.com/roy-tong/Verovo）
   VEROVO_OPTIN=1     允许上传聚合（当前版本仅记录，不实现上传）
   DO_NOT_TRACK=1         完全禁用记录
 
@@ -30,7 +30,7 @@ from pathlib import Path
 EVENTS_DIR = Path(
     os.environ.get("VEROVO_EVENTS_DIR", str(Path.home() / ".verovo" / "events"))
 ).expanduser()
-TARGET = os.environ.get("VEROVO_TARGET", "github.com/roy-tong/verovo")
+TARGET = os.environ.get("VEROVO_TARGET", "github.com/roy-tong/Verovo")
 DO_NOT_TRACK = os.environ.get("DO_NOT_TRACK", "0") == "1"
 SIGNING_SECRET = os.environ.get("VEROVO_SECRET", "")  # 空 = 本地无签名模式
 KEY_ID = os.environ.get("VEROVO_KEY_ID", "local")

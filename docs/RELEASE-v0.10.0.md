@@ -33,7 +33,7 @@ the economics case instead of hand-writing JSON.
 ## Install
 
 ```bash
-pipx install "git+https://github.com/roy-tong/verovo@v0.10.0#subdirectory=healthcheck"
+pipx install "git+https://github.com/roy-tong/Verovo@v0.10.0#subdirectory=healthcheck"
 verovo demo
 ```
 

@@ -15,7 +15,7 @@ task set × harness matrix × factor variants
 ## Quickstart (under 5 minutes)
 
 ```bash
-git clone https://github.com/roy-tong/verovo && cd Verovo
+git clone https://github.com/roy-tong/Verovo && cd Verovo
 
 # 1. sanity: planted uplift must be recovered, a zero-effect factor must report an honest null
 python3 lab/verovo lab selftest

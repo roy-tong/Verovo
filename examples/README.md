@@ -69,7 +69,7 @@ cd sdk && node examples/mcp-integration-v2.js   # v2 (primary)
 ## Onboarding your own MCP server (3 steps)
 
 1. Install from the release tarball (npm registry publish pending):
-   `npm install https://github.com/roy-tong/verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
+   `npm install https://github.com/roy-tong/Verovo/releases/download/v0.1.1/verovo-mcp-0.1.1.tgz`
 2. Wrap your tool handlers as in `sdk/examples/mcp-integration-v2.js` (v2) or
    `mcp-integration.js` (v1)
 3. Point the metrics tool at the events file:
@@ -78,5 +78,5 @@ cd sdk && node examples/mcp-integration-v2.js   # v2 (primary)
 python3 product/local-analytics.py ~/.verovo/events/verovo-events.jsonl --project github.com/you/your-server
 ```
 
-Questions? [Issue #2: First external Provider onboarding](https://github.com/roy-tong/verovo/issues/2)
+Questions? [Issue #2: First external Provider onboarding](https://github.com/roy-tong/Verovo/issues/2)
 is the front door — we'll add you to the conformance list.
