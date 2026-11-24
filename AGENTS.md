@@ -137,6 +137,8 @@ python3 conformance/runners/run_sse_usage.py
 
 CI red means do not merge. See `CI-DISCIPLINE.md`.
 
+发版 PR 合并进 `origin/main` 并打完 tag 后，回到主工作树执行 `git merge --ff-only origin/main`。发版在 `git worktree` 或 `临时工作区/` 里完成时主工作树不会自动前进，漏掉这一步会让下一次 review 把已经发布的内容读成大量未提交改动。正确状态是 `git status --porcelain` 为空。
+
 ## 11. What not to claim
 
 - Do not state an attribution as a cause (invariant 14)
