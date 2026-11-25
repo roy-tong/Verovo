@@ -697,7 +697,8 @@ class OpenItemGroupingTests(CloseReportTestBase):
 
 class OpenItemPriorityTests(unittest.TestCase):
     def report(self, items):
-        return {"scope": {"currency": "USD"}, "open_items": items}
+        return {"scope": {"currency": "USD"}, "amounts": {"open_difference": "0"},
+                "open_items": items}
 
     def test_orders_by_amount_then_dedupes_by_line(self):
         report = self.report([
