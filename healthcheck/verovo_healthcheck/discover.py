@@ -34,23 +34,27 @@ class DiscoveryResult:
 
     def selected_files(self) -> List[str]:
         for rt in self.runtimes:
-            if rt.supported:
+            if rt.supported and rt.files:
                 return rt.files
         return []
 
     def primary(self) -> Optional[RuntimeFound]:
         for rt in self.runtimes:
-            if rt.supported:
+            if rt.supported and rt.files:
                 return rt
         return None
 
 
+def _home(home: Optional[str] = None) -> str:
+    return home or os.environ.get("HOME") or os.path.expanduser("~")
+
+
 def codex_root(home: Optional[str] = None) -> str:
-    return os.path.join(home or os.path.expanduser("~"), ".codex", "sessions")
+    return os.path.join(_home(home), ".codex", "sessions")
 
 
 def claude_root(home: Optional[str] = None) -> str:
-    return os.path.join(home or os.path.expanduser("~"), ".claude", "projects")
+    return os.path.join(_home(home), ".claude", "projects")
 
 
 def _codex_date_of(path: str) -> Optional[datetime]:

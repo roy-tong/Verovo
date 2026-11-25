@@ -46,6 +46,64 @@ command here uploads data. `delivery` is the review team's effort journal,
 not the buyer acceptance command.
 
 
+## Local spend operations and optimization review
+
+```bash
+verovo monitor freeze-baseline --file USAGE --state STATE
+verovo monitor track --file USAGE --state STATE
+verovo monitor series --state STATE --granularity day
+verovo monitor notify --state STATE --out ALERTS_JSONL --severity medium
+verovo monitor resolution --file ALERTS_JSONL --alert ALERT_ID
+verovo monitor forecast --state STATE --contract FORECAST_JSON
+verovo budget check --state STATE --budget BUDGET
+verovo budget verify --state STATE --decision DECISION --receipt RECEIPT
+verovo budget resume --state STATE --budget BUDGET --recovery RECOVERY --out HISTORY_JSONL
+verovo optimize-verify --baseline BASE --final FINAL --contract CONTRACT
+verovo optimize-loop create --contract LOOP --out NEW_LOOP_DIR
+verovo optimize-loop tick|status --dir LOOP_DIR --at ISO_TIMESTAMP
+verovo optimize-loop pause|resume --dir LOOP_DIR --at ISO_TIMESTAMP
+verovo human-baseline --human HUMAN_TASKS --agent AGENT_TASKS --contract HUMAN_BASELINE
+verovo experiment run --contract CONTROLLED_TASK_RUN --out NEW_RUN_DIR
+verovo tool-value --file TASKS --json
+verovo tool-value-export --file TASKS --design DESIGN --out OUT
+```
+
+Monitoring and notification write only the named local state/outbox files. Alerts remain
+`pending_local_delivery`; no email, IM, webhook, external delivery confirmation or
+host wake-up is performed. `alert_resolution` emits a shared Problem Resolution Contract;
+no retry, pause or supplier disposition is applied. `monitor_forecast` linearly estimates
+remaining cost from explicit progress and same-task/currency observations; missing data
+stays null, and the estimate is neither a cap nor a final bill. `monitor series`
+provides UTC minute/hour/day amounts and retry counts per currency, with half-open
+windows and no cross-currency total. Budget `allow/warn/hold/review`
+results are advisory signals: they do not enforce a gateway, stop an external
+runtime, or prove that spending stopped. `budget verify` reconciles a matching
+stopped runtime readback with complete subsequent-spend coverage. Positive post-stop
+charges fail and credits cannot hide them; incomplete evidence stays UNPROVABLE.
+This is local consistency evidence, not external-record authentication or runtime contact.
+`budget resume` additionally requires named confirmation, current allow/warn status and
+running readback; it preserves spend and appends deduplicated local history without
+resetting the budget or contacting a runtime. `human-baseline` compares direct cost
+plus declared human-minute cost across equal human/agent task contracts; quality drops
+and zero-success denominators stay inconclusive, with no causal or realized-saving claim.
+`experiment run` executes named local-only control/treatment argv in fresh isolated
+processes with timeout/output caps and source hashes; costs stay unknown and no
+external actions or causal winner are produced. `optimize-verify` returns a
+`keep/rollback/inconclusive` recommendation from observed before/after cost and
+quality; it never applies a rollback, claims causality, or books realized invoice
+savings. `optimize-loop` persists a named local-only contract and explicitly ticks the same
+review when due, preserving source hashes and pause/resume state. It is not a daemon,
+configuration writer or applied rollback. Tool-value analysis adds per-arm Wilson and difference Newcombe 95% intervals,
+including whether the difference interval covers zero; empty arms stay null and no
+interval automatically selects a winner. Population representativeness and selection
+bias remain unassessed. Tool-value export writes a new shared experiment contract and preserves
+descriptive rather than causal interpretation.
+
+The MCP tool `verovo_economics_ops` exposes the same nineteen paths through actions
+`monitor_track`, `monitor_freeze_baseline`, `monitor_series`, `monitor_notify`, `monitor_forecast`, `alert_resolution`, `budget_check`, `budget_verify`, `budget_resume`, `optimize_verify`, `optimization_loop_create`, `optimization_loop_tick`, `optimization_loop_status`, `optimization_loop_pause`, `optimization_loop_resume`, `human_baseline`, `experiment_run`, `tool_value_analyze`, and
+`tool_value_export`. It has no network, supplier-contact, enforcement, or
+automatic-rollback action.
+
 ## Technical measurement checks (offline, deterministic)
 
 ```bash

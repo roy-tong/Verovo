@@ -1,3 +1,20 @@
+## v0.20.0 - 2026-11-26
+
+### Added
+
+- Persistent incremental spend monitoring with frozen baselines, UTC minute/hour/day series, task forecasts, deduplicated local alert outboxes and shared problem-resolution projections.
+- Advisory budget contracts, stop-readback/subsequent-spend verification and named recovery history. Controlled local control/treatment process runs use an explicit separately packaged adapter; costs remain unknown when not connected.
+- Comparable tool-value analysis with Wilson/Newcombe intervals, shared experiment export, equal-quality human baselines and post-optimization reviews. Persistent `optimize-loop` adds explicit due ticks, source hashes, source-change detection and pause/resume without external configuration or applied rollback.
+
+### Fixed
+
+- Reversed/overlapping optimization windows and missing change-effective times cannot produce a `keep` conclusion. Budget recovery no longer hides FAIL→PASS transitions or resets observed spend.
+- Runtime discovery selects a supported runtime with actual files, so an empty Codex directory no longer masks Claude sessions.
+
+### Tests
+
+- 763 healthcheck and 69 root tests pass, alongside selftest, metric registry and all protocol vectors. Rebuilt wheels pass isolated monitoring, control, experiment, human-baseline, optimization-loop and discovery chains. Synthetic observations do not prove production control, supplier reconciliation, causality or realized savings.
+
 ## v0.19.0 - 2026-11-25
 
 ### Added

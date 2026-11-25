@@ -47,6 +47,17 @@ from . import periods as periods_mod
 from . import certify as certify_mod
 from . import incrementality as inc_mod
 from . import monitor as monitor_mod
+from . import monitor_state as monitor_state_mod
+from . import monitor_alerts as monitor_alerts_mod
+from . import monitor_series as monitor_series_mod
+from . import alert_resolution as alert_resolution_mod
+from . import spend_forecast as spend_forecast_mod
+from . import budget_control as budget_control_mod
+from . import budget_recovery as budget_recovery_mod
+from . import control_receipt as control_receipt_mod
+from . import experiment_export as experiment_export_mod
+from . import experiment_runner as experiment_runner_mod
+from verovo_local_runner import run_process
 from . import tool_value as tool_value_mod
 from . import templates as templates_mod
 from . import commerce as commerce_mod
@@ -65,6 +76,9 @@ from . import invoice_intake as invoice_mod
 from . import period_intake as period_mod
 from . import cost_drivers as drivers_mod
 from . import optimization as optimization_mod
+from . import optimization_review as optimization_review_mod
+from . import optimization_loop as optimization_loop_mod
+from . import human_baseline as human_baseline_mod
 from . import proof_export as proof_mod
 from . import spend_action as spend_action_mod
 from . import provider_contract as provider_contract_mod
@@ -1448,6 +1462,44 @@ def cmd_incrementality(args) -> int:
 def cmd_monitor(args) -> int:
     """Continuous spend observation: local baseline and anomalies, never a block."""
     try:
+        if args.monitor_action == "series":
+            scope = {key: getattr(args, key) for key in ("task_id", "tool", "model")
+                     if getattr(args, key)}
+            payload = monitor_series_mod.build(
+                args.state, granularity=args.granularity, scope=scope,
+                start=args.start or None, end=args.end or None)
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, indent=2))
+            else:
+                print(monitor_series_mod.render(payload), end="")
+            return 0
+        if args.monitor_action == "forecast":
+            spec = json.loads(Path(args.contract).read_text(encoding="utf-8"))
+            payload = spend_forecast_mod.evaluate(args.state, spec)
+            print(json.dumps(payload, ensure_ascii=False, indent=2)
+                  if args.json else spend_forecast_mod.render(payload))
+            return 0
+        if args.monitor_action == "resolution":
+            alert = alert_resolution_mod.load_alert(args.file, args.alert)
+            print(json.dumps(alert_resolution_mod.from_alert(alert), ensure_ascii=False, indent=2))
+            return 0
+        if args.monitor_action == "notify":
+            payload = monitor_alerts_mod.emit(
+                args.state, args.out, min_severity=args.severity)
+            print(json.dumps(payload, ensure_ascii=False, indent=2)
+                  if args.json else monitor_alerts_mod.render(payload))
+            return 0
+        if args.monitor_action in ("track", "freeze-baseline"):
+            if not args.state:
+                raise ValueError("%s needs --state STATE_JSON" % args.monitor_action)
+            payload = monitor_state_mod.track_file(
+                args.file, args.state, min_days=args.min_days,
+                z_threshold=args.z, price_drift=args.price_drift,
+                retry_threshold=args.retry_threshold,
+                freeze=args.monitor_action == "freeze-baseline")
+            print(json.dumps(payload, ensure_ascii=False, indent=2)
+                  if args.json else monitor_mod.render(payload))
+            return 0
         records = monitor_mod.load_records(args.file)
         base = monitor_mod.baseline(records, min_days=args.min_days)
         if args.monitor_action == "ingest":
@@ -1473,6 +1525,32 @@ def cmd_monitor(args) -> int:
         return 2
 
 
+def cmd_budget(args) -> int:
+    try:
+        if args.budget_action == "resume":
+            document = json.loads(Path(args.budget).read_text(encoding="utf-8"))
+            recovery = json.loads(Path(args.recovery).read_text(encoding="utf-8"))
+            payload = budget_recovery_mod.evaluate(args.state, document, recovery, args.out)
+            rendered = budget_recovery_mod.render(payload)
+        elif args.budget_action == "verify":
+            decision = json.loads(Path(args.decision).read_text(encoding="utf-8"))
+            receipt = json.loads(Path(args.receipt).read_text(encoding="utf-8"))
+            payload = control_receipt_mod.evaluate(args.state, decision, receipt)
+            rendered = control_receipt_mod.render(payload)
+        else:
+            document = json.loads(Path(args.budget).read_text(encoding="utf-8"))
+            payload = budget_control_mod.evaluate(args.state, document)
+            rendered = budget_control_mod.render(payload)
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(rendered, end="")
+        return 0
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
 def cmd_tool_value(args) -> int:
     """Comparable task groups: success rate and cost per success, never call-share."""
     try:
@@ -1484,6 +1562,27 @@ def cmd_tool_value(args) -> int:
               if args.json else tool_value_mod.render(payload))
         return 0
     except (ValueError, OSError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
+def cmd_tool_value_export(args) -> int:
+    try:
+        tasks = tool_value_mod.load_tasks(
+            args.file, group_col=args.group_col, success_col=args.success_col,
+            cost_col=args.cost_col, retry_col=args.retry_col)
+        analysis = tool_value_mod.analyze(tasks)
+        spec = json.loads(Path(args.design).read_text(encoding="utf-8"))
+        document = experiment_export_mod.from_tool_value(
+            tasks, analysis, args.file, spec, __version__)
+        out = experiment_export_mod.write_new(document, args.out)
+        print(json.dumps({"status": "exported", "schema": document["schema"],
+                          "experiment_id": document["experiment_id"],
+                          "observations": len(document["observations"]),
+                          "outcome": document["outcome"]["status"],
+                          "path": str(out)}, ensure_ascii=False, indent=2))
+        return 0
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
         print("error: %s" % exc, file=sys.stderr)
         return 2
 
@@ -1844,6 +1943,69 @@ def cmd_optimize(args) -> int:
         return 2
 
 
+def cmd_experiment(args) -> int:
+    try:
+        spec = json.loads(Path(args.contract).read_text(encoding="utf-8"))
+        payload = experiment_runner_mod.run(spec, args.out, process_runner=run_process)
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(experiment_runner_mod.render(payload), end="")
+        return 0 if payload["status"] == "PASS" else 1
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
+def cmd_human_baseline(args) -> int:
+    try:
+        spec = json.loads(Path(args.contract).read_text(encoding="utf-8"))
+        payload = human_baseline_mod.evaluate(args.human, args.agent, spec)
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(human_baseline_mod.render(payload), end="")
+        return 0
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
+def cmd_optimize_verify(args) -> int:
+    try:
+        baseline = tool_value_mod.load_tasks(args.baseline)
+        final = tool_value_mod.load_tasks(args.final)
+        spec = json.loads(Path(args.contract).read_text(encoding="utf-8"))
+        payload = optimization_review_mod.evaluate(baseline, final, spec)
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(optimization_review_mod.render(payload), end="")
+        return 0
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
+def cmd_optimize_loop(args) -> int:
+    try:
+        if args.loop_action == "create":
+            spec = json.loads(Path(args.contract).read_text(encoding="utf-8"))
+            payload = optimization_loop_mod.create(spec, args.out)
+        elif args.loop_action == "tick":
+            payload = optimization_loop_mod.tick(args.dir, now=args.at)
+        elif args.loop_action == "status":
+            payload = optimization_loop_mod.status(args.dir, now=args.at)
+        else:
+            payload = optimization_loop_mod.set_paused(
+                args.dir, args.loop_action == "pause", now=args.at)
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        print("error: %s" % exc, file=sys.stderr)
+        return 2
+
+
 def cmd_intake(args) -> int:
     """Assemble a task-economics case from a local billing-period bundle."""
     try:
@@ -2038,6 +2200,46 @@ def build_parser() -> argparse.ArgumentParser:
     p_optimize.add_argument("--markdown", metavar="PATH", help="write human-readable proposals")
     p_optimize.add_argument("--json-only", action="store_true", help="print JSON instead of Markdown")
     p_optimize.set_defaults(func=cmd_optimize)
+
+    p_opt_verify = sub.add_parser(
+        "optimize-verify",
+        help="review observed before/after cost and quality; keep/rollback advice is not causal attribution")
+    p_opt_verify.add_argument("--baseline", required=True, help="baseline comparable task CSV/JSONL")
+    p_opt_verify.add_argument("--final", required=True, help="post-action comparable task CSV/JSONL")
+    p_opt_verify.add_argument("--contract", required=True, help="verovo.optimization-review/1 JSON")
+    p_opt_verify.add_argument("--json", action="store_true")
+    p_opt_verify.set_defaults(func=cmd_optimize_verify)
+
+    p_opt_loop = sub.add_parser(
+        "optimize-loop",
+        help="persistent local optimization reviews with explicit ticks; no daemon or external changes")
+    loop_sub = p_opt_loop.add_subparsers(dest="loop_action", required=True)
+    p_loop_create = loop_sub.add_parser("create")
+    p_loop_create.add_argument("--contract", required=True, help="verovo.optimization-loop/1 JSON")
+    p_loop_create.add_argument("--out", required=True, help="new local loop directory")
+    p_loop_create.set_defaults(func=cmd_optimize_loop)
+    for action in ("tick", "status", "pause", "resume"):
+        p_loop_action = loop_sub.add_parser(action)
+        p_loop_action.add_argument("--dir", required=True, help="existing local loop directory")
+        p_loop_action.add_argument("--at", default="", help="current timezone-aware ISO timestamp")
+        p_loop_action.set_defaults(func=cmd_optimize_loop)
+
+    p_human = sub.add_parser(
+        "human-baseline", help="compare fully loaded human and agent costs for comparable accepted tasks")
+    p_human.add_argument("--human", required=True, help="human task CSV/JSONL")
+    p_human.add_argument("--agent", required=True, help="agent task CSV/JSONL")
+    p_human.add_argument("--contract", required=True, help="verovo.human-baseline/1 JSON")
+    p_human.add_argument("--json", action="store_true")
+    p_human.set_defaults(func=cmd_human_baseline)
+
+    p_experiment = sub.add_parser(
+        "experiment", help="run bounded local control/treatment tasks with process evidence")
+    experiment_sub = p_experiment.add_subparsers(dest="experiment_action", required=True)
+    p_experiment_run = experiment_sub.add_parser("run")
+    p_experiment_run.add_argument("--contract", required=True, help="verovo.controlled-task-run/1 JSON")
+    p_experiment_run.add_argument("--out", required=True, help="new local run directory")
+    p_experiment_run.add_argument("--json", action="store_true")
+    p_experiment_run.set_defaults(func=cmd_experiment)
 
     p_intake = sub.add_parser(
         "intake",
@@ -2430,15 +2632,71 @@ def build_parser() -> argparse.ArgumentParser:
         "monitor",
         help="continuous spend observation: ingest usage, build a local baseline, surface anomalies")
     msub = p_mon.add_subparsers(dest="monitor_action", required=True)
-    for action in ("ingest", "baseline", "anomalies", "report"):
+    for action in ("ingest", "baseline", "anomalies", "report", "track", "freeze-baseline"):
         item = msub.add_parser(action)
         item.add_argument("--file", required=True, help="usage CSV or JSONL")
+        item.add_argument("--state", default="", help="persistent state for track/freeze-baseline")
         item.add_argument("--min-days", type=int, default=7, dest="min_days")
         item.add_argument("--z", type=float, default=3.5)
         item.add_argument("--price-drift", type=float, default=0.2, dest="price_drift")
         item.add_argument("--retry-threshold", type=int, default=5, dest="retry_threshold")
         item.add_argument("--json", action="store_true")
         item.set_defaults(func=cmd_monitor)
+    p_mon_notify = msub.add_parser(
+        "notify", help="append deduplicated active anomalies to a local JSONL outbox; no external delivery")
+    p_mon_notify.add_argument("--state", required=True, help="persistent monitor state JSON")
+    p_mon_notify.add_argument("--out", required=True, help="local alert outbox JSONL")
+    p_mon_notify.add_argument("--severity", choices=("low", "medium", "high"), default="low")
+    p_mon_notify.add_argument("--json", action="store_true")
+    p_mon_notify.set_defaults(func=cmd_monitor)
+    p_mon_resolution = msub.add_parser(
+        "resolution", help="project one local alert into ovo.problem-resolution/1; read-only")
+    p_mon_resolution.add_argument("--file", required=True, help="alert JSON or outbox JSONL")
+    p_mon_resolution.add_argument("--alert", required=True, help="alert_id")
+    p_mon_resolution.add_argument("--json", action="store_true")
+    p_mon_resolution.set_defaults(func=cmd_monitor)
+    p_mon_forecast = msub.add_parser(
+        "forecast", help="estimate remaining task cost from local observed cost and explicit progress")
+    p_mon_forecast.add_argument("--state", required=True, help="persistent monitor state JSON")
+    p_mon_forecast.add_argument("--contract", required=True, help="verovo.spend-forecast/1 JSON")
+    p_mon_forecast.add_argument("--json", action="store_true")
+    p_mon_forecast.set_defaults(func=cmd_monitor)
+    p_mon_series = msub.add_parser(
+        "series", help="group observed spend into UTC minute/hour/day buckets by currency")
+    p_mon_series.add_argument("--state", required=True, help="persistent monitor state JSON")
+    p_mon_series.add_argument("--granularity", choices=("minute", "hour", "day"), default="day")
+    p_mon_series.add_argument("--start", default="", help="optional inclusive ISO timestamp")
+    p_mon_series.add_argument("--end", default="", help="optional exclusive ISO timestamp")
+    p_mon_series.add_argument("--task-id", default="")
+    p_mon_series.add_argument("--tool", default="")
+    p_mon_series.add_argument("--model", default="")
+    p_mon_series.add_argument("--json", action="store_true")
+    p_mon_series.set_defaults(func=cmd_monitor)
+
+    p_budget = sub.add_parser(
+        "budget", help="evaluate local observed spend against an explicit budget contract")
+    budget_sub = p_budget.add_subparsers(dest="budget_action", required=True)
+    p_budget_check = budget_sub.add_parser(
+        "check", help="emit advisory allow/warn/hold/review; never applies external control")
+    p_budget_check.add_argument("--state", required=True, help="persistent monitor state JSON")
+    p_budget_check.add_argument("--budget", required=True, help="verovo.spend-budget/1 JSON")
+    p_budget_check.add_argument("--json", action="store_true")
+    p_budget_check.set_defaults(func=cmd_budget)
+    p_budget_verify = budget_sub.add_parser(
+        "verify", help="reconcile a local runtime stop readback with subsequent observed spend")
+    p_budget_verify.add_argument("--state", required=True, help="persistent monitor state JSON")
+    p_budget_verify.add_argument("--decision", required=True, help="spend-control-decision JSON")
+    p_budget_verify.add_argument("--receipt", required=True, help="verovo.spend-control-receipt/1 JSON")
+    p_budget_verify.add_argument("--json", action="store_true")
+    p_budget_verify.set_defaults(func=cmd_budget)
+    p_budget_resume = budget_sub.add_parser(
+        "resume", help="record named budget recovery only after current-budget and running-readback checks")
+    p_budget_resume.add_argument("--state", required=True, help="persistent monitor state JSON")
+    p_budget_resume.add_argument("--budget", required=True, help="current verovo.spend-budget/1 JSON")
+    p_budget_resume.add_argument("--recovery", required=True, help="verovo.spend-budget-recovery/1 JSON")
+    p_budget_resume.add_argument("--out", required=True, help="append-only local recovery history JSONL")
+    p_budget_resume.add_argument("--json", action="store_true")
+    p_budget_resume.set_defaults(func=cmd_budget)
 
     p_tv = sub.add_parser(
         "tool-value",
@@ -2451,6 +2709,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_tv.add_argument("--value-per-success", default=None, dest="value_per_success")
     p_tv.add_argument("--json", action="store_true")
     p_tv.set_defaults(func=cmd_tool_value)
+
+    p_tv_export = sub.add_parser(
+        "tool-value-export",
+        help="export comparable tasks and explicit preregistration as a shared experiment contract")
+    p_tv_export.add_argument("--file", required=True, help="task CSV or JSONL")
+    p_tv_export.add_argument("--design", required=True, help="explicit experiment design JSON")
+    p_tv_export.add_argument("--out", required=True, help="new output JSON; never overwritten")
+    p_tv_export.add_argument("--group-col", default="group", dest="group_col")
+    p_tv_export.add_argument("--success-col", default="success", dest="success_col")
+    p_tv_export.add_argument("--cost-col", default="cost", dest="cost_col")
+    p_tv_export.add_argument("--retry-col", default="retry_cost", dest="retry_col")
+    p_tv_export.set_defaults(func=cmd_tool_value_export)
 
     p_tpl = sub.add_parser(
         "template",

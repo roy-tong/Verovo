@@ -170,7 +170,7 @@ def anomalies(records: List[Dict[str, Any]], baseline_payload: Dict[str, Any], *
                     })
     retry_counts: Dict[tuple, int] = {}
     for record in records:
-        if record["retry"] or record["attempt"] not in ("", "1"):
+        if record.get("retry") or record.get("attempt", "") not in ("", "1"):
             key = (record["task_id"] or "unlinked", _day(record))
             retry_counts[key] = retry_counts.get(key, 0) + 1
     for (task_id, day), count in sorted(retry_counts.items()):
