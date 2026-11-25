@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import _support
+
 from verovo_healthcheck import budget_control, budget_recovery, monitor_state
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import _support
+
 from verovo_healthcheck import discover
 
 

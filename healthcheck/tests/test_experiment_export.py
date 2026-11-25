@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import _support
+
 from verovo_healthcheck import experiment_export, tool_value
 
 ROOT = Path(__file__).resolve().parents[2]

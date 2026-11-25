@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import _support
+
 from verovo_healthcheck import experiment_runner
 from verovo_local_runner import run_process
 

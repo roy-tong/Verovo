@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import _support
+
 from verovo_healthcheck import alert_resolution, mcp_server
 
 ROOT = Path(__file__).resolve().parents[2]
