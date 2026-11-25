@@ -1,5 +1,14 @@
 # Verovo: implementation status
 
+## Business-first close report and spend monitoring (v0.19.0, 2026-11-25)
+
+- Buyer-close reports lead with the payment/renewal recommendation, invoice and open difference, accepted tasks, cost per verified success and whether value can be judged. Root-cause groups replace raw item IDs in the main answer; axes, verdict codes, line-level reconciliation and replay metadata stay in the appendix. Open items never become payment authorization.
+- Unresolved items are ordered by amount importance (same currency only), due date, evidence confidence, persistent loss and systemic-error signal. Same-line findings collapse to one exposure; gross and de-duplicated exposure are both shown, and different/unknown currencies stay out of the sum.
+- `verovo monitor` builds a local median/MAD baseline per tool/model/currency and surfaces spend spikes, unit-price drift, retry storms and orphan calls. It is advisory-only: no gateway, no auto-block, no invoice total.
+- `verovo tool-value` compares comparable task groups on success rate, cost per task and cost per verified success, with optional value-per-success. Single-arm or call-share inputs never produce a causal claim.
+- **Verification:** 445 Buyer Ledger, 673 healthcheck and 69 root tests pass; `verovo selftest` passes. Economics still never turns unknown value into zero or ROI.
+
+
 ## Native real-task case gate (2026-11-24)
 
 - `verovo case list|show|incidents|index|validate|replay|verify` delegates to the shared `ovo-acceptance` runtime. The default registry supplies the family workspace root, so commands also work from this repository. `OVO_ACCEPTANCE_HOME` overrides the shared runtime location and `OVO_CASE_REGISTRY` overrides the registry for isolated tests; `OVO_CASE_ROOT` explicitly overrides the evidence root.
@@ -14,7 +23,7 @@
 - Final reports project task-level costs and root-cause groups. V2 has 20 task rows and 3 groups over 2001 open items. Missing `outcomes.value` is named explicitly instead of asking for an already supplied file; unresolved amounts appear in the conclusion area.
 - Current verification: **440 buyer-ledger tests plus healthcheck, root, Lab and protocol suites pass**. V2/V4/V5 use frozen task fixtures; synthetic signoff is not payment authorization or a real buyer outcome.
 
-**Current install release, 2026-11-24 · [v0.18.0](../CHANGELOG.md).** Buyer-close revisions now support named source addition and selected-revision review under one root-case lock. Signoff requires exact signer authority, OCR booking binds source/export hashes, and reports expose task economics and unresolved priority amounts while preserving the v0.17.2 evidence-bound spend actions and Money Contract. Canonical verdicts, signed revisions and proof boundaries remain unchanged.
+**Current install release, 2026-11-25 · [v0.19.0](../CHANGELOG.md).** Buyer-close reports now lead with the payment/renewal decision and business measures; unresolved exposure is amount-ordered and line-deduplicated. `monitor` adds advisory spend observation and `tool-value` adds controlled cost-per-success comparison. Canonical verdicts, signed revisions and proof boundaries remain unchanged.
 
 Earlier baseline reviewed 2026-11-04 against the **v0.13.0 release**. Available means local implementation, not production validation on every platform.
 
