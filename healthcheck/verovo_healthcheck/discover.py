@@ -34,13 +34,13 @@ class DiscoveryResult:
 
     def selected_files(self) -> List[str]:
         for rt in self.runtimes:
-            if rt.supported:
+            if rt.supported and rt.files:
                 return rt.files
         return []
 
     def primary(self) -> Optional[RuntimeFound]:
         for rt in self.runtimes:
-            if rt.supported:
+            if rt.supported and rt.files:
                 return rt
         return None
 

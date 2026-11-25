@@ -12,6 +12,8 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from . import incrementality
+
 
 SCHEMA = "verovo.tool-value/1"
 GROUPS = ("treatment", "control")
@@ -79,6 +81,9 @@ def load_tasks(path, *, group_col="group", success_col="success",
             "cost": cost,
             "retry_cost": _dec(row.get(retry_col)) or Decimal("0"),
             "comparable_group": str(row.get("comparable_group") or "").strip(),
+            "observed_at": str(row.get("observed_at") or "").strip(),
+            "currency": str(row.get("currency") or "").strip().upper(),
+            "task_type": str(row.get("task_type") or "").strip(),
         })
     return tasks
 
@@ -89,7 +94,7 @@ def _group(tasks, name):
     successes = sum(1 for task in rows if task["success"])
     total = sum((task["cost"] for task in rows), Decimal("0"))
     retry = sum((task["retry_cost"] for task in rows), Decimal("0"))
-    return {
+    result = {
         "n": n,
         "successes": successes,
         "success_rate": (successes / float(n)) if n else None,
@@ -97,7 +102,12 @@ def _group(tasks, name):
         "cost_per_task": (_money(total / n) if n else None),
         "cost_per_success": (_money(total / successes) if successes else None),
         "retry_cost": _money(retry),
+        "success_rate_ci95_wilson": None,
     }
+    if n:
+        lower, upper = incrementality._wilson_interval(successes, n)
+        result["success_rate_ci95_wilson"] = [round(lower, 4), round(upper, 4)]
+    return result
 
 
 def analyze(tasks: List[Dict[str, Any]], *, value_per_success=None) -> Dict[str, Any]:
@@ -112,6 +122,11 @@ def analyze(tasks: List[Dict[str, Any]], *, value_per_success=None) -> Dict[str,
         "treatment": treatment,
         "control": control,
         "causality": "assisted" if control["n"] else "unknown",
+        "selection_bias": {
+            "population_representativeness": "not_assessed",
+            "task_selection": "comparable_group_contract_required",
+            "note": "Comparable tasks support a descriptive comparison; they do not establish population representativeness or remove selection bias.",
+        },
         "boundary": ("Comparable local task groups only. No last-call, call-count or cost-share "
                      "attribution. Without a control group no incremental value is claimed."),
     }
@@ -121,7 +136,7 @@ def analyze(tasks: List[Dict[str, Any]], *, value_per_success=None) -> Dict[str,
         return result
     if treatment["n"] < 30 or control["n"] < 30:
         result.update({"status": "insufficient_evidence",
-                       "note": "n < 30 per group; report the difference but do not quote confidence"})
+                       "note": "n < 30 per group; intervals remain unstable and no automatic winner is selected"})
     success_diff = treatment["success_rate"] - control["success_rate"]
     result["difference"] = {
         "success_rate": round(success_diff, 4),
@@ -130,6 +145,13 @@ def analyze(tasks: List[Dict[str, Any]], *, value_per_success=None) -> Dict[str,
         "cost_per_success": (_money(Decimal(treatment["cost_per_success"]) - Decimal(control["cost_per_success"]))
                              if treatment["cost_per_success"] and control["cost_per_success"] else None),
     }
+    lower, upper = incrementality._newcombe_diff_interval(
+        treatment["successes"], treatment["n"], control["successes"], control["n"])
+    result["difference"].update({
+        "success_rate_ci95_newcombe": [round(lower, 4), round(upper, 4)],
+        "interval_covers_zero": lower <= 0 <= upper,
+        "interpretation": "no_automatic_winner",
+    })
     if value_per_success is not None:
         value = _dec(value_per_success)
         if value is None:
@@ -152,17 +174,23 @@ def render(payload: Dict[str, Any]) -> str:
              "> 因果口径：%s" % payload.get("causality"), ""]
     for name in GROUPS:
         row = payload.get(name) or {}
-        lines.append("- %s：n=%s，成功率 %s，每次成功成本 %s" % (
-            name, row.get("n"), row.get("success_rate"), row.get("cost_per_success")))
+        lines.append("- %s：n=%s，成功率 %s（Wilson 95%% %s），每次成功成本 %s" % (
+            name, row.get("n"), row.get("success_rate"), row.get("success_rate_ci95_wilson"),
+            row.get("cost_per_success")))
     difference = payload.get("difference") or {}
     if difference:
         lines.extend(["", "## 差异", "",
-                      "- 成功率差：%s" % difference.get("success_rate"),
+                      "- 成功率差：%s（Newcombe 95%% %s；覆盖零：%s）" % (
+                          difference.get("success_rate"),
+                          difference.get("success_rate_ci95_newcombe"),
+                          difference.get("interval_covers_zero")),
                       "- 每任务成本差：%s" % difference.get("cost_per_task"),
                       "- 每次成功成本差：%s" % difference.get("cost_per_success")])
     if payload.get("incremental_value"):
         lines.extend(["", "## 增量价值", ""])
         for key, value in payload["incremental_value"].items():
             lines.append("- %s：%s" % (key, value))
-    lines.extend(["", "## 边界", "", "- 没有对照就没有增量结论；相关不等于因果。", ""])
+    lines.extend(["", "## 边界", "",
+                  "- 没有对照就没有增量结论；相关不等于因果。",
+                  "- 选择偏差：总体代表性未评估；区间不自动选择工具赢家。", ""])
     return "\n".join(lines)

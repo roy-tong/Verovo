@@ -53,6 +53,17 @@ verovo economics --case case.json --json out.json --markdown out.md
 The command is read-only with respect to the case and writes only the requested
 output paths.
 
+## Human alternative baseline
+
+```bash
+verovo human-baseline --human human-tasks.jsonl --agent agent-tasks.jsonl \
+  --contract human-baseline.json --json
+```
+
+A `verovo.human-baseline/1` contract binds one comparable task group, task type, acceptance rubric, currency, minimum sample, quality requirements, human hourly cost and its source/method. Human and agent files contain separate `human` / `agent` arms with unique task IDs, success, direct cost and non-negative `human_minutes`. Fully loaded cost is direct cost plus human minutes × hourly cost / 60 for both arms.
+
+The output compares cost per task, cost per verified success, success rate and human minutes per task. `lower_observed_cost` requires enough tasks, no quality-guardrail breach, lower cost per task and no higher cost per success. Zero-success arms keep cost per success unknown and the comparison inconclusive. Differences remain descriptive, unreconciled and non-causal; they are not realized invoice savings or a procurement decision. MCP action `human_baseline` shares the evaluator.
+
 ## Reconciliation and recovery rules
 
 A shared `charge_id` identifies the same financial charge represented in both usage and bill records. Supply it only when the mapping is known. The first linked row is counted and later representations become review findings; reconcile mismatched amounts before using the result. Without this explicit ID, different source references remain distinct costs.

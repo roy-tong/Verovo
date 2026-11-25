@@ -78,7 +78,7 @@ The two product goals share an evidence base but not a single score. AI Spend As
 
 `spend-actions` projects an existing Audit Case into ready/evidence/review/unreviewed/partially_settled/settled work items with owner roles and per-currency amount coverage. Only versioned `charge_reviews` bound to normalized source content and contract versions can make a line ready for payment; legacy `clean_charge_lines` alone does not clear it. A Finding marked `realized` becomes settled only when an applied credit matches the finding amount, currency and charge identity; partial credit produces `partially_settled`. Actual payment or vendor review remains outside the tool. `provider check` validates adapter identity, version, readiness, source trust, resource limits, coverage, cleanup and raw snapshot digests. Local `admit` does not claim live connectivity, complete coverage or control effectiveness. See [feature status](feature-status.md) and [Provider contract](provider-contract.md).
 
-The next business validations are an actual buyer disposition on one period, stop-receipt reconciliation against subsequent charges on one authorized path, and one private two-tool procurement comparison. Runtime enforcement, public benchmarks and universal connectors are not current capabilities.
+The next business validations are an actual buyer disposition on one period, a real authorized stop-receipt reconciliation using `budget verify` against subsequent charges, and one private two-tool procurement comparison. The local receipt/monitor consistency verifier is implemented, but runtime enforcement, authenticated external evidence, public benchmarks and universal connectors are not current capabilities.
 
 ## Task economics
 
