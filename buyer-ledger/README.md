@@ -153,6 +153,7 @@ $B close review ./close-2026-10 --by finance-reviewer \
 - 六份对象：`report.md`、`report.json`、`line-reconciliation.csv`、
   `review-queue.csv`、`evidence-index.json`、`manifest.json`（后者的输入
   hash / 规则版本 / 代码与算法版本 / 输出快照指纹支持 V23 重放）。
+- `report.md` 与终端摘要先回答付款/续约建议、账单与未解释差额、任务验收、任务成本和是否划算；未决事项存在时不建议直接付款或续约。内部裁决码、逐行差异和重放元数据保留在附录，不改变任何金额或裁决语义。
 - 四完成轴与 PASS/FAIL/UNKNOWN/UNPROVABLE 裁决分开显示；`finance_status=
   complete` 只代表资料与归集轴闭合，报告明确写“不可用于付款”。
 - 每行互斥落入 matched / explained adjustment / excluded pending

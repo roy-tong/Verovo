@@ -118,6 +118,7 @@ Abstention is a valid output. See `standard/hard-questions.md` Q4.
 ## 9. Current implementation boundaries
 
 - `spend-actions` projects an existing Audit Case into ready/evidence/review/unreviewed/partially_settled/settled work items. Only versioned `charge_reviews` bound to normalized source content and contract versions become ready for payment; text digests normalize LF/CRLF for cross-platform checkouts. Legacy `clean_charge_lines` alone does not clear a line. `realized` requires independently verified credit evidence before becoming settled, and partial credit produces `partially_settled`. Missing affected lines and duplicate finding IDs fail closed. `provider check` validates a local Provider Manifest and returns admit/degrade/refuse without contacting the engine or claiming production coverage. Both are Python 3.9 standard-library, read-only workflows.
+- Buyer-close Markdown and terminal summaries lead with the buyer decision, invoice/open difference, accepted tasks, cost and value boundaries; verdict codes, axes, line items and replay metadata stay in the appendix. Open items mean direct payment/renewal is not recommended, never automatic approval. Calculations and verdict semantics do not change.
 - `buyer_ledger.period_case.PeriodCase` owns the read-only buyer-close projection; `CaseRepository` owns registered state paths, strict JSON reads, atomic case writes and byte-level projection snapshots. Legacy `close` init/ingest/mapping writes use the same Repository boundary. Direct projections refuse unfinished journals and detect state drift; `close status` still runs recovery first and may report unresolved recovery state, so it is not a side-effect-free read. Projections also require report revision, report/calculation/canonical fingerprints and signoff metadata to bind one revision. Revision-built reports carry their actual revision id. Selected-revision review and signoff share the root-case lock, and signing requires an exact reviewer match in `manifest.buyer.acceptance_signers`. `close.build_case` remains a compatibility facade.
 - `healthcheck/verovo_healthcheck/money.py` owns display rounding for task economics, optimization, cost drivers and spend actions. Default two-decimal behavior is unchanged; BHD/IQD/JOD/KWD/LYD/OMR/TND explicitly use three minor units. Zero-decimal currency tolerances and allocation rules remain explicit separate contracts.
 - `reproduce` builds and verifies in a sibling staging directory before replacing the output. Canonical finance and usage replay remain separate engines and proof scopes.
@@ -136,6 +137,8 @@ python3 conformance/runners/run_sse_usage.py
 ```
 
 CI red means do not merge. See `CI-DISCIPLINE.md`.
+
+发版 PR 合并进 `origin/main` 并打完 tag 后，回到主工作树执行 `git merge --ff-only origin/main`。发版在 `git worktree` 或 `临时工作区/` 里完成时主工作树不会自动前进，漏掉这一步会让下一次 review 把已经发布的内容读成大量未提交改动。正确状态是 `git status --porcelain` 为空。
 
 ## 11. What not to claim
 

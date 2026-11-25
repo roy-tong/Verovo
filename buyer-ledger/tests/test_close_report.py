@@ -278,7 +278,7 @@ class AcceptanceAuthorityTests(CloseReportTestBase):
         self.assertEqual(["Buyer Owner"], authority["qualified_signers"])
         lines = close_report._report_markdown(report).splitlines()
         self.assertEqual(
-            "> 实际验收方：Buyer Owner（受控组织 buyer-1；来源：manifest.buyer.acceptance_signers）",
+            "> 实际验收方：Buyer Owner（买方 buyer-1）",
             lines[2])
 
     def test_vendor_self_acceptance_leaves_the_report_unidentified(self):
@@ -693,6 +693,86 @@ class OpenItemGroupingTests(CloseReportTestBase):
         detail_ids = [line.split("|")[1].strip()
                       for line in text.splitlines() if line.startswith("| D-")]
         self.assertEqual(["D-%d" % n for n in range(1, 21)], detail_ids)
+
+
+class OpenItemPriorityTests(unittest.TestCase):
+    def report(self, items):
+        return {"scope": {"currency": "USD"}, "amounts": {"open_difference": "0"},
+                "open_items": items}
+
+    def test_orders_by_amount_then_dedupes_by_line(self):
+        report = self.report([
+            {"id": "D-1", "kind": "rule_repriced_fail", "amount": "40.00",
+             "currency": "USD", "line_ref": "L1", "state": "unresolved"},
+            {"id": "D-2", "kind": "rule_repriced_fail", "amount": "100.00",
+             "currency": "USD", "line_ref": "L1", "state": "unresolved"},
+            {"id": "D-3", "kind": "currency_unknown", "amount": "50.00",
+             "currency": "EUR", "line_ref": "L2", "state": "unresolved"},
+            {"id": "D-4", "kind": "invoice_draft", "amount": None,
+             "currency": None, "line_ref": "L3", "state": "unresolved"},
+        ])
+        priority = close_report._open_item_priority(report)
+        self.assertEqual(["D-2", "D-1", "D-3", "D-4"],
+                         [item["id"] for item in priority["items"]])
+        self.assertEqual("100.00", priority["deduped"])
+        self.assertEqual("140.00", priority["gross"])
+        self.assertEqual(1, priority["unknown_currency"])
+        summary = close_report._priority_summary(report)
+        self.assertIn("去重后敞口 100.00 USD", summary)
+        self.assertIn("毛额 140.00", summary)
+        self.assertIn("另有 1 项", summary)
+
+    def test_due_date_persistent_and_systemic_break_ties(self):
+        report = self.report([
+            {"id": "D-1", "kind": "rule_repriced_fail", "amount": "50.00",
+             "currency": "USD", "line_ref": "L1", "state": "unresolved",
+             "due_date": "2026-12-31", "confidence": "confirmed"},
+            {"id": "D-2", "kind": "rule_repriced_fail", "amount": "50.00",
+             "currency": "USD", "line_ref": "L2", "state": "unresolved",
+             "due_date": "2026-12-01", "confidence": "low", "recurring": True},
+            {"id": "D-3", "kind": "rule_repriced_fail", "amount": "50.00",
+             "currency": "USD", "line_ref": "L3", "state": "unresolved",
+             "due_date": "2026-12-15", "confidence": "inferred"},
+            {"id": "D-4", "kind": "rule_repriced_fail", "amount": "50.00",
+             "currency": "USD", "line_ref": "L4", "state": "unresolved",
+             "due_date": "2026-12-20", "confidence": "inferred"},
+        ])
+        priority = close_report._open_item_priority(report)
+        self.assertEqual("D-2", priority["items"][0]["id"])
+        self.assertEqual("D-3", priority["items"][1]["id"])
+        self.assertEqual("D-4", priority["items"][2]["id"])
+
+    def test_no_open_items(self):
+        self.assertEqual("> 优先处置：无未决项", close_report._priority_summary(
+            self.report([])))
+
+
+class BusinessOutputTests(CloseReportTestBase):
+    def test_business_decision_precedes_verdict_codes_and_line_items(self):
+        report = self.report(
+            sources=[_source("bills", "bill-export.csv"),
+                     _source("usage", "usage-export.jsonl", "buyer"),
+                     _source("outcomes", "outcomes.csv", "buyer")],
+            bills=self.full_bills(amount="25.00"), usage=USAGE,
+            outcomes=OUTCOME_HEADER +
+            "t1,o1,success,true,buyer-1,2026-10-31T00:00:00Z,outcomes.csv#o1,100.00,USD\n")
+        text = close_report._report_markdown(report)
+
+        main = text.split("## 附录：", 1)[0]
+        self.assertIn("## 本期业务结论", main)
+        self.assertIn("当前不建议直接付款或续约", main)
+        self.assertIn("供应商账单 25.00 USD", main)
+        self.assertIn("按已批准规则重算 20.00 USD；未解释差额 5.00 USD", main)
+        self.assertIn("每个已验证成功任务成本", main)
+        self.assertIn("怎么判断这笔支出是否划算", main)
+        for token in (
+            "finance_status", "UNPROVABLE", "PASS", "Task Economics",
+            "This report", "D-1", "canonical_fingerprint", "逐行差异",
+            "manifest.buyer", "charge_amount_mismatch", "line-level", "usage：",
+        ):
+            self.assertNotIn(token, main)
+        self.assertIn("Rule Repriced（规则重算）", text)
+        self.assertIn("## 五、逐行差异", text)
 
 
 if __name__ == "__main__":

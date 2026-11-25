@@ -1607,21 +1607,201 @@ def _needs_money_layers(report: Dict[str, Any]) -> bool:
             or economics.get("roi") in (None, ""))
 
 
+def _unresolved_items(report: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return [item for item in report.get("open_items") or []
+            if item.get("state") not in ("resolved", "closed", "not_applicable")]
+
+
+def _priority_amount(item: Dict[str, Any], report_currency: str):
+    value = item.get("amount")
+    if value in (None, ""):
+        return None, False
+    amount = _dec(value, "open item amount")
+    currency = _text(item.get("currency")).upper()
+    known = not currency or not report_currency or currency == report_currency
+    return amount, known
+
+
+def _is_persistent(item: Dict[str, Any]) -> bool:
+    text = " ".join([_text(item.get("detail")), " ".join(item.get("candidate_causes") or [])]).lower()
+    return bool(item.get("recurring") or item.get("persistent")
+                or any(word in text for word in ("recurring", "persistent", "持续", "反复")))
+
+
+def _confidence_rank(item: Dict[str, Any]) -> int:
+    value = _text(item.get("confidence") or item.get("qualification") or "unresolved").lower()
+    return {"low": 0, "unresolved": 0, "inferred": 1, "medium": 1,
+            "confirmed": 2, "high": 2}.get(value, 0)
+
+
+def _open_item_priority(report: Dict[str, Any]) -> Dict[str, Any]:
+    unresolved = _unresolved_items(report)
+    if not unresolved:
+        return {"items": [], "gross": None, "deduped": None, "currency": None,
+                "unknown_currency": 0, "lines": 0}
+    currency = _text((report.get("scope") or {}).get("currency")).upper() or None
+    counts: Dict[str, int] = {}
+    for item in unresolved:
+        kind = _text(item.get("kind")) or "open_item"
+        counts[kind] = counts.get(kind, 0) + 1
+
+    def key(item):
+        amount, known = _priority_amount(item, currency)
+        due = _text(item.get("due_at") or item.get("due_date")
+                    or item.get("payment_due") or item.get("deadline"))
+        return (
+            0 if known else 1,
+            -abs(amount) if amount is not None and known else 0,
+            due or "9999",
+            _confidence_rank(item),
+            0 if _is_persistent(item) else 1,
+            0 if (item.get("systemic") or counts.get(_text(item.get("kind")), 0) >= 3) else 1,
+            _text(item.get("id")),
+        )
+
+    ordered = sorted(unresolved, key=key)
+    groups: Dict[str, Dict[str, Any]] = {}
+    gross = Decimal("0")
+    unknown = 0
+    for item in unresolved:
+        amount, known = _priority_amount(item, currency)
+        if amount is None:
+            continue
+        if not known:
+            unknown += 1
+            continue
+        gross += abs(amount)
+        line = _text(item.get("line_ref")) or _text(item.get("id"))
+        group = groups.setdefault(line, {"amount": Decimal("0"), "items": []})
+        group["amount"] = max(group["amount"], abs(amount))
+        group["items"].append(item.get("id"))
+    deduped = sum(group["amount"] for group in groups.values()) if groups else Decimal("0")
+    return {
+        "items": ordered,
+        "gross": _money(gross) if groups else None,
+        "deduped": _money(deduped) if groups else None,
+        "currency": currency,
+        "unknown_currency": unknown,
+        "lines": len(groups),
+    }
+
+
+_BUSINESS_ROOT_CAUSES = {
+    "charge_amount_mismatch": "账单金额与来源记录不一致",
+    "usage": "费用尚未归集到具体任务",
+    "unverified_value": "任务价值尚未核验",
+}
+
+_BUSINESS_ACTIONS = {
+    "missing_invoice_lines": "由财务补齐账单行",
+    "missing_charge_id": "由财务补齐账单行标识",
+    "missing_invoice_amount": "由财务补齐账单金额",
+    "currency_unknown": "由财务确认币种",
+    "period_outlier": "由财务核对服务日期与账期",
+    "credit_or_refund_not_applied": "由财务核对信用或退款的应用记录",
+    "invoice_reconciled_unprovable": "补充独立的用量或成本来源",
+    "invoice_reconciled_fail": "核对账单与用量来源，确认差额原因",
+    "rule_repriced_fail": "核对合同价格、数量和计算精度",
+    "rule_repriced_unknown": "由采购确认适用的价格规则",
+    "adjustment_sign_mismatch": "由财务核对调整凭据与金额符号",
+    "unsupported_adjustment_type": "由财务确认调整类型",
+    "invoice_draft": "由财务完成账单或 OCR 文档审阅",
+    "buyer_verified_unprovable": "补充买方控制的用量或成本记录",
+    "unverified_outcome": "由运营补齐任务结果证据",
+    "unverified_value": "由运营补齐任务价值记录",
+    "charge_amount_mismatch": "由财务核对来源金额并登记处理结果",
+    "usage": "由运营补齐任务映射或已批准的费用分摊依据",
+}
+
+
+def _business_group_view(group: Dict[str, Any]) -> Tuple[str, str]:
+    kind = _text(group.get("kind"))
+    cause = _BUSINESS_ROOT_CAUSES.get(kind) or _OPEN_ITEM_ROOT_CAUSES.get(kind) or _text(group.get("root_cause")) or "待处理差异"
+    action = _BUSINESS_ACTIONS.get(kind)
+    if not action:
+        candidate = _text(group.get("action"))
+        action = candidate if any("\u4e00" <= char <= "\u9fff" for char in candidate) else "由负责人补齐处理材料并登记结果"
+    return cause, action
+
+
+def _business_authority(authority: Dict[str, Any]) -> str:
+    signers = [str(value) for value in authority.get("qualified_signers") or []]
+    if not signers:
+        return "未识别"
+    return "%s（买方 %s）" % ("、".join(signers), authority.get("org_id") or "未识别")
+
+
+def _business_report_main(report: Dict[str, Any]) -> List[str]:
+    amounts = report["amounts"]
+    currency = report["scope"]["currency"]
+    unresolved = _unresolved_items(report)
+    economics = report.get("task_economics") or {}
+    delivery = report["verdicts"].get("Delivery Accepted") or {}
+    accepted_count = len(delivery.get("rows") or []) if delivery.get("status") == "PASS" else 0
+    if unresolved:
+        decision = "当前不建议直接付款或续约：还有 %d 项未决事项。" % len(unresolved)
+    else:
+        decision = "当前没有未决事项；是否付款或续约仍由买方负责人决定。"
+    lines = [
+        "## 本期业务结论",
+        "",
+        f"- **{decision}**",
+        "- 供应商账单 %s %s；按已批准规则重算 %s %s；未解释差额 %s %s。" % (
+            _display(amounts["invoice_total"]), currency,
+            _display(amounts["rule_repriced_subtotal"]), currency,
+            _display(amounts["open_difference"]), currency),
+        "- 买方验收：%s。" % (
+            "已有 %d 条任务验收记录通过" % accepted_count
+            if accepted_count else "任务交付尚不能确认"),
+        "- 每个已验证成功任务成本：%s；投资回报：%s。" % (
+            _display(economics.get("cost_per_verified_success"))
+            if economics.get("cost_per_verified_success") not in (None, "") else "暂时无法计算",
+            _display(economics.get("roi"))
+            if economics.get("roi") not in (None, "") else "暂时无法计算"),
+        "",
+        "## 怎么判断这笔支出是否划算",
+        "",
+    ]
+    if not economics.get("outcome_source_present"):
+        lines.append("- 本期未接入任务结果，不能把费用与业务成效关联起来。")
+    elif economics.get("roi") not in (None, ""):
+        lines.append("- 当前投资回报按已登记的任务价值计算，只反映本期账本，不证明新增收益由该工具造成。")
+    else:
+        lines.append("- 任务价值或成本口径仍不完整，当前不能判断这笔支出是否划算；缺失不按 0 处理。")
+    groups = report.get("open_item_groups") or []
+    if groups:
+        lines.extend(["", "## 需要先处理什么", ""])
+        for group in groups[:3]:
+            cause, action = _business_group_view(group)
+            lines.append("- %s：影响 %d 条；%s" % (
+                cause, group.get("count", 0), action))
+    lines.append("")
+    return lines
+
+
 def _priority_summary(report: Dict[str, Any]) -> str:
-    unresolved = [item for item in report.get("open_items") or []
-                  if item.get("state") not in ("resolved", "closed", "not_applicable")]
+    priority = _open_item_priority(report)
+    unresolved = priority["items"]
     if not unresolved:
         return "> 优先处置：无未决项"
-    amounts = []
-    for item in unresolved:
-        if item.get("amount") in (None, ""):
-            continue
-        kind = _text(item.get("kind"))
-        cause = _OPEN_ITEM_ROOT_CAUSES.get(kind, kind or "待处理差异")
-        amounts.append("%s：%s %s（%s）" % (
-            item.get("id"), item["amount"], item.get("currency") or "币种未明", cause))
-    detail = "；".join(amounts[:3]) if amounts else "相关金额未登记，不能按 0 处理"
-    return "> 优先处置：%d 项未决；%s" % (len(unresolved), detail)
+    causes = [_business_group_view(group)[0]
+              for group in report.get("open_item_groups") or []]
+    if not causes:
+        causes = list(dict.fromkeys(
+            _OPEN_ITEM_ROOT_CAUSES.get(_text(item.get("kind")), _text(item.get("kind")) or "待处理差异")
+            for item in unresolved))
+    difference = _display(report["amounts"].get("open_difference"))
+    currency = report["scope"].get("currency") or "币种未明"
+    exposure = ""
+    if priority["deduped"] is not None:
+        exposure = "；去重后敞口 %s %s（毛额 %s，%d 行）" % (
+            priority["deduped"], priority["currency"] or "币种未明",
+            priority["gross"], priority["lines"])
+        if priority["unknown_currency"]:
+            exposure += "；另有 %d 项币种不同/未知，未计入" % priority["unknown_currency"]
+    return "> 优先处置：%d 项未决；未解释差额 %s %s；主要原因：%s%s" % (
+        len(unresolved), difference, currency,
+        "；".join(causes[:3]) or "待确认", exposure)
 
 
 def _signoff_summary(report: Dict[str, Any]) -> str:
@@ -1639,9 +1819,12 @@ def _report_markdown(report: Dict[str, Any]) -> str:
     lines = [
         "# 买方可签核月结报告 · %s" % report["job_id"],
         "",
-        "> 实际验收方：%s" % (authority.get("headline") or "未识别"),
-        "> %s" % report["disclaimer"],
+        "> 实际验收方：%s" % _business_authority(authority),
+        "> 本报告用于买方复核，不是付款授权；是否结算、调整或续约由买方负责人决定。",
+        *_business_report_main(report),
         _priority_summary(report),
+        "",
+        "## 附录：核验与逐行明细",
         "",
         "## 一、核验范围",
         "",
