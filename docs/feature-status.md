@@ -1,5 +1,26 @@
 # Verovo: implementation status
 
+## Agent Native service frame (2026-11-26)
+
+- **Agent Spend Healthcheck**: accessible agent logs and usage records become cost distribution, retries, anomalies and the tasks behind inefficient spend. Subscription usage is not automatically a marginal cash bill.
+- **Independent Bill Audit**: supplier bills and buyer-side records become recalculated charges, supported differences, unresolved amounts and dispute-ready evidence.
+- **Agent Economics Optimization**: real tasks, costs and acceptance results become tool/model comparisons, controlled experiments and independent quality/cost review. Potential and realized savings remain separate.
+- Existing gateways and runtimes execute controls; Verovo checks their scope, readback and subsequent evidence. Financial correctness, control, delivery and economic value remain independent conclusions.
+
+## Notification delivery and resource hygiene (working tree, 2026-11-26)
+
+- `monitor pending` lists alerts without confirmed delivery. `monitor_alerts.deliver` appends receipt-bound delivery records, leaves failed delivery pending and never rewrites the original anomaly or implies a host wake-up.
+- The production share flow and six test files now close file handles explicitly; the suite runs with `ResourceWarning` promoted to error without emitting the previous warnings.
+- **Verification:** 779 healthcheck tests with ResourceWarning promoted to error, 70 root tests, selftest and all 62 protocol vectors pass. An isolated wheel confirms selftest and one injected delivery receipt; empty receipts stay failed and pending. No external notification channel or production spend control is claimed.
+
+## Measurement eligibility and control adapters (working tree, 2026-11-26)
+
+- `economics` adds a read-only `ovo.task-result/1` projection. Fully covered cost and buyer-outcome evidence maps to `completed`; open allocation or acceptance evidence maps to `partial_result` while preserving attributed subtotals, source refs and scoped recovery actions. The projection does not alter cost, ROI, payment or realized-saving semantics.
+- `monitor track` prefers explicit event or operation+attempt identity over content hash, retains same-event revisions without double counting, rejects unrevised identity conflicts and marks content-hash-only identities uncertain. Frozen baselines include historical unit prices; CSV `false`/`0` retries parse as false.
+- `tool-value` checks comparable group, currency, task type, acceptance rubric, group-local task uniqueness, success evidence refs and `canonical_task_economics` cost basis before calculating any comparison or interval. Ineligible input returns `incomparable` without a difference.
+- `optimize-verify` validates task acceptance/cost contracts, requires identical task IDs for a sufficient `same_task_set` comparison and supports an explicit quality-score guardrail alongside success rate.
+- `budget apply` executes only a named-authorized hold adapter matching the current decision budget/scope, then reads runtime state. `APPLIED` requires a stopped readback; subsequent-spend coverage remains separate through `budget verify`. Local fake-runtime tests do not prove production control.
+
 ## Incremental persistent monitoring and shared experiment adapters (working tree, 2026-11-25)
 
 - Runtime discovery now selects the first supported runtime with actual files, so an empty Codex sessions directory cannot hide Claude sessions. Explicit Codex scans filter rollout filename dates and ignore non-rollout JSONL. Direct mixed-runtime tests and an isolated wheel discovery→Claude parse chain pass (`V1-RUNTIME-DISCOVERY-01`, synthetic fixture only).

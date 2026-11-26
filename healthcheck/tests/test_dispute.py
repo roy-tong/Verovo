@@ -103,7 +103,8 @@ class TestMarkdownPack(unittest.TestCase):
             paths = write_pack(p, d)
             self.assertTrue(os.path.isfile(paths["json"]))
             self.assertTrue(os.path.isfile(paths["markdown"]))
-            payload = json.load(open(paths["json"], encoding="utf-8"))
+            with open(paths["json"], encoding="utf-8") as handle:
+                payload = json.load(handle)
             self.assertEqual(payload["claim"]["net"], 2)
 
 

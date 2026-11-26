@@ -220,7 +220,8 @@ class TestRecountCli(unittest.TestCase):
             rc = main(["recount", "--export", fixture("vendor-export-intercom.csv"),
                        "--vendor", "intercom", "--json", out])
         self.assertEqual(rc, 0)
-        payload = _json.load(open(out, encoding="utf-8"))
+        with open(out, encoding="utf-8") as handle:
+            payload = _json.load(handle)
         self.assertEqual(payload["vendor_id"], "intercom")
         self.assertEqual(payload["net_findings"], 2)
 

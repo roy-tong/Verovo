@@ -123,6 +123,58 @@ def emit(state_path, outbox_path, *, min_severity="low", now=None):
     }
 
 
+def pending(outbox_path):
+    delivered = {str(row.get("alert_id") or "") for row in _load_outbox(Path(outbox_path))
+                 if row.get("record_type") == "delivery"
+                 and (row.get("notification") or {}).get("status") == "delivered"}
+    return [row for row in _load_outbox(Path(outbox_path))
+            if row.get("record_type") != "delivery" and row.get("alert_id") not in delivered]
+
+
+def deliver(outbox_path, sender):
+    outbox_path = Path(outbox_path)
+    delivered = 0
+    failed = 0
+    with monitor_state._locked(outbox_path):
+        for alert in pending(outbox_path):
+            row = {"schema": SCHEMA, "record_type": "delivery",
+                   "alert_id": alert["alert_id"], "created_at": _stamp()}
+            try:
+                receipt = sender(dict(alert))
+                if not str(receipt or "").strip():
+                    raise ValueError("delivery receipt is required")
+            except Exception as exc:
+                row["notification"] = {
+                    "status": "failed", "channel": "injected_adapter",
+                    "external_delivery_attempted": True,
+                    "external_delivery_confirmed": False,
+                    "host_agent_awake": False,
+                    "error": "%s: %s" % (type(exc).__name__, str(exc)[:200]),
+                }
+                failed += 1
+            else:
+                row["notification"] = {
+                    "status": "delivered", "channel": "injected_adapter",
+                    "external_delivery_attempted": True,
+                    "external_delivery_confirmed": True,
+                    "host_agent_awake": False,
+                    "receipt": str(receipt or ""),
+                }
+                delivered += 1
+            with outbox_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+    return {
+        "schema": "verovo.spend-alert-delivery-batch/1",
+        "delivered": delivered, "failed": failed,
+        "pending_local_delivery": len(pending(outbox_path)),
+        "external_delivery_attempted": bool(delivered or failed),
+        "external_delivery_confirmed": bool(delivered),
+        "host_agent_awake": False,
+    }
+
+
 def render(payload):
     return "\n".join([
         "本地费用告警：新增 %d；待本地交付 %d。" % (

@@ -50,6 +50,38 @@ class MonitorAlertsTest(unittest.TestCase):
         self.assertFalse(alert["notification"]["external_delivery_confirmed"])
         self.assertFalse(alert["notification"]["host_agent_awake"])
 
+    def test_delivery_receipt_is_persistent_and_failed_delivery_stays_pending(self):
+        monitor_alerts.emit(self.state, self.outbox, now="2026-11-09T12:01:00Z")
+        got = monitor_alerts.deliver(self.outbox, lambda alert: {"receipt": "offline-alert-1"})
+        self.assertEqual(1, got["delivered"])
+        self.assertEqual(0, got["pending_local_delivery"])
+        self.assertEqual(0, monitor_alerts.deliver(
+            self.outbox, lambda alert: self.fail("delivered twice"))["delivered"])
+        self.assertEqual(2, len(self.lines()))
+        other = self.root / "failed-alerts.jsonl"
+        monitor_alerts.emit(self.state, other, now="2026-11-09T12:01:00Z")
+        def fail(alert):
+            raise RuntimeError("offline adapter unavailable")
+        got = monitor_alerts.deliver(other, fail)
+        self.assertEqual(1, got["failed"])
+        self.assertEqual(1, got["pending_local_delivery"])
+
+    def test_empty_delivery_receipt_remains_pending(self):
+        monitor_alerts.emit(self.state, self.outbox, now="2026-11-09T12:01:00Z")
+        got = monitor_alerts.deliver(self.outbox, lambda alert: None)
+        self.assertEqual(1, got["failed"])
+        self.assertEqual(0, got["delivered"])
+        self.assertEqual(1, got["pending_local_delivery"])
+        self.assertEqual(1, len(monitor_alerts.pending(self.outbox)))
+
+    def test_cli_lists_pending_notifications(self):
+        monitor_alerts.emit(self.state, self.outbox, now="2026-11-09T12:01:00Z")
+        command = [sys.executable, str(ROOT / "healthcheck/verovo"), "monitor", "pending",
+                   "--out", str(self.outbox), "--json"]
+        result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(1, json.loads(result.stdout)["pending_local_delivery"])
+
     def test_repeated_track_does_not_spam_the_same_active_anomaly(self):
         monitor_alerts.emit(self.state, self.outbox, now="2026-11-09T12:01:00Z")
         monitor_state.track(self.records, self.state, now="2026-11-09T13:00:00Z")

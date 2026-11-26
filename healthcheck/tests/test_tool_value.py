@@ -8,7 +8,11 @@ from verovo_healthcheck import tool_value
 
 def task(task_id, group, success, cost, retry="0"):
     return {"task_id": task_id, "group": group, "success": success,
-            "cost": cost, "retry_cost": retry}
+            "cost": cost, "retry_cost": retry,
+            "comparable_group": "research-v1", "currency": "USD",
+            "task_type": "research", "acceptance_rubric_ref": "rubric-v1",
+            "success_evidence_ref": "acceptance:" + task_id,
+            "cost_basis": "canonical_task_economics"}
 
 
 class ToolValueTest(unittest.TestCase):
@@ -55,6 +59,32 @@ class ToolValueTest(unittest.TestCase):
         tasks = tool_value.load_tasks(self.write(rows))
         payload = tool_value.analyze(tasks)
         self.assertEqual("insufficient_evidence", payload["status"])
+
+    def test_mixed_currencies_are_incomparable_before_statistics(self):
+        rows = [task("t1", "treatment", "true", "1.0"),
+                task("c1", "control", "true", "1.0")]
+        rows[0]["currency"] = "EUR"
+        payload = tool_value.analyze(tool_value.load_tasks(self.write(rows)))
+        self.assertEqual("incomparable", payload["status"])
+        self.assertIn("CURRENCY_MISMATCH", payload["eligibility"]["reason_codes"])
+        self.assertNotIn("difference", payload)
+
+    def test_duplicate_task_in_one_arm_is_incomparable(self):
+        rows = [task("same", "treatment", "true", "1.0"),
+                task("same", "treatment", "true", "1.0"),
+                task("c1", "control", "true", "1.0")]
+        payload = tool_value.analyze(tool_value.load_tasks(self.write(rows)))
+        self.assertEqual("incomparable", payload["status"])
+        self.assertIn("DUPLICATE_TASK", payload["eligibility"]["reason_codes"])
+        self.assertNotIn("difference", payload)
+
+    def test_success_without_acceptance_evidence_is_incomparable(self):
+        rows = [task("t1", "treatment", "true", "1.0"),
+                task("c1", "control", "false", "1.0")]
+        rows[0]["success_evidence_ref"] = ""
+        payload = tool_value.analyze(tool_value.load_tasks(self.write(rows)))
+        self.assertEqual("incomparable", payload["status"])
+        self.assertIn("SUCCESS_EVIDENCE_MISSING", payload["eligibility"]["reason_codes"])
 
     def test_missing_cost_is_rejected(self):
         rows = [{"task_id": "t1", "group": "treatment", "success": "true"}]

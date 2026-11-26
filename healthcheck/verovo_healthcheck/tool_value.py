@@ -84,6 +84,10 @@ def load_tasks(path, *, group_col="group", success_col="success",
             "observed_at": str(row.get("observed_at") or "").strip(),
             "currency": str(row.get("currency") or "").strip().upper(),
             "task_type": str(row.get("task_type") or "").strip(),
+            "acceptance_rubric_ref": str(row.get("acceptance_rubric_ref") or "").strip(),
+            "success_evidence_ref": str(row.get("success_evidence_ref") or "").strip(),
+            "cost_basis": str(row.get("cost_basis") or "").strip(),
+            "quality_score": _dec(row.get("quality_score")),
         })
     return tasks
 
@@ -110,15 +114,59 @@ def _group(tasks, name):
     return result
 
 
+def _eligibility(tasks):
+    reasons = set()
+    fields = ("comparable_group", "currency", "task_type", "acceptance_rubric_ref")
+    values = {field: {str(task.get(field) or "") for task in tasks} for field in fields}
+    codes = {
+        "comparable_group": "COMPARABLE_GROUP_MISMATCH",
+        "currency": "CURRENCY_MISMATCH",
+        "task_type": "TASK_TYPE_MISMATCH",
+        "acceptance_rubric_ref": "ACCEPTANCE_RUBRIC_MISMATCH",
+    }
+    for field, observed in values.items():
+        if len(observed) != 1 or "" in observed:
+            reasons.add(codes[field])
+    seen = set()
+    for task in tasks:
+        key = (task["group"], task["task_id"])
+        if key in seen:
+            reasons.add("DUPLICATE_TASK")
+        seen.add(key)
+        if task["success"] and not task.get("success_evidence_ref"):
+            reasons.add("SUCCESS_EVIDENCE_MISSING")
+        if task.get("cost_basis") != "canonical_task_economics":
+            reasons.add("COST_BASIS_UNQUALIFIED")
+    return {
+        "eligible": not reasons,
+        "reason_codes": sorted(reasons),
+        "contract": {field: sorted(observed) for field, observed in values.items()},
+        "task_economics_basis": "canonical_task_economics",
+        "boundary": "Eligibility is a deterministic contract check, not proof that cited acceptance evidence is authentic.",
+    }
+
+
 def analyze(tasks: List[Dict[str, Any]], *, value_per_success=None) -> Dict[str, Any]:
     if not tasks:
         return {"schema": SCHEMA, "status": "no_data", "causality": "not_claimed",
                 "note": "no comparable tasks"}
+    eligibility = _eligibility(tasks)
+    if not eligibility["eligible"]:
+        return {
+            "schema": SCHEMA,
+            "status": "incomparable",
+            "eligibility": eligibility,
+            "treatment": {"n": sum(1 for task in tasks if task["group"] == "treatment")},
+            "control": {"n": sum(1 for task in tasks if task["group"] == "control")},
+            "causality": "unknown",
+            "note": "Eligibility failed before any comparative statistic or interval was calculated.",
+        }
     treatment = _group(tasks, "treatment")
     control = _group(tasks, "control")
     result = {
         "schema": SCHEMA,
         "status": "observed",
+        "eligibility": eligibility,
         "treatment": treatment,
         "control": control,
         "causality": "assisted" if control["n"] else "unknown",

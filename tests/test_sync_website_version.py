@@ -29,6 +29,16 @@ class SyncWebsiteVersionTests(unittest.TestCase):
         self.assertEqual(expected, module.sync_text(source, "1.2.3"))
         self.assertEqual(expected, module.sync_text(expected, "1.2.3"))
 
+    def test_prerelease_version_can_be_synchronized(self):
+        module = self.load_module()
+        source = (
+            '<strong data-release-version="cli">old</strong>'
+            '<span data-release-version="v-pypi">old</span>'
+        )
+        updated = module.sync_text(source, "1.2.3rc2")
+        self.assertIn("Current CLI release: v1.2.3rc2", updated)
+        self.assertIn("v1.2.3rc2 · PyPI", updated)
+
     def test_repository_labels_match_package_version(self):
         version = self.load_module().package_version()
         completed = subprocess.run(

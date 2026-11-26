@@ -56,17 +56,23 @@ verovo monitor notify --state STATE --out ALERTS_JSONL --severity medium
 verovo monitor resolution --file ALERTS_JSONL --alert ALERT_ID
 verovo monitor forecast --state STATE --contract FORECAST_JSON
 verovo budget check --state STATE --budget BUDGET
+verovo budget apply --adapter HOLD_ADAPTER --decision HOLD_DECISION --receipt-out NEW_RECEIPT
 verovo budget verify --state STATE --decision DECISION --receipt RECEIPT
 verovo budget resume --state STATE --budget BUDGET --recovery RECOVERY --out HISTORY_JSONL
 verovo optimize-verify --baseline BASE --final FINAL --contract CONTRACT
 verovo optimize-loop create --contract LOOP --out NEW_LOOP_DIR
 verovo optimize-loop tick|status --dir LOOP_DIR --at ISO_TIMESTAMP
 verovo optimize-loop pause|resume --dir LOOP_DIR --at ISO_TIMESTAMP
+verovo economics --case CASE --json OUT --markdown OUT_MD
 verovo human-baseline --human HUMAN_TASKS --agent AGENT_TASKS --contract HUMAN_BASELINE
 verovo experiment run --contract CONTROLLED_TASK_RUN --out NEW_RUN_DIR
 verovo tool-value --file TASKS --json
 verovo tool-value-export --file TASKS --design DESIGN --out OUT
 ```
+
+Monitoring prefers explicit event or operation+attempt identity and retains distinct revisions; content-hash-only identity remains uncertain. Unit-price drift compares the frozen baseline. Tool-value comparisons require one eligible task/currency/acceptance/cost contract before any interval or difference is calculated.
+
+`economics` returns an `ovo.task-result/1` projection alongside the deterministic amounts. `completed` requires complete cost and buyer-outcome coverage; open allocation or acceptance evidence remains `partial_result` with scoped gaps and a rerun action. The projection never upgrades ROI, payment authorization or realized savings.
 
 Monitoring and notification write only the named local state/outbox files. Alerts remain
 `pending_local_delivery`; no email, IM, webhook, external delivery confirmation or
@@ -76,8 +82,11 @@ remaining cost from explicit progress and same-task/currency observations; missi
 stays null, and the estimate is neither a cap nor a final bill. `monitor series`
 provides UTC minute/hour/day amounts and retry counts per currency, with half-open
 windows and no cross-currency total. Budget `allow/warn/hold/review`
-results are advisory signals: they do not enforce a gateway, stop an external
-runtime, or prove that spending stopped. `budget verify` reconciles a matching
+results are advisory signals until an explicit adapter is configured. `budget apply`
+requires named authorization plus a matching current hold decision and scope, executes
+the configured hold command and reads runtime state. APPLIED requires a stopped
+readback; it never implies complete subsequent-spend coverage or realized savings.
+`budget verify` reconciles a matching
 stopped runtime readback with complete subsequent-spend coverage. Positive post-stop
 charges fail and credits cannot hide them; incomplete evidence stays UNPROVABLE.
 This is local consistency evidence, not external-record authentication or runtime contact.

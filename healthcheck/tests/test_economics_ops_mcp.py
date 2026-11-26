@@ -209,9 +209,12 @@ class EconomicsOpsMcpTest(unittest.TestCase):
             return {"task_id": task_id, "group": "treatment", "success": "true",
                     "cost": str(cost), "retry_cost": "0", "comparable_group": "g1",
                     "observed_at": "2026-11-%02dT10:00:00Z" % day,
-                    "currency": "USD", "task_type": "research"}
+                    "currency": "USD", "task_type": "research",
+                    "acceptance_rubric_ref": "r1",
+                    "success_evidence_ref": "acceptance:" + task_id,
+                    "cost_basis": "canonical_task_economics"}
         baseline = write("baseline.jsonl", [row("b1", 1, 4), row("b2", 2, 4)])
-        final = write("final.jsonl", [row("f1", 11, 3), row("f2", 12, 3)])
+        final = write("final.jsonl", [row("b1", 11, 3), row("b2", 12, 3)])
         contract = self.root / "review.json"
         contract.write_text(json.dumps({
             "schema": "verovo.optimization-review/1", "optimization_id": "o1", "action_ref": "a1",
@@ -235,6 +238,8 @@ class EconomicsOpsMcpTest(unittest.TestCase):
             "task_id": "t1", "group": "treatment", "success": "true", "cost": "2.50",
             "retry_cost": "0", "comparable_group": "research-v1",
             "observed_at": "2026-11-21T10:00:00Z", "currency": "USD", "task_type": "research",
+            "acceptance_rubric_ref": "rubric-1", "success_evidence_ref": "acceptance:t1",
+            "cost_basis": "canonical_task_economics",
         }) + "\n", encoding="utf-8")
         design = self.root / "design.json"
         design.write_text(json.dumps({

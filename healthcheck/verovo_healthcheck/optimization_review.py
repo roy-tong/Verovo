@@ -53,6 +53,11 @@ def _validate_contract(spec):
     drop = _dec(spec["quality_guardrail"].get("max_success_rate_drop"), "max_success_rate_drop")
     if drop < 0 or drop > 1:
         raise ValueError("max_success_rate_drop must be between 0 and 1")
+    quality_drop = spec["quality_guardrail"].get("max_quality_score_drop")
+    if quality_drop is not None:
+        quality_drop = _dec(quality_drop, "max_quality_score_drop")
+        if quality_drop < 0:
+            raise ValueError("max_quality_score_drop must be non-negative")
     baseline_window = _validate_window(spec.get("baseline_window"), "baseline_window")
     final_window = _validate_window(spec.get("final_window"), "final_window")
     if final_window[0] <= baseline_window[1]:
@@ -61,7 +66,7 @@ def _validate_contract(spec):
         effective = _instant(spec["change_effective_at"])
         if effective <= baseline_window[1] or effective > final_window[0]:
             raise ValueError("change_effective_at must follow baseline_window and precede final observations")
-    return minimum, drop
+    return minimum, drop, quality_drop
 
 
 def _period(tasks, spec, window_name):
@@ -77,12 +82,25 @@ def _period(tasks, spec, window_name):
             raise ValueError("task %s is outside %s" % (row["task_id"], window_name))
         if str(row.get("currency") or "").upper() != str(spec["currency"]).upper():
             raise ValueError("task currency differs from the optimization contract")
+        if str(row.get("acceptance_rubric_ref") or "") != str(spec["acceptance_rubric_ref"]):
+            raise ValueError("task acceptance rubric differs from the optimization contract")
+        if row.get("success") and not str(row.get("success_evidence_ref") or "").strip():
+            raise ValueError("successful task needs success_evidence_ref")
+        if row.get("cost_basis") != "canonical_task_economics":
+            raise ValueError("task cost must use canonical_task_economics")
         selected.append(row)
     return selected
 
 
+def _mean_quality(rows):
+    values = [row.get("quality_score") for row in rows]
+    if not values or any(value is None for value in values):
+        return None
+    return sum(values, Decimal("0")) / len(values)
+
+
 def evaluate(baseline_tasks, final_tasks, spec):
-    minimum, max_drop = _validate_contract(spec)
+    minimum, max_drop, max_quality_drop = _validate_contract(spec)
     baseline_rows = _period(baseline_tasks, spec, "baseline_window")
     final_rows = _period(final_tasks, spec, "final_window")
     baseline = tool_value._group(baseline_rows, "treatment")
@@ -97,6 +115,13 @@ def evaluate(baseline_tasks, final_tasks, spec):
             or "" in baseline_groups or "" in final_groups
             or baseline_groups != final_groups):
         raise ValueError("same_task_set requires one matching non-empty comparable_group")
+    if comparability.get("same_task_set") is True \
+            and len(baseline_rows) >= minimum and len(final_rows) >= minimum:
+        baseline_ids = [row["task_id"] for row in baseline_rows]
+        final_ids = [row["task_id"] for row in final_rows]
+        if len(set(baseline_ids)) != len(baseline_ids) or len(set(final_ids)) != len(final_ids) \
+                or set(baseline_ids) != set(final_ids):
+            raise ValueError("same_task_set requires the same task ids in both periods")
 
     baseline_cost = _dec(baseline["cost_per_task"]) if baseline["cost_per_task"] else None
     final_cost = _dec(final["cost_per_task"]) if final["cost_per_task"] else None
@@ -111,6 +136,13 @@ def evaluate(baseline_tasks, final_tasks, spec):
     final_rate = final["success_rate"]
     rate_change = final_rate - baseline_rate if baseline_rate is not None and final_rate is not None else None
     quality_drop = -rate_change if rate_change is not None and rate_change < 0 else Decimal("0")
+    baseline_quality = _mean_quality(baseline_rows)
+    final_quality = _mean_quality(final_rows)
+    quality_score_change = (final_quality - baseline_quality
+                            if baseline_quality is not None and final_quality is not None else None)
+    quality_score_drop = (-quality_score_change
+                          if quality_score_change is not None and quality_score_change < 0 else Decimal("0"))
+    quality_score_unknown = max_quality_drop is not None and quality_score_change is None
 
     reasons = []
     effective_known = bool(spec.get("change_effective_at"))
@@ -123,10 +155,16 @@ def evaluate(baseline_tasks, final_tasks, spec):
         reasons.append("NOT_COMPARABLE")
     if success_cost_change is None:
         reasons.append("COST_PER_SUCCESS_UNKNOWN")
+    if quality_score_unknown:
+        reasons.append("QUALITY_SCORE_UNKNOWN")
     if rate_change is not None and Decimal(str(quality_drop)) > max_drop:
         decision = "rollback"
         reasons.append("QUALITY_GUARDRAIL_BREACHED")
-    elif sufficient and comparable and effective_known and saving is not None and saving > 0 \
+    elif max_quality_drop is not None and quality_score_drop > max_quality_drop:
+        decision = "rollback"
+        reasons.append("QUALITY_GUARDRAIL_BREACHED")
+    elif sufficient and comparable and effective_known and not quality_score_unknown \
+            and saving is not None and saving > 0 \
             and success_cost_change is not None and success_cost_change <= 0:
         decision = "keep"
         reasons.append("OBSERVED_COST_IMPROVEMENT_WITHIN_QUALITY_GUARDRAIL")
@@ -155,6 +193,8 @@ def evaluate(baseline_tasks, final_tasks, spec):
         "observed_change": {
             "cost_per_task_saving": _money(saving) if saving is not None else None,
             "success_rate_change": round(rate_change, 4) if rate_change is not None else None,
+            "quality_score_change": (round(float(quality_score_change), 4)
+                                     if quality_score_change is not None else None),
             "cost_per_success_change": _money(success_cost_change) if success_cost_change is not None else None,
         },
         "baseline": baseline,

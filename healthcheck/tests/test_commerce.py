@@ -47,7 +47,8 @@ def event(**overrides):
 
 
 def load_fixtures():
-    schema = json.loads(open(SCHEMA_PATH, encoding="utf-8").read())
+    with open(SCHEMA_PATH, encoding="utf-8") as handle:
+        schema = json.loads(handle.read())
     events = cm.load_events(os.path.join(FIXTURES, "agent-events.jsonl"), schema)
     orders = cm.load_orders(os.path.join(FIXTURES, "merchant-orders.csv"))
     payments = cm.load_payments(os.path.join(FIXTURES, "merchant-payments.csv"))
@@ -85,7 +86,8 @@ class TestF24Baseline(unittest.TestCase):
 
 class TestF21ModeSegregation(unittest.TestCase):
     def setUp(self):
-        self.schema = json.loads(open(SCHEMA_PATH, encoding="utf-8").read())
+        with open(SCHEMA_PATH, encoding="utf-8") as handle:
+            self.schema = json.loads(handle.read())
         self.paths = []
 
     def tearDown(self):
@@ -129,7 +131,8 @@ class TestF21ModeSegregation(unittest.TestCase):
 
 class TestF22DecisionObservation(unittest.TestCase):
     def setUp(self):
-        self.schema = json.loads(open(SCHEMA_PATH, encoding="utf-8").read())
+        with open(SCHEMA_PATH, encoding="utf-8") as handle:
+            self.schema = json.loads(handle.read())
 
     def test_observed_merchants_field_not_candidate_set(self):
         # The schema has observed_merchants and has no candidate_set anywhere.
@@ -224,7 +227,8 @@ class TestF26NamingLint(unittest.TestCase):
 
 class TestF27Governance(unittest.TestCase):
     def setUp(self):
-        self.schema = json.loads(open(SCHEMA_PATH, encoding="utf-8").read())
+        with open(SCHEMA_PATH, encoding="utf-8") as handle:
+            self.schema = json.loads(handle.read())
         self.paths = []
 
     def tearDown(self):

@@ -10,7 +10,11 @@ from verovo_healthcheck import tool_value
 
 def task(task_id, group, success):
     return {"task_id": task_id, "group": group, "success": success,
-            "cost": "1.0", "retry_cost": "0"}
+            "cost": "1.0", "retry_cost": "0",
+            "comparable_group": "research-v1", "currency": "USD",
+            "task_type": "research", "acceptance_rubric_ref": "rubric-v1",
+            "success_evidence_ref": "acceptance:" + task_id,
+            "cost_basis": "canonical_task_economics"}
 
 
 class ToolValueUncertaintyTest(unittest.TestCase):

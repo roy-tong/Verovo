@@ -29,6 +29,24 @@ def _record_id(record):
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _identity(record):
+    content_hash = _record_id(record)
+    source = str(record.get("source") or "")
+    event_id = str(record.get("event_id") or record.get("supplier_event_id") or "")
+    operation_id = str(record.get("operation_id") or "")
+    attempt_id = str(record.get("attempt_id") or "")
+    if event_id:
+        identity = "event\0%s\0%s" % (source, event_id)
+        basis = "event_id"
+    elif operation_id and attempt_id:
+        identity = "attempt\0%s\0%s\0%s" % (source, operation_id, attempt_id)
+        basis = "operation_attempt_id"
+    else:
+        return content_hash, "content_hash", content_hash, str(record.get("revision") or "")
+    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    return "id:" + digest, basis, content_hash, str(record.get("revision") or "")
+
+
 def _anomaly_id(anomaly):
     canonical = json.dumps(anomaly, ensure_ascii=False, sort_keys=True,
                            separators=(",", ":"))
@@ -90,17 +108,38 @@ def track(records, state_path, *, min_days=7, z_threshold=3.5,
     stamp = str(now or _now())
     with _locked(path):
         state = _load(path)
-        known = {entry["record_id"] for entry in state["records"]}
+        known = {entry["record_id"]: entry for entry in state["records"]}
         added = []
+        revised = []
+        duplicates = 0
         for record in records:
-            record_id = _record_id(record)
-            if record_id in known:
+            record_id, basis, content_hash, revision = _identity(record)
+            existing = known.get(record_id)
+            if existing is not None:
+                previous_hash = existing.get("content_hash") or _record_id(existing["record"])
+                if previous_hash == content_hash:
+                    duplicates += 1
+                    continue
+                previous_revision = str(existing.get("revision") or "")
+                if not revision or revision == previous_revision:
+                    raise ValueError(
+                        "event identity %s changed without a distinct revision" % record_id)
+                history = existing.setdefault("revision_history", [])
+                history.append({
+                    "record": existing["record"],
+                    "content_hash": previous_hash,
+                    "revision": previous_revision,
+                })
+                existing.update(record=record, content_hash=content_hash,
+                                revision=revision, identity_basis=basis)
+                revised.append(existing)
                 continue
-            entry = {"record_id": record_id, "record": record}
+            entry = {"record_id": record_id, "record": record,
+                     "content_hash": content_hash, "revision": revision,
+                     "identity_basis": basis}
             state["records"].append(entry)
-            known.add(record_id)
+            known[record_id] = entry
             added.append(entry)
-        duplicates = len(records) - len(added)
         all_records = [entry["record"] for entry in state["records"]]
 
         if freeze:
@@ -109,6 +148,8 @@ def track(records, state_path, *, min_days=7, z_threshold=3.5,
                 "frozen_at": stamp,
                 "through": max((row["observed_at"] for row in all_records), default=""),
                 "record_ids": sorted(known),
+                "record_hashes": {record_id: entry.get("content_hash") or _record_id(entry["record"])
+                                  for record_id, entry in known.items()},
                 "payload": payload,
             }
             result = monitor.report(all_records, payload, [])
@@ -124,8 +165,12 @@ def track(records, state_path, *, min_days=7, z_threshold=3.5,
         else:
             frozen = state["baseline"]
             baseline_ids = set(frozen.get("record_ids") or [])
+            baseline_hashes = frozen.get("record_hashes") or {}
             pending = [entry for entry in state["records"]
-                       if entry["record_id"] not in baseline_ids]
+                       if entry["record_id"] not in baseline_ids
+                       or (entry["record_id"] in baseline_hashes
+                           and baseline_hashes[entry["record_id"]] != (
+                               entry.get("content_hash") or _record_id(entry["record"])))]
             detection = [entry["record"] for entry in pending]
             payload = frozen["payload"]
             found = monitor.anomalies(
@@ -149,7 +194,11 @@ def track(records, state_path, *, min_days=7, z_threshold=3.5,
             result["baseline_through"] = through
         result.update({
             "new_records": len(added),
+            "revised_records": len(revised),
             "duplicate_records": duplicates,
+            "identity_uncertain_records": sum(
+                1 for entry in state["records"]
+                if (entry.get("identity_basis") or "content_hash") == "content_hash"),
             "state_records": len(state["records"]),
             "late_records": late_records,
             "state_schema": STATE_SCHEMA,

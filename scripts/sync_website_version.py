@@ -16,7 +16,7 @@ LABELS = {
 
 
 def package_version(path: Path = VERSION_FILE) -> str:
-    match = re.search(r'^version\s*=\s*["\'](\d+\.\d+\.\d+)["\']\s*$',
+    match = re.search(r'^version\s*=\s*["\'](\d+\.\d+\.\d+(?:rc\d+)?)["\']\s*$',
                       path.read_text(encoding="utf-8"), re.M)
     if not match:
         raise ValueError("healthcheck/pyproject.toml has no semantic project version")
@@ -24,8 +24,8 @@ def package_version(path: Path = VERSION_FILE) -> str:
 
 
 def sync_text(text: str, version: str) -> str:
-    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
-        raise ValueError("version must be MAJOR.MINOR.PATCH")
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:rc\d+)?", version):
+        raise ValueError("version must be MAJOR.MINOR.PATCH with an optional rcN suffix")
     updated = text
     for kind, template in LABELS.items():
         pattern = re.compile(
