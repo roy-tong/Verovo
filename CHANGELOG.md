@@ -1,3 +1,9 @@
+## 0.20.1rc4 — 2026-11-26
+
+### Fixed
+
+- Distribution metadata now reads `verovo_healthcheck.__version__`, so an installed wheel and `verovo --version` report the same prerelease instead of retaining the previous stable runtime version.
+
 ## 0.20.1rc3 — 2026-11-26
 
 ### Fixed
