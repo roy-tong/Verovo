@@ -1571,9 +1571,12 @@ def cmd_budget(args) -> int:
 def cmd_tool_value(args) -> int:
     """Comparable task groups: success rate and cost per success, never call-share."""
     try:
-        tasks = tool_value_mod.load_tasks(
-            args.file, group_col=args.group_col, success_col=args.success_col,
-            cost_col=args.cost_col, retry_col=args.retry_col)
+        if bool(args.economics_case) == bool(args.file):
+            raise ValueError("choose exactly one of --economics-case or --file")
+        tasks = (tool_value_mod.load_economics(args.economics_case) if args.economics_case
+                 else tool_value_mod.load_tasks(
+                     args.file, group_col=args.group_col, success_col=args.success_col,
+                     cost_col=args.cost_col, retry_col=args.retry_col))
         payload = tool_value_mod.analyze(tasks, value_per_success=args.value_per_success)
         print(json.dumps(payload, ensure_ascii=False, indent=2)
               if args.json else tool_value_mod.render(payload))
@@ -2730,7 +2733,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_tv = sub.add_parser(
         "tool-value",
         help="compare comparable task groups on success rate and cost per success; no call-share attribution")
-    p_tv.add_argument("--file", required=True, help="task CSV or JSONL")
+    p_tv.add_argument("--file", help="declared task CSV or JSONL (compatibility input)")
+    p_tv.add_argument("--economics-case", help="canonical task-economics case JSON; costs and acceptance are derived")
     p_tv.add_argument("--group-col", default="group", dest="group_col")
     p_tv.add_argument("--success-col", default="success", dest="success_col")
     p_tv.add_argument("--cost-col", default="cost", dest="cost_col")

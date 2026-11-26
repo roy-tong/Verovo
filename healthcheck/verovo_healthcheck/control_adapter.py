@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime
 from pathlib import Path
 
 SCHEMA = "verovo.spend-control-adapter/1"
@@ -36,6 +37,16 @@ def _validate(spec, decision):
         raise ValueError("hold decision scope does not match the adapter")
 
 
+def _instant(value):
+    try:
+        parsed = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("control decision and readback need ISO-8601 timestamps") from exc
+    if parsed.tzinfo is None:
+        raise ValueError("control decision and readback timestamps need a timezone")
+    return parsed
+
+
 def _call(runner, argv, spec):
     try:
         outcome = runner(argv=argv, cwd=str(Path(spec.get("working_directory") or ".")),
@@ -65,8 +76,21 @@ def apply(spec, decision, *, process_runner=None):
             observed = candidate
     except (ValueError, UnicodeDecodeError):
         observed = {}
+    verification_errors = []
+    if observed.get("budget_id") != spec["budget_id"]:
+        verification_errors.append("budget_mismatch")
+    if (observed.get("scope") or {}) != (spec.get("scope") or {}):
+        verification_errors.append("scope_mismatch")
+    if observed.get("action") != "hold":
+        verification_errors.append("action_mismatch")
+    try:
+        if _instant(observed.get("observed_at")) < _instant(decision.get("evaluated_at")):
+            verification_errors.append("stale_readback")
+    except ValueError:
+        verification_errors.append("invalid_readback_time")
     readback_valid = bool(str(observed.get("observed_at") or "").strip()
-                          and str(observed.get("source_ref") or "").strip())
+                          and str(observed.get("source_ref") or "").strip()
+                          and not verification_errors)
     applied = bool(not action.get("error") and action.get("exit_code") == 0
                    and not readback.get("error") and readback.get("exit_code") == 0
                    and readback_valid and observed.get("status") == "stopped")
@@ -79,8 +103,12 @@ def apply(spec, decision, *, process_runner=None):
         "budget_id": spec["budget_id"],
         "requested_action": "hold",
         "scope": spec.get("scope") or {},
+        "control_verified": applied,
         "readback": {
             "status": str(observed.get("status") or "unknown"),
+            "budget_id": str(observed.get("budget_id") or ""),
+            "scope": observed.get("scope") if isinstance(observed.get("scope"), dict) else {},
+            "action": str(observed.get("action") or ""),
             "observed_at": str(observed.get("observed_at") or ""),
             "source_type": "runtime_readback",
             "source_ref": str(observed.get("source_ref") or ""),
@@ -95,8 +123,9 @@ def apply(spec, decision, *, process_runner=None):
         "external_runtime_contacted": spec.get("external_runtime") is True,
         "action": {"exit_code": action.get("exit_code"), "error": str(action.get("error") or "")},
         "readback_exit_code": readback.get("exit_code"),
+        "verification_errors": verification_errors,
         "receipt": receipt,
         "subsequent_spend_verified": False,
         "automatic_retry": False,
-        "boundary": "APPLIED means the configured command returned success and a stopped runtime readback. It does not prove complete post-stop spend coverage or realized savings; run budget verify separately.",
+        "boundary": "APPLIED means the configured command returned success and a stopped runtime readback with matching budget/scope/action and a non-stale observation. It does not prove complete post-stop spend coverage or realized savings; run budget verify separately.",
     }

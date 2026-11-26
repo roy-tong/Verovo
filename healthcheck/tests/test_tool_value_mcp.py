@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import _support
 
@@ -12,6 +13,7 @@ class ToolValueMcpTest(unittest.TestCase):
     def test_manifest_and_skill_expose_direct_tool_value_analysis(self):
         tool = next(row for row in mcp_server.TOOLS if row["name"] == "verovo_economics_ops")
         self.assertIn("tool_value_analyze", tool["inputSchema"]["properties"]["action"]["enum"])
+        self.assertIn("economics_case", tool["inputSchema"]["properties"])
         text = (Path(__file__).resolve().parents[2] /
                 "skills/verovo/SKILL.md").read_text(encoding="utf-8")
         self.assertIn("verovo tool-value --file TASKS --json", text)
@@ -40,6 +42,20 @@ class ToolValueMcpTest(unittest.TestCase):
         self.assertEqual("insufficient_evidence", payload["status"])
         self.assertIn("success_rate_ci95_newcombe", payload["difference"])
         self.assertEqual("no_automatic_winner", payload["difference"]["interpretation"])
+
+    def test_mcp_accepts_canonical_economics_case(self):
+        tasks = [{"task_id": "t1", "group": "treatment", "success": True, "cost": 2,
+                  "retry_cost": 0, "comparable_group": "research-v1", "currency": "USD",
+                  "task_type": "research", "acceptance_rubric_ref": "rubric-v1",
+                  "success_evidence_ref": "acceptance:t1", "cost_basis": "canonical_task_economics",
+                  "input_trust": "derived_canonical_task_economics"}]
+        with mock.patch.object(mcp_server.tool_value, "load_economics", return_value=tasks) as load:
+            result = mcp_server.call_tool("verovo_economics_ops", {
+                "action": "tool_value_analyze", "economics_case": "case.json"})
+        self.assertFalse(result.get("isError"), result)
+        load.assert_called_once_with("case.json")
+        payload = json.loads(result["content"][0]["text"])
+        self.assertEqual("derived_canonical_task_economics", payload["eligibility"]["input_trust"][0])
 
 
 if __name__ == "__main__":

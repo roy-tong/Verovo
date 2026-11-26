@@ -722,6 +722,8 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
     financial_candidates = sum(1 for item in usage.values() if item.get("financialized") is True) + len(cost_items)
     cost_complete = bool(financial_candidates) and not unallocated and not coverage_unknown and not case_cost_open
 
+    outcome_evidence = {row["task_id"]: str(row.get("source_ref") or "")
+                        for row in outcome_rows if row.get("verification_status") == "verified"}
     rows: List[Dict[str, Any]] = []
     total_cost = Decimal("0")
     for task_id, task in tasks.items():
@@ -732,6 +734,13 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
         success = outcome_status[task_id]
         rows.append({
             "task_id": task_id, "type": task.get("type", ""),
+            "group": str(task.get("group") or ""),
+            "comparable_group": str(task.get("comparable_group") or ""),
+            "acceptance_rubric_ref": str(task.get("acceptance_rubric_ref") or ""),
+            "observed_at": str(task.get("observed_at") or ""),
+            "quality_score": task.get("quality_score"),
+            "retry_cost": str(task.get("retry_cost") or "0"),
+            "success_evidence_ref": outcome_evidence.get(task_id, ""),
             "direct_cost": str(direct_cost), "allocated_cost": str(shared_cost),
             "fully_loaded_cost": str(total),
             "cost_status": "attributed_subtotal" if not cost_complete else "complete",

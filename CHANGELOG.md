@@ -1,3 +1,11 @@
+## Unreleased
+
+### Fixed
+
+- Monitoring accepts only provably newer integer-sequence or timezone-aware timestamp revisions; historical replay and unordered revisions cannot overwrite current events.
+- `tool-value --economics-case` and MCP `economics_case` derive costs and buyer acceptance from Canonical Task Economics. Incomplete coverage is refused and declared CSV/JSONL inputs carry a separate trust label.
+- Budget `APPLIED` now binds runtime readback to the requested budget, scope and hold action, and requires an observation no earlier than the control decision. Wrong-scope and stale readbacks remain `UNPROVABLE`.
+
 ## 0.20.1rc2 — 2026-11-26
 
 ### Fixed

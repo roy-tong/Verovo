@@ -47,6 +47,19 @@ def _identity(record):
     return "id:" + digest, basis, content_hash, str(record.get("revision") or "")
 
 
+def _revision_order(value):
+    text = str(value or "").strip()
+    if text.isdigit():
+        return "sequence", int(text)
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return "timestamp", parsed
+
+
 def _anomaly_id(anomaly):
     canonical = json.dumps(anomaly, ensure_ascii=False, sort_keys=True,
                            separators=(",", ":"))
@@ -124,6 +137,14 @@ def track(records, state_path, *, min_days=7, z_threshold=3.5,
                 if not revision or revision == previous_revision:
                     raise ValueError(
                         "event identity %s changed without a distinct revision" % record_id)
+                previous_order = _revision_order(previous_revision)
+                current_order = _revision_order(revision)
+                if previous_order is None or current_order is None:
+                    raise ValueError("event identity %s has no provable revision order" % record_id)
+                if previous_order[0] != current_order[0] or current_order[1] < previous_order[1]:
+                    raise ValueError("event identity %s rejected an older revision replay" % record_id)
+                if current_order[1] == previous_order[1]:
+                    raise ValueError("event identity %s changed at the same revision" % record_id)
                 history = existing.setdefault("revision_history", [])
                 history.append({
                     "record": existing["record"],

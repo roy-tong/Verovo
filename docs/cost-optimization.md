@@ -182,8 +182,14 @@ The result is `estimate_not_cap`: future retries, price changes, unfinished work
 ## Statistical uncertainty in tool-value comparisons
 
 ```bash
+# Preferred: derive costs and buyer acceptance from Canonical Task Economics
+verovo tool-value --economics-case task-case.json --json
+
+# Compatibility: declared CSV/JSONL input; eligibility marks the lower trust level
 verovo tool-value --file comparable-tasks.jsonl --json
 ```
+
+Canonical input refuses incomplete cost coverage or unknown buyer acceptance instead of trusting a caller-declared `cost_basis` string. The task rows carry group, comparable group, rubric, observation time and success evidence from the canonical case.
 
 Each non-empty arm reports a Wilson 95% interval for task success rate. When both arms are present, the treatment-minus-control success difference also reports a Newcombe 95% interval and whether it covers zero. Empty arms keep null intervals; fewer than 30 tasks per arm remains `insufficient_evidence`, and no interval automatically selects a tool winner.
 

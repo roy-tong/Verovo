@@ -87,6 +87,21 @@ class MonitorStateTest(unittest.TestCase):
         saved = json.loads(self.state.read_text(encoding="utf-8"))
         self.assertEqual(["1", "2"], sorted(entry["record"]["amount"] for entry in saved["records"]))
 
+    def test_historical_revision_replay_cannot_replace_current_event(self):
+        source = Path(self.tmp.name) / "identified.jsonl"
+        first = dict(row(9, amount="1"), event_id="event-a", revision="1")
+        source.write_text(json.dumps(first) + "\n", encoding="utf-8")
+        monitor_state.track(monitor.load_records(source), self.state)
+        revised = dict(first, amount="2", revision="2")
+        source.write_text(json.dumps(revised) + "\n", encoding="utf-8")
+        monitor_state.track(monitor.load_records(source), self.state)
+        source.write_text(json.dumps(first) + "\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "older revision"):
+            monitor_state.track(monitor.load_records(source), self.state)
+        saved = json.loads(self.state.read_text(encoding="utf-8"))
+        self.assertEqual("2", saved["records"][0]["record"]["amount"])
+        self.assertEqual("2", saved["records"][0]["revision"])
+
     def test_corrupt_state_fails_without_replacing_bytes(self):
         self.state.write_text("not-json", encoding="utf-8")
         with self.assertRaises(ValueError):

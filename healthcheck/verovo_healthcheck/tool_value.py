@@ -12,7 +12,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import incrementality
+from . import incrementality, task_economics
 
 
 SCHEMA = "verovo.tool-value/1"
@@ -88,8 +88,43 @@ def load_tasks(path, *, group_col="group", success_col="success",
             "success_evidence_ref": str(row.get("success_evidence_ref") or "").strip(),
             "cost_basis": str(row.get("cost_basis") or "").strip(),
             "quality_score": _dec(row.get("quality_score")),
+            "input_trust": "declared_csv_or_jsonl",
         })
     return tasks
+
+
+def tasks_from_economics(result: Dict[str, Any]) -> List[Dict[str, Any]]:
+    tasks = []
+    currency = str(result.get("currency") or "").upper()
+    for row in result.get("tasks") or []:
+        if row.get("cost_status") != "complete":
+            raise ValueError("cost coverage is incomplete for task %s" % row.get("task_id"))
+        if not isinstance(row.get("verified_success"), bool):
+            raise ValueError("buyer acceptance is unknown for task %s" % row.get("task_id"))
+        cost = _dec(row.get("fully_loaded_cost"))
+        if cost is None:
+            raise ValueError("canonical task cost is missing for task %s" % row.get("task_id"))
+        tasks.append({
+            "task_id": str(row.get("task_id") or ""),
+            "group": str(row.get("group") or "").lower(),
+            "success": row["verified_success"],
+            "cost": cost,
+            "retry_cost": _dec(row.get("retry_cost")) or Decimal("0"),
+            "comparable_group": str(row.get("comparable_group") or ""),
+            "observed_at": str(row.get("observed_at") or ""),
+            "currency": currency,
+            "task_type": str(row.get("type") or ""),
+            "acceptance_rubric_ref": str(row.get("acceptance_rubric_ref") or ""),
+            "success_evidence_ref": str(row.get("success_evidence_ref") or ""),
+            "cost_basis": "canonical_task_economics",
+            "quality_score": _dec(row.get("quality_score")),
+            "input_trust": "derived_canonical_task_economics",
+        })
+    return tasks
+
+
+def load_economics(path) -> List[Dict[str, Any]]:
+    return tasks_from_economics(task_economics.evaluate(task_economics.load_case(path)))
 
 
 def _group(tasks, name):
@@ -142,7 +177,8 @@ def _eligibility(tasks):
         "reason_codes": sorted(reasons),
         "contract": {field: sorted(observed) for field, observed in values.items()},
         "task_economics_basis": "canonical_task_economics",
-        "boundary": "Eligibility is a deterministic contract check, not proof that cited acceptance evidence is authentic.",
+        "input_trust": sorted({str(task.get("input_trust") or "unknown") for task in tasks}),
+        "boundary": "Eligibility is a deterministic contract check, not proof that cited acceptance evidence is authentic. Canonical inputs are derived; CSV/JSONL inputs are declarations.",
     }
 
 

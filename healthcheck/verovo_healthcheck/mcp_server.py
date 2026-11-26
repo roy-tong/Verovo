@@ -109,6 +109,7 @@ TOOLS = [
                     "tool_value_analyze", "tool_value_export",
                 ]},
                 "file": {"type": "string", "description": "local usage/task JSONL or CSV path"},
+                "economics_case": {"type": "string", "description": "canonical task-economics case JSON for derived tool-value input"},
                 "state": {"type": "string", "description": "local monitoring state JSON path"},
                 "dir": {"type": "string", "description": "existing local optimization-loop directory"},
                 "at": {"type": "string", "description": "optimization-loop current timezone-aware ISO timestamp"},
@@ -249,7 +250,7 @@ def _run_economics_ops(args):
         "optimization_loop_resume": ("dir",),
         "human_baseline": ("human", "agent", "contract"),
         "experiment_run": ("contract", "out"),
-        "tool_value_analyze": ("file",),
+        "tool_value_analyze": (),
         "tool_value_export": ("file", "design", "out"),
     }
     if action not in required:
@@ -257,6 +258,8 @@ def _run_economics_ops(args):
     missing = [key for key in required[action] if not args.get(key)]
     if missing:
         return _err("%s requires: %s" % (action, ", ".join(missing)))
+    if action == "tool_value_analyze" and bool(args.get("file")) == bool(args.get("economics_case")):
+        return _err("tool_value_analyze requires exactly one of file or economics_case")
     if action in ("monitor_track", "monitor_freeze_baseline"):
         return _text(monitor_state.track_file(
             args["file"], args["state"],
@@ -308,7 +311,8 @@ def _run_economics_ops(args):
             return _text(optimization_loop.status(args["dir"], now=args.get("at") or ""))
         return _text(optimization_loop.set_paused(
             args["dir"], loop_action == "pause", now=args.get("at") or ""))
-    tasks = tool_value.load_tasks(args["file"])
+    tasks = (tool_value.load_economics(args["economics_case"]) if args.get("economics_case")
+             else tool_value.load_tasks(args["file"]))
     if action == "tool_value_analyze":
         return _text(tool_value.analyze(tasks))
     analysis = tool_value.analyze(tasks)
