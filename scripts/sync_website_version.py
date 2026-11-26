@@ -16,11 +16,22 @@ LABELS = {
 
 
 def package_version(path: Path = VERSION_FILE) -> str:
+    project = path.read_text(encoding="utf-8")
     match = re.search(r'^version\s*=\s*["\'](\d+\.\d+\.\d+(?:rc\d+)?)["\']\s*$',
-                      path.read_text(encoding="utf-8"), re.M)
-    if not match:
-        raise ValueError("healthcheck/pyproject.toml has no semantic project version")
-    return match.group(1)
+                      project, re.M)
+    if match:
+        return match.group(1)
+    dynamic = re.search(
+        r'^version\s*=\s*\{\s*attr\s*=\s*["\']([\w.]+)["\']\s*\}\s*$',
+        project, re.M)
+    if dynamic:
+        module = path.parent.joinpath(*dynamic.group(1).split(".")[:-1])
+        module = module / "__init__.py" if module.is_dir() else module.with_suffix(".py")
+        match = re.search(r'^__version__\s*=\s*["\'](\d+\.\d+\.\d+(?:rc\d+)?)["\']\s*$',
+                          module.read_text(encoding="utf-8"), re.M)
+        if match:
+            return match.group(1)
+    raise ValueError("healthcheck package has no semantic runtime version")
 
 
 def sync_text(text: str, version: str) -> str:
