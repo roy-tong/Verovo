@@ -27,7 +27,7 @@ Verovo is buyer-first. Financial correctness, control, delivery and economic val
 <!--OVO:verovo-stable-->pipx install verovo==0.20.0
 verovo review --sample<!--/OVO:verovo-stable-->
 # Preview
-<!--OVO:verovo-preview-->pipx install verovo==0.20.1rc2
+<!--OVO:verovo-preview-->pipx install verovo==0.20.1rc3
 verovo review --sample<!--/OVO:verovo-preview-->
 verovo review --sample --html buyer-review.html --json buyer-review.json
 
