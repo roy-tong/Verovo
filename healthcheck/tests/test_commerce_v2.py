@@ -356,9 +356,9 @@ class TestDashboardWave2(unittest.TestCase):
     def test_receipt_renders(self):
         from _support import FIXTURES_DIR
         import verovo_healthcheck.commerce as cm
-        schema = json.loads(open(os.path.join(
-            REPO_ROOT, "schemas", "commerce-profile.schema.json"),
-            encoding="utf-8").read())
+        with open(os.path.join(
+                REPO_ROOT, "schemas", "commerce-profile.schema.json"), encoding="utf-8") as handle:
+            schema = json.loads(handle.read())
         fix = os.path.join(FIXTURES_DIR, "commerce")
         events = cm.load_events(os.path.join(fix, "agent-events.jsonl"), schema)
         orders = cm.load_orders(os.path.join(fix, "merchant-orders.csv"))

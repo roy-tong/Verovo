@@ -48,6 +48,17 @@ def _rows(path) -> List[Dict[str, Any]]:
     return rows
 
 
+def _bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    if text in ("1", "true", "yes"):
+        return True
+    if text in ("", "0", "false", "no"):
+        return False
+    raise ValueError("retry must be 0/1, true/false or yes/no")
+
+
 def load_records(path) -> List[Dict[str, Any]]:
     records = []
     for index, row in enumerate(_rows(path), start=1):
@@ -72,8 +83,12 @@ def load_records(path) -> List[Dict[str, Any]]:
             "unit_price": str(unit_price) if unit_price is not None else None,
             "amount": str(amount),
             "currency": currency,
-            "retry": bool(row.get("retry")) if "retry" in row else False,
+            "retry": _bool(row.get("retry")) if "retry" in row else False,
             "attempt": str(row.get("attempt") or "").strip(),
+            "event_id": str(row.get("event_id") or row.get("supplier_event_id") or "").strip(),
+            "operation_id": str(row.get("operation_id") or "").strip(),
+            "attempt_id": str(row.get("attempt_id") or row.get("attempt") or "").strip(),
+            "revision": str(row.get("revision") or "").strip(),
             "source": str(row.get("source") or "").strip(),
         })
     return records
@@ -106,10 +121,17 @@ def baseline(records: List[Dict[str, Any]], *, min_days: int = 7) -> Dict[str, A
     for (tool, model, currency), amounts in sorted(groups.items()):
         daily = _daily(records, tool, model, currency)
         values = sorted(daily.values())
+        prices = sorted(Decimal(record["unit_price"]) for record in records
+                        if record["tool"] == tool and record["model"] == model
+                        and (record["currency"] or "unknown") == currency
+                        and record.get("unit_price"))
+        price_center = median([float(value) for value in prices]) if prices else None
         if len(values) < min_days:
             result.append({"tool": tool, "model": model, "currency": currency,
                            "status": "insufficient_baseline",
-                           "days": len(values), "required_days": min_days})
+                           "days": len(values), "required_days": min_days,
+                           "unit_price_median": price_center,
+                           "unit_price_records": len(prices)})
             continue
         center = median([float(value) for value in values])
         mad = median([abs(float(value) - center) for value in values])
@@ -120,6 +142,8 @@ def baseline(records: List[Dict[str, Any]], *, min_days: int = 7) -> Dict[str, A
             "daily_median": round(center, 6),
             "daily_mad": round(mad, 6),
             "records": len(amounts),
+            "unit_price_median": price_center,
+            "unit_price_records": len(prices),
         })
     return {"schema": SCHEMA, "groups": result,
             "currencies": sorted(currencies),
@@ -157,13 +181,14 @@ def anomalies(records: List[Dict[str, Any]], baseline_payload: Dict[str, Any], *
                   if record["tool"] == tool and record["model"] == model
                   and (record["currency"] or "unknown") == currency
                   and record["unit_price"]]
-        if prices:
-            center_price = median([float(value) for value in prices])
+        if prices and base.get("unit_price_median") is not None:
+            center_price = float(base["unit_price_median"])
             for price in sorted(set(prices)):
                 if center_price > 0 and abs(float(price) - center_price) / center_price >= price_drift:
                     found.append({
                         "schema": ANOMALY_SCHEMA, "kind": "unit_price_drift",
-                        "tool": tool, "model": model, "unit_price": str(price),
+                        "tool": tool, "model": model, "currency": currency,
+                        "unit_price": str(price),
                         "baseline_median": round(center_price, 6),
                         "severity": "medium",
                         "suggestion": "compare the approved rule/version and the vendor price sheet",

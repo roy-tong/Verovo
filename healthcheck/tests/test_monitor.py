@@ -56,6 +56,30 @@ class MonitorTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             monitor.load_records(path)
 
+    def test_uniform_price_increase_is_compared_with_frozen_baseline(self):
+        history = monitor.load_records(self.write([row(day, unit_price="1") for day in range(1, 9)]))
+        base = monitor.baseline(history)
+        current = monitor.load_records(self.write([row(9, amount="10", unit_price="2")]))
+        found = monitor.anomalies(current, base)
+        drifts = [item for item in found if item["kind"] == "unit_price_drift"]
+        self.assertEqual(1, len(drifts))
+        drift = drifts[0]
+        self.assertEqual(1.0, drift["baseline_median"])
+        self.assertEqual("2", drift["unit_price"])
+
+    def test_csv_retry_false_and_zero_are_not_true(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / "usage.csv"
+        path.write_text(
+            "observed_at,tool,amount,retry\n"
+            "2026-11-01T00:00:00Z,search,1,false\n"
+            "2026-11-01T00:01:00Z,search,1,0\n"
+            "2026-11-01T00:02:00Z,search,1,true\n",
+            encoding="utf-8")
+        records = monitor.load_records(path)
+        self.assertEqual([False, False, True], [row["retry"] for row in records])
+
     def test_report_keeps_currencies_separate(self):
         rows = [row(1), row(2, currency="EUR", amount="7")]
         records = monitor.load_records(self.write(rows))

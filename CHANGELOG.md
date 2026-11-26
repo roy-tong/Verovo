@@ -1,3 +1,18 @@
+## 0.20.1rc1 — 2026-11-26
+
+### Fixed
+
+- Closed the production share-flow file handle and six test-file handles, eliminating the previously observed ResourceWarning instances without suppressing warnings.
+- Alert delivery requires a non-empty adapter receipt; empty receipts remain failed and pending instead of being marked delivered.
+- Monitoring uses explicit event identity and revisions before content-hash fallback, freezes unit-price baselines and parses CSV retry booleans correctly.
+- Tool-value and optimization comparisons enforce task/currency/acceptance/cost eligibility before statistics and support multidimensional quality guardrails.
+
+### Added
+
+- `monitor pending` lists alerts without confirmed delivery. `monitor_alerts.deliver` appends receipt-bound delivery records and leaves failed delivery pending; the original anomaly remains unchanged.
+- `budget apply` provides a named-authorized hold command adapter with runtime readback and a separate receipt for subsequent-spend verification.
+- `economics` now includes an `ovo.task-result/1` projection. Complete cost and buyer-outcome coverage produces `completed`; attributed subtotals with open allocation or acceptance evidence produce `partial_result`, with scoped gaps and a rerun capability rather than an upgraded ROI or savings claim.
+
 ## v0.20.0 - 2026-11-26
 
 ### Added

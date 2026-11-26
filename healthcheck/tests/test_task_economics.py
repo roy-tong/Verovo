@@ -93,6 +93,39 @@ class TestTaskEconomics(unittest.TestCase):
         with self.assertRaisesRegex(econ.EconomicsError, "cross-currency"):
             econ.evaluate(case)
 
+    def test_open_financial_and_outcome_evidence_is_a_partial_task_result(self):
+        result = econ.evaluate(base_case())
+        self.assertIn("task_result", result)
+        projection = result["task_result"]
+        self.assertEqual("ovo.task-result/1", projection["schema"])
+        self.assertEqual("verovo", projection["product"])
+        self.assertEqual("case-1", projection["task_id"])
+        self.assertEqual("partial_result", projection["status"])
+        self.assertFalse(projection["user_decision_required"])
+        self.assertEqual("case-1", projection["resume_ref"])
+        self.assertTrue(projection["completed"])
+        self.assertIn("crm:1", projection["evidence_refs"])
+        scopes = {row["scope"] for row in projection["missing_conditions"]}
+        self.assertIn("cost_allocation", scopes)
+        self.assertIn("business_acceptance", scopes)
+        self.assertTrue(projection["next_actions"])
+
+    def test_complete_economics_has_no_blocking_missing_condition(self):
+        case = base_case()
+        case["tasks"] = [{"task_id": "t1", "type": "support"}]
+        case["runs"] = [{"run_id": "r1", "task_id": "t1"}]
+        case["usage"] = [case["usage"][0]]
+        case["cost_items"] = []
+        case["outcomes"] = [case["outcomes"][0]]
+        case["loss_events"] = []
+        result = econ.evaluate(case)
+        self.assertIn("task_result", result)
+        projection = result["task_result"]
+        self.assertEqual("completed", projection["status"])
+        self.assertFalse(projection["user_decision_required"])
+        self.assertFalse(any(row["blocking"] for row in projection["missing_conditions"]))
+        self.assertEqual([], projection["next_actions"])
+
     def test_no_verified_value_makes_roi_null(self):
         case = base_case()
         case["outcomes"] = [{"task_id": "t1", "status": "success",

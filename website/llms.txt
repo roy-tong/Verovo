@@ -1,59 +1,14 @@
-# Verovo
+# Verovo website entry
 
-> Know what your AI agents spent, whether the bill is right, and whether the spend was worth it. Verovo tracks AI spend, audits charges independently, prepares line-level buyer actions, and compares task costs with verified outcomes. Spend Monitoring, Control, Audit and Optimization remain distinct; real-time control and causal contribution are separate roadmap work.
+Verovo is now presented inside the unified OVO website, not as a separately styled homepage.
 
-## Start here
+- Unified product home: https://roy-tong.github.io/ovo/en.html
+- Real cases: https://roy-tong.github.io/ovo/cases.html
+- Engineering journal: https://roy-tong.github.io/ovo/journal.html
+- Get started: https://roy-tong.github.io/ovo/start.html
+- Verovo repository and full agent entry: https://github.com/roy-tong/Verovo (repo-root llms.txt)
+- Current capabilities: https://github.com/roy-tong/Verovo/blob/main/docs/feature-status.md
+- Task economics: https://github.com/roy-tong/Verovo/blob/main/docs/task-economics.md
+- Conformance: https://github.com/roy-tong/Verovo/tree/main/conformance
 
-- [Website](https://roy-tong.github.io/Verovo/): overview and local quickstart
-- [Services](https://roy-tong.github.io/Verovo/services.html): free measurement-run scope, inputs and turnaround
-- [FAQ（中文）](https://roy-tong.github.io/Verovo/faq.html): Chinese answers to common queries (AI bill checking, API cost recount, open-source reconciliation tools, AI-support billing disputes) with sourced numbers; FAQPage structured data
-- [Tool bill coverage](https://roy-tong.github.io/Verovo/tools.html): cataloged tool billing models for buyer tasks; provider work is a conditional extension. Cataloged is not live-validated.
-- [Healthcheck](https://github.com/roy-tong/Verovo/blob/main/healthcheck/README.md): local session checks, sharing and supported commands; install from PyPI `pipx install verovo`
-- [SDK](https://github.com/roy-tong/Verovo/blob/main/sdk/README.md): Provider SDK `@verovo/mcp` on npm, independently versioned
-- [Release notes](https://roy-tong.github.io/Verovo/releases.html): independent package versions and dated releases
-- [AI invoice reconciliation](https://roy-tong.github.io/Verovo/blog/ai-invoice-reconciliation.html): three-step method, seven failure modes and a free browser recount; the reproducible sample lives in `buyer-ledger/examples/ai-invoice-reconciliation`
-- [Per-resolution bills](https://roy-tong.github.io/Verovo/blog/resolution-bill-check.html): who attested each resolution, and how to check that bill locally
-- [Verovo technical blog](https://roy-tong.github.io/Verovo/blog/): deterministic replay, control domains and buyer evidence
-- [AI spend optimization method](https://roy-tong.github.io/Verovo/blog/ai-spend-optimization.html): Monitoring, Control, Audit and Optimization; cost per verified success; tool removal and replacement experiments; current L1–L3 versus future L4–L5 boundaries
-- [Deterministic replay for AI charges, with the unknowns intact](https://roy-tong.github.io/Verovo/blog/03-verovo-deterministic-replay-with-unknowns.html): counting grain, content-addressed revisions, Decimal arithmetic and OCR integrity
-- [A vendor export is not buyer evidence](https://roy-tong.github.io/Verovo/blog/06-verovo-a-vendor-export-is-not-buyer-evidence.html): provenance, outcome observer grades, completion axes and evidence-only handoffs
-
-## Measurement and evidence
-
-- [Core](https://github.com/roy-tong/Verovo/blob/main/standard/CORE.md): objects, grains and invariants
-- [Metrics](https://github.com/roy-tong/Verovo/blob/main/standard/METRICS.md): metric contracts
-- [VSS-1](https://github.com/roy-tong/Verovo/blob/main/standard/SETTLEMENT.md): settlement statement semantics
-- [Quality](https://github.com/roy-tong/Verovo/blob/main/standard/QUALITY.md): evidence and claim discipline
-- [Conformance pack](https://github.com/roy-tong/Verovo/blob/main/conformance/pack/README.md): supported checks and fixture requirements
-- [Claims index](https://roy-tong.github.io/Verovo/claims.html): dated reproductions, corrections and upstream responses
-- [Vocabularies](https://github.com/roy-tong/Verovo/blob/main/registry/vocabularies.yaml): canonical enums
-- [Metric registry](https://github.com/roy-tong/Verovo/blob/main/registry/metrics.yaml): machine-readable contracts
-
-- [Commercial scope](https://github.com/roy-tong/Verovo/blob/main/docs/commercial-narrative.md): buyer tasks, provider incentives, partners and open-source boundaries
-
-## Product definition and buyer review
-
-- [Product definition](https://github.com/roy-tong/Verovo/blob/main/docs/product-definition.md): independent agent spend audit and value measurement, with separate financial, control, delivery and economic conclusions.
-- [Spend action list](https://github.com/roy-tong/Verovo/blob/main/schemas/spend-action-list.schema.json): ready/evidence/review/unreviewed/settled work items from an existing Audit Case; no payment execution or authorization.
-- [Provider contract](https://github.com/roy-tong/Verovo/blob/main/docs/provider-contract.md): local adapter admission, version, limits, coverage and cleanup; no live-connectivity claim.
-- [Buyer review guide](https://github.com/roy-tong/Verovo/blob/main/docs/buyer-review.md): local criteria and JSON evidence; separate verdicts, hashes and offline reports.
-- [Synthetic buyer report](https://roy-tong.github.io/Verovo/examples/buyer-review.html): charge match, unmet delivery requirement and missing evidence, kept separate.
-
-## Service and evidence limits
-
-Analysis runs locally. Sharing is a user choice after inspection. Existing sample-based measurement runs are free with their published scope. Enterprise charge/delivery reviews require a concrete task, agreed scope and any individually agreed fee; no fixed price or recovery guarantee is published. Delivery review does not require a billing error. Rule applicability and source truth require human review.
-
-Summary counts support interpretation, not guaranteed root-cause diagnosis. Core FMT-002 does not verify token/cache semantics, invoice amounts or pricing accuracy. Missing evidence remains UNPROVABLE. Technical findings and synthetic fixtures are not customer value or paid-demand proof.
-
-## Further reference
-
-- [Roadmap](https://github.com/roy-tong/Verovo/blob/main/ROADMAP.md): current focus and deferred work
-- [Buyer reconciliation](https://roy-tong.github.io/Verovo/first-look.html): buyer task-fit discussion and supported scope; no standard package or guaranteed recovery
-- [Lab](https://github.com/roy-tong/Verovo/blob/main/lab/README.md): existing experimental toolkit
-- [Contributing](https://github.com/roy-tong/Verovo/blob/main/CONTRIBUTING.md): contribution and AI-use rules
-- [Agent instructions](https://github.com/roy-tong/Verovo/blob/main/AGENTS.md): invariants and required checks
-
-- [Recompute a synthetic billing period and inspect missing delivery evidence](https://roy-tong.github.io/Verovo/examples/replayable-period.html)
-
-- [OVO Discord community](https://discord.gg/UqrM8MCXb)
-- [OVO product updates on X](https://x.com/elliwoodtong)
+Deep product guides and examples remain at their existing Verovo URLs, including /examples/buyer-review.html, /examples/replayable-period.html, /tools.html, /claims.html, /services.html, /faq.html, /releases.html and /blog/.

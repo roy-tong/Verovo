@@ -31,6 +31,13 @@ success flag and verified value. At the case level: fully loaded cost, verified
 success count, cost per verified success, verified value, ROI (or null with a
 reason), loss events, coverage, duplicates and unallocated items.
 
+`task_result` follows `ovo.task-result/1`. Complete financial coverage and a
+complete buyer-outcome denominator produce `completed`; otherwise the calculated
+subtotals remain available as `partial_result` with scoped `cost_allocation` or
+`business_acceptance` gaps and a `verovo.economics` rerun action. This projection
+does not change any amount or evidence grade and never turns partial economics
+into ROI, payment authorization or realized savings.
+
 ## Hard boundaries
 
 - No cross-currency aggregation or hidden FX conversion.

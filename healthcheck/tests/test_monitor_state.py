@@ -69,6 +69,24 @@ class MonitorStateTest(unittest.TestCase):
         self.assertEqual(1, result["late_records"])
         self.assertIn("spend_spike", result["anomaly_counts"])
 
+    def test_event_identity_distinguishes_equal_calls_and_applies_revisions(self):
+        source = Path(self.tmp.name) / "identified.jsonl"
+        first = dict(row(9, amount="1"), event_id="event-a", revision="1")
+        second = dict(row(9, amount="1"), event_id="event-b", revision="1")
+        source.write_text("\n".join(json.dumps(item) for item in (first, second)) + "\n",
+                          encoding="utf-8")
+        initial = monitor_state.track(monitor.load_records(source), self.state)
+        self.assertEqual(2, initial["new_records"])
+        self.assertEqual(2, initial["state_records"])
+        revised = dict(first, amount="2", revision="2")
+        source.write_text("\n".join(json.dumps(item) for item in (revised, second)) + "\n",
+                          encoding="utf-8")
+        result = monitor_state.track(monitor.load_records(source), self.state)
+        self.assertEqual(1, result["revised_records"])
+        self.assertEqual(2, result["state_records"])
+        saved = json.loads(self.state.read_text(encoding="utf-8"))
+        self.assertEqual(["1", "2"], sorted(entry["record"]["amount"] for entry in saved["records"]))
+
     def test_corrupt_state_fails_without_replacing_bytes(self):
         self.state.write_text("not-json", encoding="utf-8")
         with self.assertRaises(ValueError):

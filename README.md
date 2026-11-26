@@ -2,60 +2,58 @@
 
 <img src="assets/verovo-logo-card.png" alt="Verovo" width="300">
 
-**Know what your AI agents spent, whether the bill is right, and whether the spend was worth it.**
+**Find the economic problem you did not know you had.**
 
-Verovo helps teams track AI spend, audit charges independently, and compare costs with verified task outcomes. Finance, operations and engineering can decide what to pay, hold, fix or choose next.
+Verovo is independent economic intelligence for AI agents. It helps developers, AI teams, finance and procurement discover abnormal spend, audit supplier charges and compare the real cost of accepted outcomes across tools, models and workflows.
 
-[Website](https://roy-tong.github.io/Verovo/) · [中文](README.zh-CN.md) · [Buyer guide](docs/buyer-review.md) · [Replay example](https://roy-tong.github.io/Verovo/examples/replayable-period.html) · [Discord](https://discord.gg/UqrM8MCXb)
+[OVO unified website](https://roy-tong.github.io/ovo/en.html) · [中文](README.zh-CN.md) · [Buyer guide](docs/buyer-review.md) · [Replay example](https://roy-tong.github.io/Verovo/examples/replayable-period.html)
 
 [![CI](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml/badge.svg)](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml)
 [![PyPI](https://img.shields.io/pypi/v/verovo)](https://pypi.org/project/verovo/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
-## Track spend. Audit charges. Understand value.
+## A platform can tell you what it charged. Verovo checks what the work was worth.
 
-A total invoice cannot tell you where money is going, which line needs evidence, whether a retry was worth it, or which tool should handle the next task. Verovo connects supplier rules, invoices, usage, delivery and buyer acceptance across four buyer questions:
+Agent platforms, gateways and observability tools already show usage and prices. The buyer still needs an independent answer: which retry created no value, which invoice line needs evidence, and which tool delivers an accepted task at a defensible cost.
 
-| Capability | Question | What Verovo provides |
+Verovo connects agent logs, supplier records and independently accepted business outcomes without turning financial correctness, control, delivery and value into one opaque score.
+
+### Three economic services
+
+| Service | Start with | Business delivery |
 | --- | --- | --- |
-| Spend Monitoring | Where is money going? | Usage and cost records, task aggregation and cost drivers; real-time observation and anomaly detection are the next build focus |
-| Spend Control | Should spending continue? | Disposition and control recommendations today; budget and hold integrations require an authorized external execution system |
-| Spend Audit | Was the charge correct? | Independent recalculation, line-level actions, evidence supplements, revisions, review, signoff and period replay |
-| Spend Optimization | Was the spend worth it? | Task economics and scenario comparisons today; tool removal, replacement and replay experiments are the path to incremental contribution |
+| **Agent Spend Healthcheck** | Accessible agent logs and usage records | Cost distribution, retries, anomalies and the tasks behind inefficient spend |
+| **Independent Bill Audit** | A supplier bill and buyer-side records | Recalculated charges, supported differences, unresolved amounts and dispute-ready evidence |
+| **Agent Economics Optimization** | Real tasks, costs and acceptance results | Tool/model comparisons, controlled experiments and an independent review of the optimized result |
 
-Financial correctness, control, delivery and economic value remain separate conclusions. Missing evidence stays visible instead of becoming a zero or a pass.
+A useful first result is direct: **“I found an economic problem I could not see before.”** When no anomaly exists, a reliable bounded review is also a valid delivery.
 
-## From one billing period to a clear next move
+## Go from a charge to an economic decision
 
-1. **Bring the period.** Gather the rules, invoice, usage and delivery records for one supplier.
-2. **Review charges and outcomes.** See financial, delivery and evidence coverage as separate answers.
-3. **Assign the next action.** Give each open line an owner and a reason; record the buyer’s actual payment, hold or vendor review separately.
-4. **Replay and compare.** Reproduce the evidence and use task economics for the next acceptance, renewal or procurement decision.
+1. **Discover the actual environment.** Identify supported local agent runtimes and the records they can prove; subscription usage is not automatically a marginal cash bill.
+2. **Calculate the economics.** Connect task, operation and attempt identities without double counting revisions or collapsing separate currencies.
+3. **Investigate the exception.** Find abnormal cost, retry loops, orphan calls and incomplete evidence.
+4. **Audit independently.** Apply explicit supplier rules and keep confirmed, estimated and unresolved amounts separate.
+5. **Compare and verify.** Run comparable tasks, measure cost per accepted outcome and review quality before calling an option better.
 
-[Open a buyer review](https://roy-tong.github.io/Verovo/examples/buyer-review.html) · [Replay a billing period](https://roy-tong.github.io/Verovo/examples/replayable-period.html)
+Verovo does not need to become another model gateway. Existing gateways and runtimes execute controls; Verovo checks their scope, readback and subsequent evidence.
 
-## Run your first review
+## Proof comes from measurement, not a larger dashboard
+
+Verovo grew out of public measurement work across **110+ repositories**, producing **65+ evidence-backed findings across 5 recurring accounting problem classes**. Those reproductions demonstrate technical measurement, not customer savings or paid adoption.
+
+A separate **USD 4.50 synthetic billing difference** shows why historical pricing rules must enter the calculation. It is a fixture, not a customer loss or a recovered amount.
+
+[Read the Token-Accounting Bug Report](campaigns/audit-report-2026-09.md) · [Inspect claims and reproductions](https://roy-tong.github.io/Verovo/claims.html)
+
+## Run your first healthcheck
 
 ```bash
 pipx install verovo
 verovo review --sample --html buyer-review.html --json buyer-review.json
 ```
 
-The offline synthetic example presents charge and delivery reviews with traceable criteria and observations. Prepare your own task with the [buyer guide](docs/buyer-review.md).
-
-## Turn an Audit Case into a spend-action list
-
-From a source checkout:
-
-```bash
-python3 healthcheck/verovo spend-actions \
-  --case examples/audit-golden-case/audit-case.json \
-  --json spend-actions.json --markdown spend-actions.md
-```
-
-The synthetic case produces three evidence actions, four review actions, one unreviewed line, two lines ready for payment and one settled line. Only versioned reviews bound to normalized source content and contract versions can become ready for payment; `realized` becomes settled only after the applied credit is independently verified. The report does not execute or authorize payment.
-
-## See the economics behind each task
+The offline synthetic review compares explicit charge and delivery criteria with local observations. For task economics:
 
 ```bash
 git clone https://github.com/roy-tong/Verovo.git && cd Verovo
@@ -64,53 +62,41 @@ python3 healthcheck/verovo economics \
   --json economics.json --markdown economics.md
 ```
 
-Verovo connects tasks, agent runs, usage, invoices and verified outcomes. Compare direct and allocated costs, cost per verified success and supplier or workflow scenarios. Incomplete cost or outcome coverage remains explicit.
+The result keeps attributed subtotals when full economics are incomplete. Unknown costs, outcomes and ROI remain unknown instead of becoming zero.
 
-[Task economics](docs/task-economics.md) · [Period intake](docs/period-intake.md) · [Cost drivers](docs/cost-optimization.md)
+## A measurable path from healthcheck to optimization
 
-## Keep external components behind an evidence contract
-
-```bash
-python3 healthcheck/verovo provider check \
-  --manifest examples/provider-manifest/otel-file.json
+```text
+Agent logs / supplier bill
+    ↓
+Canonical usage, cost and outcome records
+    ↓
+Anomaly or independently verified difference
+    ↓
+Comparable tool, model or workflow experiment
+    ↓
+Independent quality and cost review
+    ↓
+Keep / rollback / inconclusive
 ```
 
-The Provider Manifest records engine version, integration mode, source trust, readiness checks, resource limits, coverage, cleanup and raw-snapshot digests. Local admission can be `admit`, `degrade` or `refuse`; it never claims live engine contact or complete production coverage. [Provider contract](docs/provider-contract.md)
+Potential savings and realized savings are separate results. A successful experiment with no observed saving is also an honest outcome.
 
-## Export and replay a period proof
+## Current capabilities and next proof
 
-```bash
-verovo proof export --bundle healthcheck/tests/fixtures/canonical-finance --out /tmp/verovo-period-proof --by reviewer
-verovo proof replay /tmp/verovo-period-proof --bundle healthcheck/tests/fixtures/canonical-finance
-```
+- **Available now:** local runtime discovery, persistent spend monitoring, anomaly records, advisory budgets and control receipts, independent buyer review, line-level spend actions, task economics, controlled local experiments and proof replay.
+- **Next to validate:** authorized production control, complete subsequent-spend reconciliation, a real supplier period and equal-or-better-quality optimization.
+- **Adoption goal:** repeated independent use by developers, technical owners and professional reviewers, rather than more cost charts.
 
-Replay returns `EXPIRED` for changed inputs and `FAIL` for changed financial output. Neither command mutates the period or authorizes payment. The installed wheel covers these canonical proof commands; pre-M1 `python3 -m buyer_ledger` workflows remain source-checkout tools documented in [Buyer Ledger](buyer-ledger/README.md).
-
-## Where Verovo fits
-
-- **OTel, OpenLIT and Langfuse** provide execution observations. Verovo uses eligible records for independent financial and outcome review rather than treating a trace as a final bill.
-- **LiteLLM and other gateways** execute routing and controls. Verovo is designed to check their records, coverage and subsequent charges rather than replacing them.
-- **FOCUS and FinOps tools** exchange and aggregate cost. Verovo links those amounts to agent tasks, acceptance and procurement choices.
-- **Inspect and other runners** execute evaluations. Verovo Lab owns preregistration, comparison limits and economic interpretation.
-
-These are integration boundaries, not a claim that every connector is already shipped. [Current capabilities](docs/feature-status.md) and [the validation roadmap](ROADMAP.md) separate local functionality from live-provider and customer validation.
-
-## Built from public measurement work
-
-Verovo grew out of an audit of roughly 110 AI usage and cost tools. The project published more than 65 evidence-backed findings across five recurring accounting problems, along with reproductions and upstream corrections.
-
-- [The Token-Accounting Bug Report](campaigns/audit-report-2026-09.md)
-- [Dated case cards](docs/launch/README.md)
-- [Claims and reproductions](https://roy-tong.github.io/Verovo/claims.html)
-
-That work continues in the open-source rules, SDK, conformance vectors and buyer tools. Use the CLI, connect through MCP, join [Discord](https://discord.gg/UqrM8MCXb), follow [X](https://x.com/elliwoodtong), or bring a concrete supplier period to the [buyer task page](https://roy-tong.github.io/Verovo/first-look.html#contact).
+See [feature status](docs/feature-status.md) and [the validation roadmap](ROADMAP.md) for live-provider and customer-validation boundaries. OTel, Langfuse, LiteLLM and evaluation runners remain integration counterparts, not proof that every connector is shipped.
 
 ## Continue
 
 - [Buyer review guide](docs/buyer-review.md)
+- [Task economics](docs/task-economics.md)
 - [Supported recounts](examples/showcase/README.md)
 - [Buyer Ledger](buyer-ledger/README.md)
 - [Provider SDK](sdk/README.md)
 - [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [AGENTS.md](AGENTS.md)
 
-Verovo is MIT open source. Start with one supplier, one period and one decision.
+Verovo is MIT open source. Bring one agent environment, one supplier period and one decision to the [buyer task page](https://roy-tong.github.io/Verovo/first-look.html#contact), or join [Discord](https://discord.gg/UqrM8MCXb).

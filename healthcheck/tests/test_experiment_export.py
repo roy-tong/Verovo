@@ -26,6 +26,10 @@ class ToolValueExperimentExportTest(unittest.TestCase):
                 "cost": "1.00",
                 "retry_cost": "0",
                 "comparable_group": "research-v1",
+                "currency": "USD", "task_type": "research",
+                "acceptance_rubric_ref": "rubric-v1",
+                "success_evidence_ref": "acceptance:control-%d" % index,
+                "cost_basis": "canonical_task_economics",
                 "observed_at": "2026-11-2%dT10:00:00Z" % (index + 1),
             })
             rows.append({
@@ -35,6 +39,10 @@ class ToolValueExperimentExportTest(unittest.TestCase):
                 "cost": "1.20",
                 "retry_cost": "0.10",
                 "comparable_group": "research-v1",
+                "currency": "USD", "task_type": "research",
+                "acceptance_rubric_ref": "rubric-v1",
+                "success_evidence_ref": "acceptance:treatment-%d" % index,
+                "cost_basis": "canonical_task_economics",
                 "observed_at": "2026-11-2%dT11:00:00Z" % (index + 1),
             })
         self.source.write_text("\n".join(json.dumps(row) for row in rows) + "\n",

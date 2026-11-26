@@ -54,6 +54,7 @@ from . import alert_resolution as alert_resolution_mod
 from . import spend_forecast as spend_forecast_mod
 from . import budget_control as budget_control_mod
 from . import budget_recovery as budget_recovery_mod
+from . import control_adapter as control_adapter_mod
 from . import control_receipt as control_receipt_mod
 from . import experiment_export as experiment_export_mod
 from . import experiment_runner as experiment_runner_mod
@@ -834,8 +835,8 @@ def _selftest_share_flow() -> int:
                     share_summary=summary)
         with open(report, "w", encoding="utf-8") as fh:
             json.dump(snap, fh, ensure_ascii=True)
-        body = share_mod.share_markdown(json.load(
-            open(report, encoding="utf-8"))["share_summary"])
+        with open(report, encoding="utf-8") as handle:
+            body = share_mod.share_markdown(json.load(handle)["share_summary"])
         if "Verovo Healthcheck" not in body:
             print("  share flow: report roundtrip preview broken  [MISMATCH]")
             problems += 1
@@ -1489,6 +1490,13 @@ def cmd_monitor(args) -> int:
             print(json.dumps(payload, ensure_ascii=False, indent=2)
                   if args.json else monitor_alerts_mod.render(payload))
             return 0
+        if args.monitor_action == "pending":
+            items = monitor_alerts_mod.pending(args.out)
+            payload = {"schema": "verovo.spend-alert-pending/1",
+                       "pending_local_delivery": len(items), "items": items,
+                       "outbox": str(args.out)}
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            return 0
         if args.monitor_action in ("track", "freeze-baseline"):
             if not args.state:
                 raise ValueError("%s needs --state STATE_JSON" % args.monitor_action)
@@ -1527,7 +1535,16 @@ def cmd_monitor(args) -> int:
 
 def cmd_budget(args) -> int:
     try:
-        if args.budget_action == "resume":
+        if args.budget_action == "apply":
+            adapter = json.loads(Path(args.adapter).read_text(encoding="utf-8"))
+            decision = json.loads(Path(args.decision).read_text(encoding="utf-8"))
+            payload = control_adapter_mod.apply(adapter, decision, process_runner=run_process)
+            if args.receipt_out:
+                with Path(args.receipt_out).open("x", encoding="utf-8") as handle:
+                    json.dump(payload["receipt"], handle, ensure_ascii=False, indent=2)
+                    handle.write("\n")
+            rendered = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+        elif args.budget_action == "resume":
             document = json.loads(Path(args.budget).read_text(encoding="utf-8"))
             recovery = json.loads(Path(args.recovery).read_text(encoding="utf-8"))
             payload = budget_recovery_mod.evaluate(args.state, document, recovery, args.out)
@@ -2649,6 +2666,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_mon_notify.add_argument("--severity", choices=("low", "medium", "high"), default="low")
     p_mon_notify.add_argument("--json", action="store_true")
     p_mon_notify.set_defaults(func=cmd_monitor)
+    p_mon_pending = msub.add_parser(
+        "pending", help="list local alerts without a confirmed delivery receipt")
+    p_mon_pending.add_argument("--out", required=True, help="local alert outbox JSONL")
+    p_mon_pending.add_argument("--json", action="store_true")
+    p_mon_pending.set_defaults(func=cmd_monitor)
     p_mon_resolution = msub.add_parser(
         "resolution", help="project one local alert into ovo.problem-resolution/1; read-only")
     p_mon_resolution.add_argument("--file", required=True, help="alert JSON or outbox JSONL")
@@ -2682,6 +2704,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_budget_check.add_argument("--budget", required=True, help="verovo.spend-budget/1 JSON")
     p_budget_check.add_argument("--json", action="store_true")
     p_budget_check.set_defaults(func=cmd_budget)
+    p_budget_apply = budget_sub.add_parser(
+        "apply", help="execute an explicitly authorized hold adapter and read back runtime state")
+    p_budget_apply.add_argument("--adapter", required=True, help="verovo.spend-control-adapter/1 JSON")
+    p_budget_apply.add_argument("--decision", required=True, help="current hold decision JSON")
+    p_budget_apply.add_argument("--receipt-out", default="", help="new receipt JSON; never overwritten")
+    p_budget_apply.add_argument("--json", action="store_true")
+    p_budget_apply.set_defaults(func=cmd_budget)
     p_budget_verify = budget_sub.add_parser(
         "verify", help="reconcile a local runtime stop readback with subsequent observed spend")
     p_budget_verify.add_argument("--state", required=True, help="persistent monitor state JSON")

@@ -324,6 +324,86 @@ def recalculate_charge(item: Dict[str, Any], pricing_rules: Dict[str, Dict[str, 
     return result
 
 
+def task_result_view(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Project calculation completeness without upgrading financial or outcome evidence."""
+    case_id = str(result.get("case_id") or "")
+    totals = result.get("totals") or {}
+    unallocated = result.get("unallocated") or []
+    allocation_complete = all(
+        str(row.get("status") or "") == "complete"
+        for row in (result.get("allocation_coverage") or []))
+    complete = (totals.get("cost_status") == "complete"
+                and totals.get("success_denominator_status") == "complete"
+                and not unallocated and allocation_complete)
+
+    completed = [
+        "Attributed cost subtotal: %s %s." % (
+            totals.get("attributed_cost_subtotal"), result.get("currency"))]
+    success_count = totals.get("verified_success_tasks")
+    if isinstance(success_count, int) and not isinstance(success_count, bool):
+        completed.append("Buyer-verified successful tasks: %d." % success_count)
+    observations = [
+        "Cost coverage: %s; outcome denominator: %s." % (
+            totals.get("cost_status"), totals.get("success_denominator_status")),
+        str(totals.get("cost_per_verified_success_reason") or ""),
+    ]
+
+    missing = []
+    for row in unallocated:
+        missing.append({
+            "code": "FINANCIAL_COVERAGE_OPEN",
+            "detail": "%s %s: %s" % (row.get("kind"), row.get("id"), row.get("reason")),
+            "scope": "cost_allocation",
+            "blocking": True,
+        })
+    if totals.get("cost_status") != "complete" and not unallocated:
+        missing.append({
+            "code": "COST_COVERAGE_INCOMPLETE",
+            "detail": str(totals.get("cost_per_verified_success_reason") or
+                          "Fully loaded cost remains incomplete."),
+            "scope": "cost_allocation",
+            "blocking": True,
+        })
+    if totals.get("success_denominator_status") != "complete":
+        missing.append({
+            "code": "OUTCOME_EVIDENCE_INCOMPLETE",
+            "detail": str(totals.get("cost_per_verified_success_reason") or
+                          "Buyer outcome evidence is incomplete."),
+            "scope": "business_acceptance",
+            "blocking": True,
+        })
+
+    evidence_refs = []
+    for row in ((result.get("outcomes") or []) + (result.get("loss_events") or [])
+                + (result.get("findings") or [])):
+        ref = str(row.get("source_ref") or "").strip()
+        if ref and ref not in evidence_refs:
+            evidence_refs.append(ref)
+    for row in result.get("allocation") or []:
+        ref = str((row.get("driver") or {}).get("source_ref") or "").strip()
+        if ref and ref not in evidence_refs:
+            evidence_refs.append(ref)
+    next_actions = [] if complete else [{
+        "kind": "capability",
+        "description": "Resolve the scoped financial or outcome evidence, then rerun task economics.",
+        "requires_user": True,
+        "capability": "verovo.economics",
+    }]
+    return {
+        "schema": "ovo.task-result/1",
+        "task_id": case_id,
+        "product": "verovo",
+        "status": "completed" if complete else "partial_result",
+        "completed": completed,
+        "observations": [text for text in observations if text],
+        "evidence_refs": evidence_refs,
+        "missing_conditions": missing,
+        "next_actions": next_actions,
+        "user_decision_required": False,
+        "resume_ref": case_id,
+    }
+
+
 def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(case, dict):
         raise EconomicsError("case must be an object")
@@ -776,6 +856,7 @@ def evaluate(case: Dict[str, Any]) -> Dict[str, Any]:
             "qualified from consistent procedural metadata, not cryptographic proof."
         ),
     }
+    result["task_result"] = task_result_view(result)
     return result
 
 

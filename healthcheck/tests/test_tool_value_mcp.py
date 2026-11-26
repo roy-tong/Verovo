@@ -22,8 +22,14 @@ class ToolValueMcpTest(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         path = Path(tmp.name) / "tasks.jsonl"
         rows = [
-            {"task_id": "t1", "group": "treatment", "success": "true", "cost": "2", "retry_cost": "0"},
-            {"task_id": "c1", "group": "control", "success": "false", "cost": "1", "retry_cost": "0"},
+            {"task_id": "t1", "group": "treatment", "success": "true", "cost": "2", "retry_cost": "0",
+             "comparable_group": "research-v1", "currency": "USD", "task_type": "research",
+             "acceptance_rubric_ref": "rubric-v1", "success_evidence_ref": "acceptance:t1",
+             "cost_basis": "canonical_task_economics"},
+            {"task_id": "c1", "group": "control", "success": "false", "cost": "1", "retry_cost": "0",
+             "comparable_group": "research-v1", "currency": "USD", "task_type": "research",
+             "acceptance_rubric_ref": "rubric-v1", "success_evidence_ref": "acceptance:c1",
+             "cost_basis": "canonical_task_economics"},
         ]
         path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
         result = mcp_server.call_tool("verovo_economics_ops", {

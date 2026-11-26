@@ -18,6 +18,9 @@ def task(task_id, day, cost, success="true"):
         "cost": str(cost), "retry_cost": "0", "comparable_group": "research-v1",
         "observed_at": "2026-11-%02dT10:00:00Z" % day,
         "currency": "USD", "task_type": "research",
+        "acceptance_rubric_ref": "rubric-1",
+        "success_evidence_ref": "acceptance:" + task_id,
+        "cost_basis": "canonical_task_economics",
     }
 
 
@@ -27,7 +30,7 @@ class OptimizationLoopTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.baseline = self.write("baseline.jsonl", [task("b1", 1, 4), task("b2", 2, 4)])
-        self.final = self.write("final.jsonl", [task("f1", 11, 3), task("f2", 12, 3)])
+        self.final = self.write("final.jsonl", [task("b1", 11, 3), task("b2", 12, 3)])
         self.directory = self.root / "loop"
 
     def write(self, name, rows):
@@ -62,7 +65,7 @@ class OptimizationLoopTest(unittest.TestCase):
         self.assertEqual("keep", first["runs"][0]["review"]["decision"])
         no_due = optimization_loop.tick(self.directory, now="2026-11-21T00:00:00Z")
         self.assertEqual("no_due_loop", no_due["status"])
-        self.write("final.jsonl", [task("f1", 11, 2), task("f2", 12, 2)])
+        self.write("final.jsonl", [task("b1", 11, 2), task("b2", 12, 2)])
         second = optimization_loop.tick(self.directory, now="2026-11-22T00:00:00Z")
         self.assertTrue(second["runs"][0]["source_changed"])
         self.assertEqual("2.00", second["runs"][0]["review"]["observed_change"]["cost_per_task_saving"])
@@ -73,7 +76,7 @@ class OptimizationLoopTest(unittest.TestCase):
 
     def test_quality_regression_requires_but_never_applies_rollback(self):
         optimization_loop.create(self.spec(), self.directory)
-        self.write("final.jsonl", [task("f1", 11, 2, "false"), task("f2", 12, 2)])
+        self.write("final.jsonl", [task("b1", 11, 2, "false"), task("b2", 12, 2)])
         result = optimization_loop.tick(self.directory, now="2026-11-21T00:00:00Z")
         run = result["runs"][0]
         self.assertEqual("rollback", run["review"]["decision"])
