@@ -18,7 +18,7 @@ class ProofWebSurfaceTest(unittest.TestCase):
 
     def test_home_links_family_story_and_replayable_period(self):
         text = (ROOT.parent / "website" / "index.html").read_text(encoding="utf-8")
-        destination = "https://roy-tong.github.io/ovo/en.html"
+        destination = "https://roy-tong.github.io/ovo/verovo/"
         self.assertIn(f'http-equiv="refresh" content="0;url={destination}"', text)
         self.assertIn("examples/replayable-period.html", text)
 
