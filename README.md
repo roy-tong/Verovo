@@ -49,7 +49,12 @@ A separate **USD 4.50 synthetic billing difference** shows why historical pricin
 ## Run your first healthcheck
 
 ```bash
-pipx install verovo
+# Stable
+<!--OVO:verovo-stable-->pipx install verovo==0.20.0
+verovo review --sample<!--/OVO:verovo-stable-->
+# Preview
+<!--OVO:verovo-preview-->pipx install verovo==0.20.1rc2
+verovo review --sample<!--/OVO:verovo-preview-->
 verovo review --sample --html buyer-review.html --json buyer-review.json
 ```
 

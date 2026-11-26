@@ -1,9 +1,14 @@
+import copy
 import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from verovo_healthcheck import tool_value
+from verovo_healthcheck import task_economics, tool_value
+try:
+    from tests.test_task_economics import base_case
+except ModuleNotFoundError:
+    from test_task_economics import base_case
 
 
 def task(task_id, group, success, cost, retry="0"):
@@ -90,6 +95,37 @@ class ToolValueTest(unittest.TestCase):
         rows = [{"task_id": "t1", "group": "treatment", "success": "true"}]
         with self.assertRaises(ValueError):
             tool_value.load_tasks(self.write(rows))
+
+    def test_canonical_economics_is_derived_not_redeclared(self):
+        case = base_case()
+        case["tasks"][0].update({
+            "group": "treatment", "comparable_group": "research-v1",
+            "acceptance_rubric_ref": "rubric-v1", "observed_at": "2026-11-01T00:00:00Z"})
+        case["tasks"][1].update({
+            "group": "control", "comparable_group": "research-v1",
+            "acceptance_rubric_ref": "rubric-v1", "observed_at": "2026-11-01T00:00:00Z"})
+        case["runs"] = case["runs"][:2]
+        case["usage"] = case["usage"][:2]
+        case["cost_items"] = []
+        case["loss_events"] = []
+        failure = copy.deepcopy(case["outcomes"][0])
+        failure.update(task_id="t2", status="failure", source_ref="crm:2", value=None,
+                       value_verified=False)
+        case["outcomes"][1] = failure
+        result = task_economics.evaluate(case)
+        tasks = tool_value.tasks_from_economics(result)
+        self.assertEqual(["t1", "t2"], [row["task_id"] for row in tasks])
+        self.assertEqual([True, False], [row["success"] for row in tasks])
+        self.assertEqual("1.50", str(tasks[0]["cost"]))
+        self.assertEqual("crm:1", tasks[0]["success_evidence_ref"])
+        payload = tool_value.analyze(tasks)
+        self.assertTrue(payload["eligibility"]["eligible"])
+        self.assertEqual("insufficient_evidence", payload["status"])
+
+    def test_incomplete_economics_cannot_enter_tool_value(self):
+        result = task_economics.evaluate(base_case())
+        with self.assertRaisesRegex(ValueError, "cost coverage"):
+            tool_value.tasks_from_economics(result)
 
 
 if __name__ == "__main__":

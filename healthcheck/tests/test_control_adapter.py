@@ -25,7 +25,8 @@ class ControlAdapterTest(unittest.TestCase):
         }
 
     def decision(self):
-        return {"decision": "hold", "budget_id": "b1", "scope": {"task_id": "t1"}}
+        return {"decision": "hold", "budget_id": "b1", "scope": {"task_id": "t1"},
+                "evaluated_at": "2026-11-25T00:00:00Z"}
 
     def test_hold_executes_only_with_matching_decision_and_reads_back(self):
         self.assertIsNotNone(importlib.util.find_spec("verovo_healthcheck.control_adapter"))
@@ -35,7 +36,7 @@ class ControlAdapterTest(unittest.TestCase):
             calls.append(kwargs)
             if kwargs["argv"] == ["runtime-status"]:
                 return {"exit_code": 0, "error": "", "stdout":
-                        b'{"status":"stopped","observed_at":"2026-11-26T00:00:00Z","source_ref":"runtime-1"}',
+                        b'{"status":"stopped","budget_id":"b1","scope":{"task_id":"t1"},"action":"hold","observed_at":"2026-11-26T00:00:00Z","source_ref":"runtime-1"}',
                         "stderr": b""}
             return {"exit_code": 0, "error": "", "stdout": b"held", "stderr": b""}
         result = control_adapter.apply(self.spec(), self.decision(), process_runner=runner)
@@ -54,7 +55,7 @@ class ControlAdapterTest(unittest.TestCase):
             "import json,sys\n"
             "state=sys.argv[2]\n"
             "if sys.argv[1]=='hold':\n"
-            " open(state,'w').write(json.dumps({'status':'stopped','observed_at':'2026-11-26T00:00:00Z','source_ref':'local-runtime'}))\n"
+            " open(state,'w').write(json.dumps({'status':'stopped','budget_id':'b1','scope':{'task_id':'t1'},'action':'hold','observed_at':'2026-11-26T00:00:00Z','source_ref':'local-runtime'}))\n"
             "else:\n print(open(state).read())\n", encoding="utf-8")
         state = root / "state.json"
         spec = self.spec()
@@ -73,6 +74,20 @@ class ControlAdapterTest(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr + result.stdout)
         self.assertEqual("APPLIED", json.loads(result.stdout)["status"])
         self.assertEqual("stopped", json.loads(receipt.read_text())["readback"]["status"])
+
+    def test_wrong_scope_and_stale_readback_are_not_applied(self):
+        from verovo_healthcheck import control_adapter
+        def runner(**kwargs):
+            if kwargs["argv"] == ["runtime-status"]:
+                return {"exit_code": 0, "error": "", "stdout":
+                        b'{"status":"stopped","budget_id":"b1","scope":{"task_id":"other"},"action":"hold","observed_at":"2020-01-01T00:00:00Z","source_ref":"runtime-other"}',
+                        "stderr": b""}
+            return {"exit_code": 0, "error": "", "stdout": b"held", "stderr": b""}
+        result = control_adapter.apply(self.spec(), self.decision(), process_runner=runner)
+        self.assertEqual("UNPROVABLE", result["status"])
+        self.assertFalse(result["receipt"]["control_verified"])
+        self.assertIn("scope_mismatch", result["verification_errors"])
+        self.assertIn("stale_readback", result["verification_errors"])
 
     def test_allow_decision_cannot_invoke_adapter(self):
         from verovo_healthcheck import control_adapter

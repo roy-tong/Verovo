@@ -66,11 +66,12 @@ verovo optimize-loop pause|resume --dir LOOP_DIR --at ISO_TIMESTAMP
 verovo economics --case CASE --json OUT --markdown OUT_MD
 verovo human-baseline --human HUMAN_TASKS --agent AGENT_TASKS --contract HUMAN_BASELINE
 verovo experiment run --contract CONTROLLED_TASK_RUN --out NEW_RUN_DIR
-verovo tool-value --file TASKS --json
+verovo tool-value --economics-case CASE --json  # derived canonical costs and acceptance
+verovo tool-value --file TASKS --json          # declared compatibility input
 verovo tool-value-export --file TASKS --design DESIGN --out OUT
 ```
 
-Monitoring prefers explicit event or operation+attempt identity and retains distinct revisions; content-hash-only identity remains uncertain. Unit-price drift compares the frozen baseline. Tool-value comparisons require one eligible task/currency/acceptance/cost contract before any interval or difference is calculated.
+Monitoring prefers explicit event or operation+attempt identity and retains distinct revisions only when an integer sequence or timezone-aware timestamp proves them newer; historical replay and unordered revisions are refused. Content-hash-only identity remains uncertain. Unit-price drift compares the frozen baseline. Tool-value comparisons prefer derived Canonical Economics, label declared CSV/JSONL separately and require one eligible task/currency/acceptance/cost contract before any interval or difference is calculated.
 
 `economics` returns an `ovo.task-result/1` projection alongside the deterministic amounts. `completed` requires complete cost and buyer-outcome coverage; open allocation or acceptance evidence remains `partial_result` with scoped gaps and a rerun action. The projection never upgrades ROI, payment authorization or realized savings.
 
@@ -85,7 +86,9 @@ windows and no cross-currency total. Budget `allow/warn/hold/review`
 results are advisory signals until an explicit adapter is configured. `budget apply`
 requires named authorization plus a matching current hold decision and scope, executes
 the configured hold command and reads runtime state. APPLIED requires a stopped
-readback; it never implies complete subsequent-spend coverage or realized savings.
+readback with the same budget, scope and hold action, observed no earlier than the decision;
+wrong-scope and stale readbacks stay UNPROVABLE. It never implies complete
+subsequent-spend coverage or realized savings.
 `budget verify` reconciles a matching
 stopped runtime readback with complete subsequent-spend coverage. Positive post-stop
 charges fail and credits cannot hide them; incomplete evidence stays UNPROVABLE.
