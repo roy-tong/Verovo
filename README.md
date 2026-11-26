@@ -1,13 +1,13 @@
 # Verovo website
 
 Live: https://roy-tong.github.io/Verovo/
-Current public release: v0.17.1.
+Current public release: v0.20.0.
 
-Static HTML, CSS and JavaScript. Verovo is presented as the independent measurement and audit layer for AI agents: period spend actions, delivery review, control-effectiveness validation and private procurement comparison. Buyer services and fee mechanisms are under validation. Local developer tools and the existing free measurement runs retain their separate scope. Standards, SDK, claims and research remain supporting resources.
+Static HTML, CSS and JavaScript. Verovo is presented inside the unified OVO website as independent economic intelligence for AI agents: Agent Spend Healthcheck, Independent Bill Audit and Agent Economics Optimization. This directory retains buyer guides, examples, services, claims and the Verovo engineering blog; the independent visual homepage has been replaced by a redirect to `https://roy-tong.github.io/ovo/en.html`. Buyer services and fee mechanisms are under validation. Local developer tools and the existing free measurement runs retain their separate scope. Standards, SDK, claims and research remain supporting resources.
 
 ## Pages
 
-- `index.html`: spend-action demo, charge/delivery/economics answers, task-fit entry, Provider contract and technical evidence.
+- `index.html`: redirect to the unified OVO homepage; deep product guides and examples remain available.
 - `first-look.html`: three commissioning tasks — period charges and delivery, control effectiveness, private procurement comparison.
 - `examples/buyer-review.html`: generated synthetic output of the actual `review --sample` command.
 - `tools.html`: cataloged domestic/overseas tool bill coverage, buyer vs seller audit, local CDP collection and research cases. Cataloged is not live-validated.
