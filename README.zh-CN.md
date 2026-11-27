@@ -8,6 +8,8 @@ Verovo 是面向 AI Agent 的独立经济度量产品。它帮助开发者、AI 
 
 [OVO 统一官网](https://roy-tong.github.io/ovo/) · [English](README.md) · [买方指南](docs/buyer-review.md) · [账期重放示例](https://roy-tong.github.io/Verovo/examples/replayable-period.html)
 
+**关注进展：** [X @elliwoodtong](https://x.com/elliwoodtong) · [加入 OVO Discord](https://discord.gg/UqrM8MCXb)
+
 [![CI](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml/badge.svg)](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml)
 [![PyPI](https://img.shields.io/pypi/v/verovo)](https://pypi.org/project/verovo/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
