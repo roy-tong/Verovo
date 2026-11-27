@@ -8,6 +8,8 @@ Verovo is independent economic intelligence for AI agents. It helps developers, 
 
 [OVO unified website](https://roy-tong.github.io/ovo/en.html) · [中文](README.zh-CN.md) · [Buyer guide](docs/buyer-review.md) · [Replay example](https://roy-tong.github.io/Verovo/examples/replayable-period.html)
 
+**Follow the build:** [X @elliwoodtong](https://x.com/elliwoodtong) · [Join the OVO Discord](https://discord.gg/UqrM8MCXb)
+
 [![CI](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml/badge.svg)](https://github.com/roy-tong/Verovo/actions/workflows/conformance.yml)
 [![PyPI](https://img.shields.io/pypi/v/verovo)](https://pypi.org/project/verovo/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
