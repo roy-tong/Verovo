@@ -14,7 +14,7 @@ requires-python = ">=3.9"
 license = { text = "MIT" }
 keywords = ["agent", "codex", "claude", "observability", "measurement", "healthcheck", "conformance"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
