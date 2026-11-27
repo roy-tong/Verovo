@@ -50,10 +50,10 @@ Verovo 起源于对 **110+ 个仓库**的公开测量，形成了 **65+ 条证�
 
 ```bash
 # 稳定版
-<!--OVO:verovo-stable-->pipx install verovo==0.20.0
+<!--OVO:verovo-stable-->pipx install verovo==1.0.0
 verovo review --sample<!--/OVO:verovo-stable-->
 # 预发行验收版
-<!--OVO:verovo-preview-->pipx install verovo==0.20.1rc4
+<!--OVO:verovo-preview-->pipx install verovo==1.0.0
 verovo review --sample<!--/OVO:verovo-preview-->
 verovo review --sample --html buyer-review.html --json buyer-review.json
 ```

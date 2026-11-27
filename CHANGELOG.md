@@ -1,3 +1,14 @@
+## 1.0.0 — 2026-11-27
+
+### Changed
+
+- Promote the complete 0.20.x line to the first stable release, including spend monitoring, buyer-close economics, revision-safe monitoring, control readback and distribution metadata that matches the runtime version.
+- Stable and Preview installation entries now identify Verovo 1.0.0. Package classifiers reflect production/stable status; evidence boundaries and `UNPROVABLE` semantics remain unchanged.
+
+### Verification
+
+- Healthcheck, root, registry and protocol suites remain release gates. Wheel and sdist must report 1.0.0 in both metadata and `verovo --version`; production control, supplier periods, realized savings and external adoption remain unclaimed.
+
 ## 0.20.1rc4 — 2026-11-26
 
 ### Fixed
